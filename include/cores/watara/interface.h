@@ -1,7 +1,7 @@
-#ifndef __WATARA_INT_H__
-#define __WATARA_INT_H__
+#ifndef __WATARA_INTERFACE_H__
+#define __WATARA_INTERFACE_H__
 
-#include "interface.h"
+#include "types.h"
 
 void watara_run_frame(void* ctx);
 void* watara_init(const char* filename, SDL_AudioDeviceID device_id);
