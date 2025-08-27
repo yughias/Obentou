@@ -4,29 +4,29 @@
 #include "cores/watara/interface.h"
 #include "cores/pv1000/interface.h"
 
-core_t cores[] = {
-    {
-        .init = watara_init,
-        .run_frame = watara_run_frame,
-        .width = watara_width,
-        .height = watara_height,
-        .fps = watara_fps,
-        .audio_spec = watara_audio_spec
-    },
-    {
-        .init = pv1000_init,
-        .run_frame = pv1000_run_frame,
-        .width = pv1000_width,
-        .height = pv1000_height,
-        .fps = pv1000_fps,
-        .audio_spec = pv1000_audio_spec
-    }
+const core_t cores[] = {
+    LOAD_CORE(watara),
+    LOAD_CORE(pv1000),
 };
 
 void* emu;
+const core_t* core = NULL;
+
+static void detect_core(const char* filename){
+    for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
+        if(cores[i].detect(filename)){
+            core = &cores[i];
+            return;
+        }
+    }
+
+    fprintf(stderr, "Unknown core: %s\n", filename);
+    exit(EXIT_FAILURE);
+}
 
 void setup(){
-    core_t* core = &cores[1];
+    detect_core(getArgv(1));
+
     setScaleMode(NEAREST);
     size(core->width, core->height);
     frameRate(core->fps);
@@ -47,6 +47,5 @@ void setup(){
 }
 
 void loop(){
-    core_t* core = &cores[1];
     core->run_frame(emu);
 }

@@ -270,8 +270,7 @@ void* watara_init(const char* filename, SDL_AudioDeviceID device_id){
     return w;
 }
 
-void watara_run_frame(void* ctx){
-    watara_t* w = (watara_t*)ctx;
+void watara_run_frame(watara_t* w){
     w65c02_t* cpu = &w->cpu;
     tmr_t* tmr = &w->tmr;
     apu_t* apu = &w->apu;
@@ -302,4 +301,8 @@ static u8 watara_get_controller(){
         out &= ~( ((bool)keystate[keys[i]]) << i );
 
     return out;
+}
+
+bool watara_detect(const char* filename){
+    return strstr(filename, ".sv") != NULL;
 }

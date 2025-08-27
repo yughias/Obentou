@@ -4,6 +4,7 @@
 #include "types.h"
 
 void watara_run_frame(void* ctx);
+bool watara_detect(const char* filename);
 void* watara_init(const char* filename, SDL_AudioDeviceID device_id);
 
 

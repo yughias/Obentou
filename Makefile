@@ -1,4 +1,3 @@
-# Recursive wildcard function
 rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 SRC := $(call rwildcard,src/,*.c)
 OBJ := $(patsubst src/%.c, obj/%.o, $(SRC))

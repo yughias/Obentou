@@ -64,3 +64,21 @@ void pv1000_run_frame(pv1000_t* pv1000){
 
     pv1000_vdp_render(vdp, pv1000->memory);
 }
+
+bool pv1000_detect(const char* filename){
+    if(strstr(filename, ".pv"));
+        return true;
+
+    if(strstr(filename, ".bin")){
+        FILE* fptr = fopen(filename, "rb");
+        if(!fptr)
+            return false;
+        fseek(fptr, 0, SEEK_END);
+        size_t size = ftell(fptr);
+        fclose(fptr);
+        if(size == (1 << 13) || size == (1 << 14))
+            return true;
+    }
+    
+    return false;
+}

@@ -5,6 +5,7 @@
 
 void pv1000_run_frame(void* ctx);
 void* pv1000_init(const char* filename, SDL_AudioDeviceID device_id);
+bool pv1000_detect(const char* filename);
 void pv1000_psg_callback(void *userdata, Uint8 * stream, int len);
 
 
