@@ -1,7 +1,7 @@
 #ifndef __WATARA_H__
 #define __WATARA_H__
 
-#include "cores/watara/w65c02.h"
+#include "cpus/w65c02.h"
 #include "cores/watara/lcd.h"
 #include "cores/watara/tmr.h"
 #include "cores/watara/apu.h"

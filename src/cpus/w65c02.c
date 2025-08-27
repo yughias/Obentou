@@ -1,4 +1,4 @@
-#include "cores/watara/w65c02.h"
+#include "cpus/w65c02.h"
 
 #include <stdio.h>
 
