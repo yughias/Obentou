@@ -360,7 +360,7 @@ void size(int w, int h){
     } else {
         #ifndef __EMSCRIPTEN__
         SDL_DestroyTexture(drawBuffer);
-        drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_BGR555, SDL_TEXTUREACCESS_STREAMING, width, height);
+        drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, width, height);
         SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
         calculateRescaleVars();
         pixels = surface->pixels;

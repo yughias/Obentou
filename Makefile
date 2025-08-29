@@ -1,5 +1,4 @@
-rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
-SRC := $(call rwildcard,src/,*.c)
+SRC := $(shell find src -name '*.c')
 OBJ := $(patsubst src/%.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
@@ -17,5 +16,13 @@ $(EXE): $(OBJ)
 obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) -c -MMD -MP $(CFLAGS) $< -o $@
+
+clean:
+	rm -rf obj $(EXE)
+
+loc:
+	find src -name \*.c | xargs wc -l
+
+.PHONY: all clean loc
 
 -include $(DEP)

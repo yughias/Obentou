@@ -66,10 +66,10 @@ void pv1000_run_frame(pv1000_t* pv1000){
 }
 
 bool pv1000_detect(const char* filename){
-    if(strstr(filename, ".pv"))
+    if(SDL_strcasestr(filename, ".pv"))
         return true;
 
-    if(strstr(filename, ".bin")){
+    if(SDL_strcasestr(filename, ".bin")){
         FILE* fptr = fopen(filename, "rb");
         if(!fptr)
             return false;

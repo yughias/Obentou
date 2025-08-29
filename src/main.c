@@ -3,10 +3,16 @@
 #include "cores.h"
 #include "cores/watara/interface.h"
 #include "cores/pv1000/interface.h"
+#include "cores/pce/interface.h"
+#include "cores/bytepusher/interface.h"
+#include "cores/tms80/interface.h"
 
 const core_t cores[] = {
     LOAD_CORE(watara),
     LOAD_CORE(pv1000),
+    LOAD_CORE(pce),
+    LOAD_CORE(bytepusher),
+    LOAD_CORE(tms80)
 };
 
 void* emu;
@@ -25,6 +31,11 @@ static void detect_core(const char* filename){
 }
 
 void setup(){
+    if(getArgc() < 2){
+        fprintf(stderr, "Usage: %s <rom>\n", getArgv(0));
+        exit(EXIT_FAILURE);
+    }
+    
     detect_core(getArgv(1));
 
     setScaleMode(NEAREST);

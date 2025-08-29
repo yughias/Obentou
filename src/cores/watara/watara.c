@@ -304,5 +304,5 @@ static u8 watara_get_controller(){
 }
 
 bool watara_detect(const char* filename){
-    return strstr(filename, ".sv") != NULL;
+    return SDL_strcasestr(filename, ".sv") != NULL;
 }
