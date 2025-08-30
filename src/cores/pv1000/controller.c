@@ -2,10 +2,10 @@
 
 #include "SDL2/SDL.h"
 
-uint8_t pv1000_controller_read(controller_t* controller){
+u8 pv1000_controller_read(controller_t* controller){
     const Uint8* keystate = SDL_GetKeyboardState(NULL);
 
-    uint8_t out = 0;
+    u8 out = 0;
 
     if(controller->selected_matrix & 8) {
         out |= keystate[SDL_SCANCODE_A];

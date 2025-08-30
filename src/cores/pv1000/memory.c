@@ -10,27 +10,25 @@ if(addr == reg_addr){ \
         psg->square_freq[idx] = CALCULATE_SQUARE_FREQ(byte); \
 }
 
-uint8_t pv1000_readMemory(z80_t* z80, uint16_t addr){
-    pv1000_t* pv1000 = z80->ctx;
-
+u8 pv1000_readMemory(void* ctx, u16 addr){
+    pv1000_t* pv1000 = (pv1000_t*)ctx;
     return pv1000->memory[addr];
 }
 
-void pv1000_writeMemory(z80_t* z80, uint16_t addr, uint8_t byte){
-    pv1000_t* pv1000 = z80->ctx;
-
+void pv1000_writeMemory(void* ctx, u16 addr, u8 byte){
+    pv1000_t* pv1000 = (pv1000_t*)ctx;
     if(addr < 0x8000)
         return;
 
     pv1000->memory[addr] = byte;
 }
 
-uint8_t pv1000_readIO(z80_t* z80, uint16_t addr){
-    pv1000_t* pv1000 = z80->ctx;
+u8 pv1000_readIO(void* ctx, u16 addr){
+    pv1000_t* pv1000 = (pv1000_t*)ctx;
     addr &= 0xFF;
 
     if(addr == 0xFC){
-        uint8_t status = pv1000->status; 
+        u8 status = pv1000->status; 
         pv1000->status &= ~0b1;
         return status;
     }
@@ -42,8 +40,8 @@ uint8_t pv1000_readIO(z80_t* z80, uint16_t addr){
     return 0x00;
 }
 
-void pv1000_writeIO(z80_t* z80, uint16_t addr, uint8_t byte){
-    pv1000_t* pv1000 = z80->ctx;
+void pv1000_writeIO(void* ctx, u16 addr, u8 byte){
+    pv1000_t* pv1000 = (pv1000_t*)ctx;
     vdp_t* vdp = &pv1000->vdp;
     psg_t* psg = &pv1000->psg;
 

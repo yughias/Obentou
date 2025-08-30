@@ -44,7 +44,7 @@ void pv1000_run_frame(pv1000_t* pv1000){
     int next_interrupt = 196;
 
     while(z80->cycles < CYCLES_PER_FRAME){
-        uint32_t old_cycles = z80->cycles;
+        u32 old_cycles = z80->cycles;
 
         z80_step(z80);
 

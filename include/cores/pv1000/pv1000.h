@@ -6,8 +6,7 @@
 #include "cores/pv1000/psg.h"
 #include "cores/pv1000/controller.h"
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "types.h"
 
 #define REFRESH_RATE 59.9227434033
 #define CLOCK_RATE 3579545
@@ -24,9 +23,9 @@ typedef struct pv1000_t
     vdp_t vdp;
     psg_t psg;
     controller_t controller;
-    uint8_t memory[0x10000];
+    u8 memory[0x10000];
 
-    uint8_t status;
+    u8 status;
 } pv1000_t;
 
 void* pv1000_init(const char* filename, SDL_AudioDeviceID device_id);

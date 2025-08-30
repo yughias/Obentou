@@ -231,7 +231,7 @@ void z80_print(z80_t* z80){
     fprintf(stderr, "WZ: %04X\n", z80->WZ);
     fprintf(stderr, "IFF1 %d IFF2: %d\n", z80->IFF1, z80->IFF2);
     fprintf(stderr, "INTERRUPT DELAY: %d\n", z80->INTERRUPT_DELAY);
-    fprintf(stderr, "OPCODE: 0x%02X %02X %02X\n", z80->readMemory(z80, z80->PC), z80->readMemory(z80, z80->PC+1), z80->readMemory(z80, z80->PC+2));
+    fprintf(stderr, "OPCODE: 0x%02X %02X %02X\n", z80->readMemory(z80->ctx, z80->PC), z80->readMemory(z80->ctx, z80->PC+1), z80->readMemory(z80->ctx, z80->PC+2));
     fprintf(stderr, "cycles: %u\n\n", z80->cycles);
 }
 
@@ -293,7 +293,7 @@ void z80_step(z80_t* z80){
     uint16_t* rp[4];
     uint16_t* rp2[4];
 
-    uint8_t opcode = z80->readMemory(z80, z80->PC);
+    uint8_t opcode = z80->readMemory(z80->ctx, z80->PC);
     uint8_t x;
     uint8_t y;
     uint8_t z;
@@ -330,7 +330,7 @@ void z80_step(z80_t* z80){
         break;
     }
 
-    opcode = z80->readMemory(z80, z80->PC);
+    opcode = z80->readMemory(z80->ctx, z80->PC);
 
     switch(opcode){
         case 0xCB:
@@ -340,7 +340,7 @@ void z80_step(z80_t* z80){
             incrementR(&z80->R);
 
         z80->PC += 1;
-        opcode = z80->readMemory(z80, z80->PC);
+        opcode = z80->readMemory(z80->ctx, z80->PC);
         x = opcode >> 6;
         y = (opcode >> 3) & 0b111;
         z = opcode & 0b111;
@@ -349,13 +349,13 @@ void z80_step(z80_t* z80){
 
         z80->PC += 1;
         if(prefixDD || prefixFD){
-            nn = *rp[2] + (int8_t)z80->readMemory(z80, z80->PC - 2);
+            nn = *rp[2] + (int8_t)z80->readMemory(z80->ctx, z80->PC - 2);
             z80->WZ = nn;
-            z80->aux_reg = z80->readMemory(z80, nn);
+            z80->aux_reg = z80->readMemory(z80->ctx, nn);
         } else {
             nn = z80->HL;
             if(z == 6)
-                z80->aux_reg = z80->readMemory(z80, nn);
+                z80->aux_reg = z80->readMemory(z80->ctx, nn);
         }
         switch(x){
             case 0:
@@ -409,14 +409,14 @@ void z80_step(z80_t* z80){
             if(x == 1)
                 z80->cycles += 16;
             else {
-                z80->writeMemory(z80, nn, *r[z]);
+                z80->writeMemory(z80->ctx, nn, *r[z]);
                 z80->cycles += 19;
             }
         } else if(z == 6 && !prefixDD && !prefixDD){
             if(x == 1)
                 z80->cycles += 12;
             else {
-                z80->writeMemory(z80, nn, z80->aux_reg);
+                z80->writeMemory(z80->ctx, nn, z80->aux_reg);
                 z80->cycles += 15;
             }
         } else
@@ -426,7 +426,7 @@ void z80_step(z80_t* z80){
         case 0xED:
         z80->PC = z80->PC + 1;
         incrementR(&z80->R);
-        opcode = z80->readMemory(z80, z80->PC);
+        opcode = z80->readMemory(z80->ctx, z80->PC);
         x = opcode >> 6;
         y = (opcode >> 3) & 0b111;
         z = opcode & 0b111;
@@ -446,7 +446,7 @@ void z80_step(z80_t* z80){
                 z80->PC += 1;
                 z80->WZ = z80->BC + 1;
                 if(y != 6){
-                    *r[y] = z80->readIO(z80, z80->BC);
+                    *r[y] = z80->readIO(z80->ctx, z80->BC);
                     setSign8Bit(z80, *r[y]);
                     setParity(z80, *r[y]);
                     setZero(z80, *r[y]);
@@ -456,7 +456,7 @@ void z80_step(z80_t* z80){
                     CLEAR_FLAG(N);
                 } else {
                     uint8_t copy = z80->A;
-                    z80->A = z80->readIO(z80, z80->BC);
+                    z80->A = z80->readIO(z80->ctx, z80->BC);
                     setSign8Bit(z80, z80->A);
                     setParity(z80, z80->A);
                     setZero(z80, z80->A);
@@ -473,9 +473,9 @@ void z80_step(z80_t* z80){
                 z80->PC += 1;
                 z80->WZ = z80->BC + 1;
                 if(y != 6){
-                    z80->writeIO(z80, z80->BC, *r[y]);
+                    z80->writeIO(z80->ctx, z80->BC, *r[y]);
                 } else {
-                    z80->writeIO(z80, z80->BC, 0);
+                    z80->writeIO(z80->ctx, z80->BC, 0);
                 }
                 z80->cycles += 12;
                 break;
@@ -618,33 +618,33 @@ void z80_step(z80_t* z80){
 
                     case 2:
                     z80->PC += 2;
-                    DJNZ(z80, z80->readMemory(z80, z80->PC-1));
+                    DJNZ(z80, z80->readMemory(z80->ctx, z80->PC-1));
                     break;
 
                     case 3:
                     z80->PC += 2;
-                    JR(z80, z80->readMemory(z80, z80->PC-1));
+                    JR(z80, z80->readMemory(z80->ctx, z80->PC-1));
                     z80->cycles += 12;
                     break;
 
                     case 4:
                     z80->PC += 2;
-                    JRNZ(z80, z80->readMemory(z80, z80->PC-1));
+                    JRNZ(z80, z80->readMemory(z80->ctx, z80->PC-1));
                     break;
 
                     case 5:
                     z80->PC += 2;
-                    JRZ(z80, z80->readMemory(z80, z80->PC-1));
+                    JRZ(z80, z80->readMemory(z80->ctx, z80->PC-1));
                     break;
 
                     case 6:
                     z80->PC += 2;
-                    JRNC(z80, z80->readMemory(z80, z80->PC-1));
+                    JRNC(z80, z80->readMemory(z80->ctx, z80->PC-1));
                     break;
 
                     case 7:
                     z80->PC += 2;
-                    JRC(z80, z80->readMemory(z80, z80->PC-1));
+                    JRC(z80, z80->readMemory(z80->ctx, z80->PC-1));
                     break;
                 }
                 break;
@@ -673,7 +673,7 @@ void z80_step(z80_t* z80){
                     switch(p){
                         case 0:
                         z80->PC += 1;
-                        z80->writeMemory(z80, z80->BC, z80->A);
+                        z80->writeMemory(z80->ctx, z80->BC, z80->A);
                         z80->W = z80->A;
                         z80->Z = z80->C + 1;
                         z80->cycles += 7;
@@ -681,7 +681,7 @@ void z80_step(z80_t* z80){
 
                         case 1:
                         z80->PC += 1;
-                        z80->writeMemory(z80, z80->DE, z80->A);
+                        z80->writeMemory(z80->ctx, z80->DE, z80->A);
                         z80->W = z80->A;
                         z80->Z = z80->E + 1;
                         z80->cycles += 7;
@@ -698,7 +698,7 @@ void z80_step(z80_t* z80){
                         case 3:
                         nn = readHalfWord(z80, z80->PC+1);
                         z80->PC += 3;
-                        z80->writeMemory(z80, nn, z80->A);
+                        z80->writeMemory(z80->ctx, nn, z80->A);
                         z80->W = z80->A;
                         z80->Z = nn + 1;
                         z80->cycles += 13;
@@ -710,14 +710,14 @@ void z80_step(z80_t* z80){
                     switch(p){
                         case 0:
                         z80->PC += 1;
-                        z80->A = z80->readMemory(z80, z80->BC);
+                        z80->A = z80->readMemory(z80->ctx, z80->BC);
                         z80->WZ = z80->BC + 1;
                         z80->cycles += 7;
                         break;
 
                         case 1:
                         z80->PC += 1;
-                        z80->A = z80->readMemory(z80, z80->DE);
+                        z80->A = z80->readMemory(z80->ctx, z80->DE);
                         z80->WZ = z80->DE + 1;
                         z80->cycles += 7;
                         break;
@@ -733,7 +733,7 @@ void z80_step(z80_t* z80){
 
                         case 3:
                         nn = readHalfWord(z80, z80->PC+1);
-                        val8 = z80->readMemory(z80, nn);
+                        val8 = z80->readMemory(z80->ctx, nn);
                         z80->PC += 3;
                         z80->A = val8;
                         z80->WZ = nn + 1;
@@ -762,7 +762,7 @@ void z80_step(z80_t* z80){
                 case 4:
                 z80->PC += 1;
                 if(y == 6 && (prefixDD || prefixFD)){
-                    nn = *rp[2] + (int8_t)z80->readMemory(z80, z80->PC);
+                    nn = *rp[2] + (int8_t)z80->readMemory(z80->ctx, z80->PC);
                     z80->WZ = nn;
                     z80->PC += 1;
                     z80->cycles += 19;
@@ -772,16 +772,16 @@ void z80_step(z80_t* z80){
                 } else 
                     z80->cycles += 4;
                 if(y == 6)
-                    z80->aux_reg = z80->readMemory(z80, nn);
+                    z80->aux_reg = z80->readMemory(z80->ctx, nn);
                 INC_8(z80, r[y]);
                 if(y == 6)
-                    z80->writeMemory(z80, nn, z80->aux_reg);
+                    z80->writeMemory(z80->ctx, nn, z80->aux_reg);
                 break;
 
                 case 5:
                 z80->PC += 1;
                 if(y == 6 && (prefixDD || prefixFD)){
-                    nn = *rp[2] + (int8_t)z80->readMemory(z80, z80->PC);
+                    nn = *rp[2] + (int8_t)z80->readMemory(z80->ctx, z80->PC);
                     z80->WZ = nn;
                     z80->PC += 1;
                     z80->cycles += 19;
@@ -791,15 +791,15 @@ void z80_step(z80_t* z80){
                 } else 
                     z80->cycles += 4;
                 if(y == 6)
-                    z80->aux_reg = z80->readMemory(z80, nn);
+                    z80->aux_reg = z80->readMemory(z80->ctx, nn);
                 DEC_8(z80, r[y]);
                 if(y == 6)
-                    z80->writeMemory(z80, nn, z80->aux_reg);
+                    z80->writeMemory(z80->ctx, nn, z80->aux_reg);
                 break;
 
                 case 6:
                 if(y == 6 && (prefixDD || prefixFD)){
-                    nn = *rp[2] + (int8_t)z80->readMemory(z80, z80->PC+1);
+                    nn = *rp[2] + (int8_t)z80->readMemory(z80->ctx, z80->PC+1);
                     z80->WZ = nn;
                     adjustDDorFFOpcode(z80, r, rp, rp2);
                     z80->cycles += 15;
@@ -808,11 +808,11 @@ void z80_step(z80_t* z80){
                     z80->cycles += 10;
                 } else
                     z80->cycles += 7;
-                val8 = z80->readMemory(z80, z80->PC+1);
+                val8 = z80->readMemory(z80->ctx, z80->PC+1);
                 z80->PC += 2;
                 *r[y] = val8;
                 if(y == 6)
-                    z80->writeMemory(z80, nn, z80->aux_reg);
+                    z80->writeMemory(z80->ctx, nn, z80->aux_reg);
                 break;
 
                 case 7:
@@ -862,7 +862,7 @@ void z80_step(z80_t* z80){
                 z80->cycles += 4;
             } else {
                 if((z == 6 || y == 6) && (prefixDD || prefixFD)){
-                    nn = *rp[2] + (int8_t)z80->readMemory(z80, z80->PC);
+                    nn = *rp[2] + (int8_t)z80->readMemory(z80->ctx, z80->PC);
                     z80->WZ = nn;
                     adjustDDorFFOpcode(z80, r, rp, rp2);
                     z80->cycles += 15;
@@ -872,17 +872,17 @@ void z80_step(z80_t* z80){
                 } else
                     z80->cycles += 4;
                 if(z == 6)
-                    z80->aux_reg = z80->readMemory(z80, nn);
+                    z80->aux_reg = z80->readMemory(z80->ctx, nn);
                 *r[y] = *r[z];
                 if(y == 6)
-                    z80->writeMemory(z80, nn, z80->aux_reg);
+                    z80->writeMemory(z80->ctx, nn, z80->aux_reg);
             }
             break;
 
             case 2:
             if((prefixDD || prefixFD) && z == 6){
                 z80->PC += 1;
-                nn = *rp[2] + (int8_t)z80->readMemory(z80, z80->PC);
+                nn = *rp[2] + (int8_t)z80->readMemory(z80->ctx, z80->PC);
                 z80->WZ = nn;
                 z80->cycles += 15;
             } else if(!prefixDD && !prefixFD && z == 6){
@@ -891,12 +891,12 @@ void z80_step(z80_t* z80){
             } else
                 z80->cycles += 4;
             if(z == 6)
-                z80->aux_reg = z80->readMemory(z80, nn);
+                z80->aux_reg = z80->readMemory(z80->ctx, nn);
             function = alu[y];
             z80->PC += 1;
             (*function)(z80, &z80->A, *r[z]);
             if(z == 6)
-                z80->writeMemory(z80, nn, z80->aux_reg);
+                z80->writeMemory(z80->ctx, nn, z80->aux_reg);
             break;
 
             case 3:
@@ -1026,19 +1026,19 @@ void z80_step(z80_t* z80){
                     break;
                     
                     case 2:
-                    val8 = z80->readMemory(z80, z80->PC+1);
+                    val8 = z80->readMemory(z80->ctx, z80->PC+1);
                     z80->PC += 2;
-                    z80->writeIO(z80, val8, z80->A);
+                    z80->writeIO(z80->ctx, val8, z80->A);
                     z80->W = z80->A;
                     z80->Z = val8 + 1;
                     z80->cycles += 11;
                     break;
                     
                     case 3:
-                    val16 = (z80->A << 8) | z80->readMemory(z80, z80->PC+1);
+                    val16 = (z80->A << 8) | z80->readMemory(z80->ctx, z80->PC+1);
                     z80->WZ = val16 + 1;
                     z80->PC += 2;
-                    z80->A = z80->readIO(z80, val16);
+                    z80->A = z80->readIO(z80->ctx, val16);
                     z80->cycles += 11;
                     break;
 
@@ -1134,7 +1134,7 @@ void z80_step(z80_t* z80){
                 break;
 
                 case 6:
-                val8 = z80->readMemory(z80, z80->PC+1);
+                val8 = z80->readMemory(z80->ctx, z80->PC+1);
                 function = alu[y];
                 z80->PC += 2;
                 (*function)(z80, &z80->A, val8);
@@ -1927,9 +1927,9 @@ static void IM(z80_t* z80, uint8_t im_mode){
 
 static void RRD(z80_t* z80){
     uint8_t tmpA = z80->A;
-    uint8_t val = z80->readMemory(z80, z80->HL);
+    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
     z80->A = (tmpA & 0xF0) | (val & 0xF);
-    z80->writeMemory(z80,  z80->HL, (val >> 4) | (tmpA << 4) );
+    z80->writeMemory(z80->ctx,  z80->HL, (val >> 4) | (tmpA << 4) );
     setSign8Bit(z80, z80->A);
     setZero(z80, z80->A);
     setParity(z80, z80->A);
@@ -1941,9 +1941,9 @@ static void RRD(z80_t* z80){
 
 static void RLD(z80_t* z80){
     uint8_t tmpA = z80->A;
-    uint8_t val = z80->readMemory(z80, z80->HL);
+    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
     z80->A = (tmpA & 0xF0) | (val >> 4);
-    z80->writeMemory(z80, z80->HL, (val << 4) | (tmpA & 0xF));
+    z80->writeMemory(z80->ctx, z80->HL, (val << 4) | (tmpA & 0xF));
     setSign8Bit(z80, z80->A);
     setZero(z80, z80->A);
     setParity(z80, z80->A);
@@ -1956,8 +1956,8 @@ static void RLD(z80_t* z80){
 // block instructions
 
 static void LDI(z80_t* z80){
-    uint8_t hl_val = z80->readMemory(z80, z80->HL);
-    z80->writeMemory(z80, z80->DE, hl_val);
+    uint8_t hl_val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeMemory(z80->ctx, z80->DE, hl_val);
     z80->DE += 1;
     z80->HL += 1;
     z80->BC -= 1;
@@ -1980,8 +1980,8 @@ static void LDD(z80_t* z80){
 }
 
 static void LDIR(z80_t* z80){
-    uint8_t hl_val = z80->readMemory(z80, z80->HL);
-    z80->writeMemory(z80, z80->DE, hl_val);
+    uint8_t hl_val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeMemory(z80->ctx, z80->DE, hl_val);
     z80->DE += 1;
     z80->HL += 1;
     z80->BC -= 1;
@@ -2005,8 +2005,8 @@ static void LDIR(z80_t* z80){
 }
 
 static void LDDR(z80_t* z80){
-    uint8_t hl_val = z80->readMemory(z80, z80->HL);
-    z80->writeMemory(z80, z80->DE, hl_val);
+    uint8_t hl_val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeMemory(z80->ctx, z80->DE, hl_val);
     z80->DE -= 1;
     z80->HL -= 1;
     z80->BC -= 1;
@@ -2032,7 +2032,7 @@ static void LDDR(z80_t* z80){
 
 static void CPI(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80, z80->HL);
+    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL += 1;
     z80->BC -= 1;
@@ -2053,7 +2053,7 @@ static void CPI(z80_t* z80){
 
 static void CPD(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80, z80->HL);
+    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL -= 1;
     z80->BC -= 1;
@@ -2074,7 +2074,7 @@ static void CPD(z80_t* z80){
 
 static void CPIR(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80, z80->HL);
+    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL += 1;
     z80->BC -= 1;
@@ -2103,7 +2103,7 @@ static void CPIR(z80_t* z80){
 
 static void CPDR(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80, z80->HL);
+    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL -= 1;
     z80->BC -= 1;
@@ -2129,8 +2129,8 @@ static void CPDR(z80_t* z80){
 }
 
 static void INI(z80_t* z80){
-    uint8_t val = z80->readIO(z80, z80->BC);
-    z80->writeMemory(z80, z80->HL, val);
+    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    z80->writeMemory(z80->ctx, z80->HL, val);
     z80->WZ = z80->BC + 1;
     z80->HL += 1;  
     z80->B -= 1;
@@ -2152,8 +2152,8 @@ static void INI(z80_t* z80){
 }
 
 static void IND(z80_t* z80){
-    uint8_t val = z80->readIO(z80, z80->BC);
-    z80->writeMemory(z80, z80->HL, val);
+    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    z80->writeMemory(z80->ctx, z80->HL, val);
     z80->WZ = z80->BC - 1;
     z80->B -= 1;
     z80->HL -= 1;
@@ -2175,8 +2175,8 @@ static void IND(z80_t* z80){
 }
 
 static void INIR(z80_t* z80){
-    uint8_t val = z80->readIO(z80, z80->BC);
-    z80->writeMemory(z80, z80->HL, val);
+    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    z80->writeMemory(z80->ctx, z80->HL, val);
     z80->HL += 1;  
     z80->B -= 1;
 
@@ -2225,8 +2225,8 @@ static void INIR(z80_t* z80){
 }
 
 static void INDR(z80_t* z80){
-    uint8_t val = z80->readIO(z80, z80->BC);
-    z80->writeMemory(z80, z80->HL, val);
+    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    z80->writeMemory(z80->ctx, z80->HL, val);
     
     z80->B -= 1;
     z80->HL -= 1;
@@ -2278,8 +2278,8 @@ static void INDR(z80_t* z80){
 static void OUTI(z80_t* z80){
     z80->B -= 1;
     z80->WZ = z80->BC + 1;
-    uint8_t val = z80->readMemory(z80, z80->HL);
-    z80->writeIO(z80, z80->BC, val);
+    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL += 1;
     z80->cycles += 16;
 
@@ -2300,8 +2300,8 @@ static void OUTI(z80_t* z80){
 static void OUTD(z80_t* z80){
     z80->B -= 1;
     z80->WZ = z80->BC - 1;
-    uint8_t val = z80->readMemory(z80, z80->HL);
-    z80->writeIO(z80, z80->BC, val);
+    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL -= 1;
     z80->cycles += 16;
 
@@ -2321,8 +2321,8 @@ static void OUTD(z80_t* z80){
 
 static void OTIR(z80_t* z80){
     z80->B -= 1;
-    uint8_t val = z80->readMemory(z80, z80->HL);
-    z80->writeIO(z80, z80->BC, val);
+    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL += 1;
 
     setSign8Bit(z80, z80->B);
@@ -2371,8 +2371,8 @@ static void OTIR(z80_t* z80){
 
 static void OTDR(z80_t* z80){
     z80->B -= 1;
-    uint8_t val = z80->readMemory(z80, z80->HL);
-    z80->writeIO(z80, z80->BC, val);
+    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL -= 1;
 
     setSign8Bit(z80, z80->B);
@@ -2451,12 +2451,12 @@ static bool calculateCarry(int bit, uint16_t a, uint16_t b, bool cy) {
 }
 
 static uint16_t readHalfWord(z80_t* z80, uint16_t addr){
-    uint8_t lo = z80->readMemory(z80, addr);
-    uint8_t hi = z80->readMemory(z80, addr+1);
+    uint8_t lo = z80->readMemory(z80->ctx, addr);
+    uint8_t hi = z80->readMemory(z80->ctx, addr+1);
     return (hi << 8) | lo;
 }
 
 static void writeHalfWord(z80_t* z80, uint16_t addr, uint16_t halfword){
-    z80->writeMemory(z80, addr, halfword);
-    z80->writeMemory(z80, addr+1, halfword >> 8);
+    z80->writeMemory(z80->ctx, addr, halfword);
+    z80->writeMemory(z80->ctx, addr+1, halfword >> 8);
 }

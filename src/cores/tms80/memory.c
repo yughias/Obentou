@@ -4,8 +4,8 @@
 
 static u8 gg_internal_regs[] = {0xC0, 0x7F, 0xFF, 0x00, 0xFF, 0x00, 0xFF};
 
-u8 tms80_sg_sc_readMemory(z80_t* z80, u16 addr){
-    tms80_t* tms80 = z80->ctx;
+u8 tms80_sg_sc_readMemory(void* ctx, u16 addr){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     if(addr < 0xC000 && addr < tms80->cartridge_size)
         return tms80->cartridge[addr];
@@ -13,8 +13,8 @@ u8 tms80_sg_sc_readMemory(z80_t* z80, u16 addr){
     return tms80->RAM[addr];
 }
 
-u8 tms80_sg_sc_mirrored_readMemory(z80_t* z80, u16 addr){
-    tms80_t* tms80 = z80->ctx;
+u8 tms80_sg_sc_mirrored_readMemory(void* ctx, u16 addr){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     if(addr < 0xC000)
         return tms80->cartridge[addr % tms80->cartridge_size];
@@ -22,14 +22,14 @@ u8 tms80_sg_sc_mirrored_readMemory(z80_t* z80, u16 addr){
     return tms80->RAM[addr];
 }
 
-void tms80_sg_sc_writeMemory(z80_t* z80, u16 addr, u8 byte){
-    tms80_t* tms80 = z80->ctx;
+void tms80_sg_sc_writeMemory(void* ctx, u16 addr, u8 byte){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     tms80->RAM[addr] = byte;
 }
 
-void tms80_sg_sc_ram_adapter_writeMemory(z80_t* z80, u16 addr, u8 byte){
-    tms80_t* tms80 = z80->ctx;
+void tms80_sg_sc_ram_adapter_writeMemory(void* ctx, u16 addr, u8 byte){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     if(addr >= 0x2000 && addr < 0x4000){
         tms80->cartridge[addr] = byte;
@@ -39,8 +39,8 @@ void tms80_sg_sc_ram_adapter_writeMemory(z80_t* z80, u16 addr, u8 byte){
     tms80->RAM[addr] = byte;
 }
 
-u8 tms80_sms_bios_readMemory(z80_t* z80, u16 addr){
-    tms80_t* tms80 = z80->ctx;
+u8 tms80_sms_bios_readMemory(void* ctx, u16 addr){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     if(addr < 0xC000){
         u8 bank_idx = addr >> 14;
@@ -51,8 +51,8 @@ u8 tms80_sms_bios_readMemory(z80_t* z80, u16 addr){
     return tms80->RAM[addr & ((1 << 13) - 1)];
 }
 
-void tms80_sms_bios_writeMemory(z80_t* z80, u16 addr, u8 byte){
-    tms80_t* tms80 = z80->ctx;
+void tms80_sms_bios_writeMemory(void* ctx, u16 addr, u8 byte){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     if(addr == 0xFFFC){
         tms80->ram_bank = byte;
@@ -64,8 +64,8 @@ void tms80_sms_bios_writeMemory(z80_t* z80, u16 addr, u8 byte){
         tms80->RAM[addr & ((1 << 13) - 1)] = byte;
 }
 
-u8 tms80_sms_readMemory(z80_t* z80, u16 addr){
-    tms80_t* tms80 = z80->ctx;
+u8 tms80_sms_readMemory(void* ctx, u16 addr){
+    tms80_t* tms80 = (tms80_t*)ctx;
     
     if(addr < 0xC000){
         u8 bank_idx = addr >> 14;
@@ -80,8 +80,8 @@ u8 tms80_sms_readMemory(z80_t* z80, u16 addr){
     return tms80->RAM[addr & ((1 << 13) - 1)];
 }
 
-void tms80_sms_writeMemory(z80_t* z80, u16 addr, u8 byte){
-    tms80_t* tms80 = z80->ctx;
+void tms80_sms_writeMemory(void* ctx, u16 addr, u8 byte){
+    tms80_t* tms80 = (tms80_t*)ctx;
 
     if(addr == 0xFFFC){
         tms80->ram_bank = byte;
@@ -97,8 +97,8 @@ void tms80_sms_writeMemory(z80_t* z80, u16 addr, u8 byte){
         tms80->RAM[addr & ((1 << 13) - 1)] = byte;
 }
 
-u8 tms80_readIO(z80_t* z80, u16 addr){
-    tms80_t* tms80 = z80->ctx;
+u8 tms80_readIO(void* ctx, u16 addr){
+    tms80_t* tms80 = (tms80_t*)ctx;
     vdp_t* vdp = &tms80->vdp;
     addr &= 0xFF;
 
@@ -125,7 +125,7 @@ u8 tms80_readIO(z80_t* z80, u16 addr){
 
     if(addr >= 0x80 && addr <= 0xBF){
         if(addr & 1){
-            return tms80_vdp_read_status_register(vdp, z80);
+            return tms80_vdp_read_status_register(vdp, &tms80->z80);
         } else
             return tms80_vdp_read_from_data_port(vdp);
     }
@@ -133,8 +133,8 @@ u8 tms80_readIO(z80_t* z80, u16 addr){
     return 0xFF;
 }
 
-void tms80_writeIO(z80_t* z80, u16 addr, u8 byte){
-    tms80_t* tms80 = z80->ctx;
+void tms80_writeIO(void* ctx, u16 addr, u8 byte){
+    tms80_t* tms80 = (tms80_t*)ctx;
     vdp_t* vdp = &tms80->vdp;
     sn76489_t* apu = &tms80->apu;
     addr &= 0xFF;

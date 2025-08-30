@@ -16,7 +16,7 @@ static void send_samples(psg_t* psg, Uint8 * stream, int len){
             samples[1] = samples[1] ^ samples[2];
         }
         stream[i] = samples[0] + (samples[1] << 1) + (samples[2] << 2);
-        stream[i] = ((int8_t)stream[i]) * HOST_GAIN;
+        stream[i] = ((i8)stream[i]) * HOST_GAIN;
         psg->time_elapsed += psg->updateRate;
     }
 }
