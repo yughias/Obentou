@@ -4,9 +4,9 @@ DEP := $(OBJ:.o=.d)
 
 CC := gcc
 EXE := a.exe
-CFLAGS := -Iinclude -O3 -flto=auto
+CFLAGS := -Iinclude -O3 -flto=auto -DMAINLOOP_WINDOWS
 DEBUG_FLAGS := -pg -no-pie
-LIBS := -Llib -lmingw32 -lSDL2main -lSDL2 -lopengl32 -lshlwapi -lcomdlg32 -lole32
+LIBS := -Llib -lSDL2 -lopengl32 -lshlwapi -lcomdlg32 -lole32
 
 all: $(EXE)
 
@@ -16,6 +16,11 @@ $(EXE): $(OBJ)
 obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) -c -MMD -MP $(CFLAGS) $< -o $@
+
+nes-mappers:
+	gcc codegen/nes/mappers.c -o nes-mappers.exe
+	./nes-mappers.exe
+	rm nes-mappers.exe
 
 clean:
 	rm -rf obj $(EXE)

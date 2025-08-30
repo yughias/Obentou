@@ -6,13 +6,15 @@
 #include "cores/pce/interface.h"
 #include "cores/bytepusher/interface.h"
 #include "cores/tms80/interface.h"
+#include "cores/nes/interface.h"
 
 const core_t cores[] = {
     LOAD_CORE(watara),
     LOAD_CORE(pv1000),
     LOAD_CORE(pce),
     LOAD_CORE(bytepusher),
-    LOAD_CORE(tms80)
+    LOAD_CORE(tms80),
+    LOAD_CORE(nes)
 };
 
 void* emu;
