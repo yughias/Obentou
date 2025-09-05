@@ -3,30 +3,30 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef void (*rotateFunc)(z80_t*, uint8_t*);
-typedef void (*aluFunc)(z80_t*, uint8_t*, uint8_t);
+typedef void (*rotateFunc)(z80_t*, u8*);
+typedef void (*aluFunc)(z80_t*, u8*, u8);
 typedef void (*blockFunc)(z80_t*);
 
-static void useDDRegisterTable(z80_t*, uint8_t**, uint16_t**, uint16_t**);
-static void useFDRegisterTable(z80_t*, uint8_t**, uint16_t**, uint16_t**);
-static void restoreRegisterTable(z80_t*, uint8_t**, uint16_t**, uint16_t**);
-static void adjustDDorFFOpcode(z80_t*, uint8_t**, uint16_t**, uint16_t**);
+static void useDDRegisterTable(z80_t*, u8**, u16**, u16**);
+static void useFDRegisterTable(z80_t*, u8**, u16**, u16**);
+static void restoreRegisterTable(z80_t*, u8**, u16**, u16**);
+static void adjustDDorFFOpcode(z80_t*, u8**, u16**, u16**);
 
 static void NOP(z80_t*);
-static void EX(z80_t*, uint16_t*, uint16_t*);
+static void EX(z80_t*, u16*, u16*);
 static void DJNZ(z80_t*, int8_t);
 static void JR(z80_t*, int8_t);
 static void JRNZ(z80_t*, int8_t);
 static void JRZ(z80_t*, int8_t);
 static void JRNC(z80_t*, int8_t);
 static void JRC(z80_t*, int8_t);
-static void LD_8(z80_t*, uint8_t*, uint8_t);
-static void LD_16(z80_t*, uint16_t*, uint16_t);
-static void ADD_16(z80_t*, uint16_t*, uint16_t*);
-static void INC_16(z80_t*, uint16_t*);
-static void DEC_16(z80_t*, uint16_t*);
-static void INC_8(z80_t*, uint8_t*);
-static void DEC_8(z80_t*, uint8_t*);
+static void LD_8(z80_t*, u8*, u8);
+static void LD_16(z80_t*, u16*, u16);
+static void ADD_16(z80_t*, u16*, u16*);
+static void INC_16(z80_t*, u16*);
+static void DEC_16(z80_t*, u16*);
+static void INC_8(z80_t*, u8*);
+static void DEC_8(z80_t*, u8*);
 static void DAA(z80_t*);
 static void CPL(z80_t*);
 static void SCF(z80_t*);
@@ -40,62 +40,62 @@ static void RETPO(z80_t*);
 static void RETPE(z80_t*);
 static void RETP(z80_t*);
 static void RETM(z80_t*);
-static void POP(z80_t*, uint16_t*);
+static void POP(z80_t*, u16*);
 static void RET(z80_t*);
 static void EXX(z80_t*);
-static void JP(z80_t*, uint16_t);
-static void JPNZ(z80_t*, uint16_t);
-static void JPZ(z80_t*, uint16_t);
-static void JPNC(z80_t*, uint16_t);
-static void JPC(z80_t*, uint16_t);
-static void JPPO(z80_t*, uint16_t);
-static void JPPE(z80_t*, uint16_t);
-static void JPP(z80_t*, uint16_t);
-static void JPM(z80_t*, uint16_t);
+static void JP(z80_t*, u16);
+static void JPNZ(z80_t*, u16);
+static void JPZ(z80_t*, u16);
+static void JPNC(z80_t*, u16);
+static void JPC(z80_t*, u16);
+static void JPPO(z80_t*, u16);
+static void JPPE(z80_t*, u16);
+static void JPP(z80_t*, u16);
+static void JPM(z80_t*, u16);
 static void EI(z80_t*);
 static void DI(z80_t*);
-static void CALL(z80_t*, uint16_t);
-static void CALLNZ(z80_t*, uint16_t);
-static void CALLZ(z80_t*, uint16_t);
-static void CALLNC(z80_t*, uint16_t);
-static void CALLC(z80_t*, uint16_t);
-static void CALLPO(z80_t*, uint16_t);
-static void CALLPE(z80_t*, uint16_t);
-static void CALLP(z80_t*, uint16_t);
-static void CALLM(z80_t*, uint16_t);
-static void PUSH(z80_t*, uint16_t);
-static void RST(z80_t*, uint8_t);
-static void RLC(z80_t*, uint8_t*);
-static void RRC(z80_t*, uint8_t*);
+static void CALL(z80_t*, u16);
+static void CALLNZ(z80_t*, u16);
+static void CALLZ(z80_t*, u16);
+static void CALLNC(z80_t*, u16);
+static void CALLC(z80_t*, u16);
+static void CALLPO(z80_t*, u16);
+static void CALLPE(z80_t*, u16);
+static void CALLP(z80_t*, u16);
+static void CALLM(z80_t*, u16);
+static void PUSH(z80_t*, u16);
+static void RST(z80_t*, u8);
+static void RLC(z80_t*, u8*);
+static void RRC(z80_t*, u8*);
 static void RLCA(z80_t*);
 static void RRCA(z80_t*);
 static void RLA(z80_t*);
 static void RRA(z80_t*);
-static void RLC(z80_t*, uint8_t*);
-static void RRC(z80_t*, uint8_t*);
-static void RL(z80_t*, uint8_t*);
-static void RR(z80_t*, uint8_t*);
-static void SLA(z80_t*, uint8_t*);
-static void SRA(z80_t*, uint8_t*);
-static void SLL(z80_t*, uint8_t*);
-static void SRL(z80_t*, uint8_t*);
-static void BIT(z80_t*, uint8_t, uint8_t*);
-static void SET(z80_t*, uint8_t, uint8_t*);
-static void RES(z80_t*, uint8_t, uint8_t*);
-static void ADD(z80_t*, uint8_t*, uint8_t);
-static void ADC(z80_t*, uint8_t*, uint8_t);
-static void SUB(z80_t*, uint8_t*, uint8_t);
-static void SBC(z80_t*, uint8_t*, uint8_t);
-static void AND(z80_t*, uint8_t*, uint8_t);
-static void XOR(z80_t*, uint8_t*, uint8_t);
-static void OR(z80_t*, uint8_t*, uint8_t);
-static void CP(z80_t*, uint8_t*, uint8_t);
-static void ADC_16(z80_t*, uint16_t*, uint16_t);
-static void SBC_16(z80_t*, uint16_t*, uint16_t);
-static void NEG(z80_t*, uint8_t*);
+static void RLC(z80_t*, u8*);
+static void RRC(z80_t*, u8*);
+static void RL(z80_t*, u8*);
+static void RR(z80_t*, u8*);
+static void SLA(z80_t*, u8*);
+static void SRA(z80_t*, u8*);
+static void SLL(z80_t*, u8*);
+static void SRL(z80_t*, u8*);
+static void BIT(z80_t*, u8, u8*);
+static void SET(z80_t*, u8, u8*);
+static void RES(z80_t*, u8, u8*);
+static void ADD(z80_t*, u8*, u8);
+static void ADC(z80_t*, u8*, u8);
+static void SUB(z80_t*, u8*, u8);
+static void SBC(z80_t*, u8*, u8);
+static void AND(z80_t*, u8*, u8);
+static void XOR(z80_t*, u8*, u8);
+static void OR(z80_t*, u8*, u8);
+static void CP(z80_t*, u8*, u8);
+static void ADC_16(z80_t*, u16*, u16);
+static void SBC_16(z80_t*, u16*, u16);
+static void NEG(z80_t*, u8*);
 static void RETI(z80_t*);
 static void RETN(z80_t*);
-static void IM(z80_t*, uint8_t);
+static void IM(z80_t*, u8);
 static void RRD(z80_t*);
 static void RLD(z80_t*);
 
@@ -138,15 +138,15 @@ static void OTDR(z80_t*);
 #define CLEAR_FLAG(f)        z80->F &= CLEAR_ ## f
 #define CHANGE_FLAG(f, val)  z80->F ^= (-!!(val) ^ z80->F) & SET_ ## f
 
-static void incrementR(uint8_t*);
-static void setParity(z80_t*, uint8_t);
-static void setZero(z80_t*, uint16_t);
-static void setSign8Bit(z80_t*, uint8_t);
-static void setSign16Bit(z80_t*, uint16_t);
-static bool calculateCarry(int, uint16_t, uint16_t, bool);
+static void incrementR(u8*);
+static void setParity(z80_t*, u8);
+static void setZero(z80_t*, u16);
+static void setSign8Bit(z80_t*, u8);
+static void setSign16Bit(z80_t*, u16);
+static bool calculateCarry(int, u16, u16, bool);
 
-static uint16_t readHalfWord(z80_t*, uint16_t);
-static void writeHalfWord(z80_t*, uint16_t, uint16_t);
+static u16 readHalfWord(z80_t*, u16);
+static void writeHalfWord(z80_t*, u16, u16);
 
 void z80_init(z80_t* z80){
     z80->AF = 0xFFFF;
@@ -171,7 +171,7 @@ void z80_init(z80_t* z80){
     z80->cycles = 0;
 }
 
-static void restoreRegisterTable(z80_t* z80, uint8_t** r, uint16_t** rp, uint16_t** rp2){
+static void restoreRegisterTable(z80_t* z80, u8** r, u16** rp, u16** rp2){
     r[0] = &z80->B;
     r[1] = &z80->C;
     r[2] = &z80->D;
@@ -190,21 +190,21 @@ static void restoreRegisterTable(z80_t* z80, uint8_t** r, uint16_t** rp, uint16_
     rp2[3] = &z80->AF;
 }
 
-static void useDDRegisterTable(z80_t* z80, uint8_t** r, uint16_t** rp, uint16_t** rp2){
+static void useDDRegisterTable(z80_t* z80, u8** r, u16** rp, u16** rp2){
     r[4] = &z80->IXH;
     r[5] = &z80->IXL;
     rp[2] = &z80->IX;
     rp2[2] = &z80->IX;
 }
 
-static void useFDRegisterTable(z80_t* z80, uint8_t** r, uint16_t** rp, uint16_t** rp2){
+static void useFDRegisterTable(z80_t* z80, u8** r, u16** rp, u16** rp2){
     r[4] = &z80->IYH;
     r[5] = &z80->IYL;
     rp[2] = &z80->IY;
     rp2[2] = &z80->IY;
 }
 
-static void adjustDDorFFOpcode(z80_t* z80, uint8_t** r, uint16_t** rp, uint16_t** rp2){
+static void adjustDDorFFOpcode(z80_t* z80, u8** r, u16** rp, u16** rp2){
     z80->PC += 1;
     r[4] = &z80->H;
     r[5] = &z80->L;
@@ -248,7 +248,7 @@ static void processInterrupt(z80_t* z80){
         
         case 2:
         {
-            uint16_t interruptAddress = readHalfWord(z80, (z80->I << 8) | z80->INTERRUPT_VECT);
+            u16 interruptAddress = readHalfWord(z80, (z80->I << 8) | z80->INTERRUPT_VECT);
             CALL(z80, interruptAddress);
             z80->cycles += 19;
         }
@@ -287,24 +287,24 @@ void z80_step(z80_t* z80){
     const static aluFunc    alu[8]  = { ADD, ADC, SUB,  SBC,  AND,  XOR,  OR,   CP    };
     const static blockFunc  bli[16] = { LDI, LDD, LDIR, LDDR, CPI,  CPD,  CPIR, CPDR,
                                         INI, IND, INIR, INDR, OUTI, OUTD, OTIR, OTDR  };
-    const static uint8_t    im[8]   = {   0,   0,    1,    2,    0,    0,    1,    2  };
+    const static u8    im[8]   = {   0,   0,    1,    2,    0,    0,    1,    2  };
 
-    uint8_t* r[8];
-    uint16_t* rp[4];
-    uint16_t* rp2[4];
+    u8* r[8];
+    u16* rp[4];
+    u16* rp2[4];
 
-    uint8_t opcode = z80->readMemory(z80->ctx, z80->PC);
-    uint8_t x;
-    uint8_t y;
-    uint8_t z;
-    uint8_t q;
-    uint8_t p;
+    u8 opcode = z80->readMemory(z80->ctx, z80->PC);
+    u8 x;
+    u8 y;
+    u8 z;
+    u8 q;
+    u8 p;
 
-    uint8_t  val8;
-    uint16_t val16;
-    uint16_t nn;
-    uint16_t old_PC;
-    uint8_t old_F = z80->F;
+    u8  val8;
+    u16 val16;
+    u16 nn;
+    u16 old_PC;
+    u8 old_F = z80->F;
     bool prefixDD = false;
     bool prefixFD = false;
     aluFunc function;
@@ -455,7 +455,7 @@ void z80_step(z80_t* z80){
                     CLEAR_FLAG(H);
                     CLEAR_FLAG(N);
                 } else {
-                    uint8_t copy = z80->A;
+                    u8 copy = z80->A;
                     z80->A = z80->readIO(z80->ctx, z80->BC);
                     setSign8Bit(z80, z80->A);
                     setParity(z80, z80->A);
@@ -1161,8 +1161,8 @@ static void NOP(z80_t* z80){
     z80->cycles += 4;
 }
 
-static void EX(z80_t* z80, uint16_t* regA, uint16_t* regB){
-    uint16_t tmp = *regA;
+static void EX(z80_t* z80, u16* regA, u16* regB){
+    u16 tmp = *regA;
     *regA = *regB;
     *regB = tmp;
 }
@@ -1213,7 +1213,7 @@ static void JRC(z80_t* z80, int8_t d){
     }
 }
 
-static void ADD_16(z80_t* z80, uint16_t* regDst, uint16_t* regSrc){
+static void ADD_16(z80_t* z80, u16* regDst, u16* regSrc){
     CLEAR_FLAG(N);
     bool carry = calculateCarry(16, *regDst, *regSrc, 0);
     CHANGE_FLAG(C, carry);
@@ -1227,15 +1227,15 @@ static void ADD_16(z80_t* z80, uint16_t* regDst, uint16_t* regSrc){
     CHANGE_FLAG(X, (*regDst >> 8) & 0b1000);
 }
 
-static void INC_16(z80_t* z80, uint16_t* reg){
+static void INC_16(z80_t* z80, u16* reg){
     *reg += 1;
 }
 
-static void DEC_16(z80_t* z80, uint16_t* reg){
+static void DEC_16(z80_t* z80, u16* reg){
     *reg -= 1;
 }
 
-static void INC_8(z80_t* z80, uint8_t* reg){
+static void INC_8(z80_t* z80, u8* reg){
     bool aux_carry = calculateCarry(4, *reg, 1, 0);
     CHANGE_FLAG(H, aux_carry);
     CHANGE_FLAG(P, *reg == 0x7f);
@@ -1249,7 +1249,7 @@ static void INC_8(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void DEC_8(z80_t* z80, uint8_t* reg){
+static void DEC_8(z80_t* z80, u8* reg){
     bool aux_carry = calculateCarry(4, *reg, -1, 0);
     CHANGE_FLAG(H, !aux_carry);
     CHANGE_FLAG(P, *reg == 0x80);
@@ -1266,7 +1266,7 @@ static void DEC_8(z80_t* z80, uint8_t* reg){
 static void DAA(z80_t* z80){
     // explanation at:
     //      http://z80-heaven.wikidot.com/instructions-set:daa
-    uint8_t correction = 0;
+    u8 correction = 0;
     if((z80->A & 0X0F) > 0x09 || (z80->F & SET_H))
         correction += 0x06;
 
@@ -1377,7 +1377,7 @@ static void RETM(z80_t* z80){
         RET(z80);
 }
 
-static void POP(z80_t* z80, uint16_t* reg){
+static void POP(z80_t* z80, u16* reg){
     *reg = readHalfWord(z80, z80->SP);
     z80->SP = z80->SP + 2; 
 }
@@ -1393,61 +1393,61 @@ static void EXX(z80_t* z80){
     EX(z80, &z80->HL, &z80->HL_);
 }
 
-static void JP(z80_t* z80, uint16_t val){
+static void JP(z80_t* z80, u16 val){
     z80->PC = val;
     z80->WZ = val;
 }
 
-static void JPNZ(z80_t* z80, uint16_t val){
+static void JPNZ(z80_t* z80, u16 val){
     if(!(z80->F & SET_Z))
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPZ(z80_t* z80, uint16_t val){
+static void JPZ(z80_t* z80, u16 val){
     if(z80->F & SET_Z)
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPNC(z80_t* z80, uint16_t val){
+static void JPNC(z80_t* z80, u16 val){
     if(!(z80->F & SET_C))
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPC(z80_t* z80, uint16_t val){
+static void JPC(z80_t* z80, u16 val){
     if(z80->F & SET_C)
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPPO(z80_t* z80, uint16_t val){
+static void JPPO(z80_t* z80, u16 val){
     if(!(z80->F & SET_P))
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPPE(z80_t* z80, uint16_t val){
+static void JPPE(z80_t* z80, u16 val){
     if(z80->F & SET_P)
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPP(z80_t* z80, uint16_t val){
+static void JPP(z80_t* z80, u16 val){
     if(!(z80->F & SET_S))
         JP(z80, val);
     else
         z80->WZ = val;
 }
 
-static void JPM(z80_t* z80, uint16_t val){
+static void JPM(z80_t* z80, u16 val){
     if(z80->F & SET_S)
         JP(z80, val);
     else
@@ -1465,74 +1465,74 @@ static void EI(z80_t* z80){
     z80->IFF2 = true;
 }
 
-static void CALL(z80_t* z80, uint16_t val){
+static void CALL(z80_t* z80, u16 val){
     PUSH(z80, z80->PC);
     z80->PC = val;
     z80->WZ = val;
 }
 
-static void CALLNZ(z80_t* z80, uint16_t val){
+static void CALLNZ(z80_t* z80, u16 val){
     if(!(z80->F & SET_Z))
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLZ(z80_t* z80, uint16_t val){
+static void CALLZ(z80_t* z80, u16 val){
     if(z80->F & SET_Z)
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLNC(z80_t* z80, uint16_t val){
+static void CALLNC(z80_t* z80, u16 val){
     if(!(z80->F & SET_C))
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLC(z80_t* z80, uint16_t val){
+static void CALLC(z80_t* z80, u16 val){
     if(z80->F & SET_C)
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLPO(z80_t* z80, uint16_t val){
+static void CALLPO(z80_t* z80, u16 val){
     if(!(z80->F & SET_P))
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLPE(z80_t* z80, uint16_t val){
+static void CALLPE(z80_t* z80, u16 val){
     if(z80->F & SET_P)
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLP(z80_t* z80, uint16_t val){
+static void CALLP(z80_t* z80, u16 val){
     if(!(z80->F & SET_S))
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void CALLM(z80_t* z80, uint16_t val){
+static void CALLM(z80_t* z80, u16 val){
     if(z80->F & SET_S)
         CALL(z80, val);
     else
         z80->WZ = val;
 }
 
-static void PUSH(z80_t* z80, uint16_t val){
+static void PUSH(z80_t* z80, u16 val){
     z80->SP = z80->SP - 2;
     writeHalfWord(z80, z80->SP, val);
 }
 
-static void RST(z80_t* z80, uint8_t addr){
+static void RST(z80_t* z80, u8 addr){
     CALL(z80, addr*8);
 }
 
@@ -1581,7 +1581,7 @@ static void RRA(z80_t* z80){
     CHANGE_FLAG(Y, z80->A & 0b100000);
 }
 
-static void RLC(z80_t* z80, uint8_t* reg){
+static void RLC(z80_t* z80, u8* reg){
     bool msb = *reg >> 7;
     CHANGE_FLAG(C, msb);
     CLEAR_FLAG(H);
@@ -1596,7 +1596,7 @@ static void RLC(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void RRC(z80_t* z80, uint8_t* reg){
+static void RRC(z80_t* z80, u8* reg){
     bool lsb = *reg & 0b1;
     CHANGE_FLAG(C, lsb);
     CLEAR_FLAG(H);
@@ -1611,7 +1611,7 @@ static void RRC(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void RL(z80_t* z80, uint8_t* reg){
+static void RL(z80_t* z80, u8* reg){
     bool carry = z80->F & SET_C;
     bool msb = *reg >> 7;
     *reg = (*reg << 1) | carry;
@@ -1627,7 +1627,7 @@ static void RL(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void RR(z80_t* z80, uint8_t* reg){
+static void RR(z80_t* z80, u8* reg){
     bool carry = z80->F & SET_C;
     bool lsb = *reg & 0b1;
     *reg = (*reg >> 1) | (carry << 7);
@@ -1643,7 +1643,7 @@ static void RR(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void SLA(z80_t* z80, uint8_t* reg){
+static void SLA(z80_t* z80, u8* reg){
     bool msb = *reg >> 7;
     CHANGE_FLAG(C, msb);
     CLEAR_FLAG(H);
@@ -1659,7 +1659,7 @@ static void SLA(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void SRA(z80_t* z80, uint8_t* reg){
+static void SRA(z80_t* z80, u8* reg){
     bool sign = *reg >> 7;
     bool lsb = *reg & 0b1;
     CHANGE_FLAG(C, lsb);
@@ -1676,7 +1676,7 @@ static void SRA(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void SLL(z80_t* z80, uint8_t* reg){
+static void SLL(z80_t* z80, u8* reg){
     bool msb = *reg >> 7;
     CHANGE_FLAG(C, msb);
     CLEAR_FLAG(H);
@@ -1694,7 +1694,7 @@ static void SLL(z80_t* z80, uint8_t* reg){
 }
 
 
-static void SRL(z80_t* z80, uint8_t* reg){
+static void SRL(z80_t* z80, u8* reg){
     bool lsb = *reg & 0b1;
     CHANGE_FLAG(C, lsb);
     CLEAR_FLAG(H);
@@ -1710,8 +1710,8 @@ static void SRL(z80_t* z80, uint8_t* reg){
     CHANGE_FLAG(Y, *reg & 0b100000);
 }
 
-static void BIT(z80_t* z80, uint8_t bit, uint8_t* reg){
-    uint8_t masked_bit = *reg & (1 << bit);
+static void BIT(z80_t* z80, u8 bit, u8* reg){
+    u8 masked_bit = *reg & (1 << bit);
     CHANGE_FLAG(Z, masked_bit == 0);
     CHANGE_FLAG(P, masked_bit == 0);
     CHANGE_FLAG(S, masked_bit & 0x80);
@@ -1721,16 +1721,16 @@ static void BIT(z80_t* z80, uint8_t bit, uint8_t* reg){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void RES(z80_t* z80, uint8_t bit, uint8_t* reg){
-    *reg = *reg & (~(uint8_t)(1 << bit));
+static void RES(z80_t* z80, u8 bit, u8* reg){
+    *reg = *reg & (~(u8)(1 << bit));
 }
 
-static void SET(z80_t* z80, uint8_t bit, uint8_t* reg){
+static void SET(z80_t* z80, u8 bit, u8* reg){
     *reg = * reg | (1 << bit);
 }
 
-static void ADD(z80_t* z80, uint8_t* reg, uint8_t val){
-    uint8_t res = *reg + val;
+static void ADD(z80_t* z80, u8* reg, u8 val){
+    u8 res = *reg + val;
     bool carry = calculateCarry(8, *reg, val, 0);
     CHANGE_FLAG(C, carry);
 
@@ -1749,9 +1749,9 @@ static void ADD(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, res & 0b1000);
 }
 
-static void ADC(z80_t* z80, uint8_t* reg, uint8_t val){
+static void ADC(z80_t* z80, u8* reg, u8 val){
     bool carry = z80->F & SET_C;
-    uint8_t res = *reg + val + carry;
+    u8 res = *reg + val + carry;
 
     bool new_carry = calculateCarry(8, *reg, val, carry);
     CHANGE_FLAG(C, new_carry);
@@ -1771,7 +1771,7 @@ static void ADC(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void SUB(z80_t* z80, uint8_t* reg, uint8_t val){
+static void SUB(z80_t* z80, u8* reg, u8 val){
     val = ~val + 1;
     bool carry = calculateCarry(8, *reg, val - 1, 1);
     CHANGE_FLAG(C, !carry);
@@ -1779,7 +1779,7 @@ static void SUB(z80_t* z80, uint8_t* reg, uint8_t val){
     bool aux_carry = calculateCarry(4, *reg, val - 1, 1);
     CHANGE_FLAG(H, !aux_carry);
 
-    uint8_t res = *reg + val;
+    u8 res = *reg + val;
 
     bool overflow = calculateCarry(7, *reg, val - 1, 1) != calculateCarry(8, *reg, val - 1, 1);
     CHANGE_FLAG(P, overflow);
@@ -1793,7 +1793,7 @@ static void SUB(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, res & 0b1000);
 }
 
-static void SBC(z80_t* z80, uint8_t* reg, uint8_t val){
+static void SBC(z80_t* z80, u8* reg, u8 val){
     val = ~val + 1;
     bool carry = z80->F & SET_C;
     bool new_carry = calculateCarry(8, *reg, val - 1, !carry);
@@ -1802,7 +1802,7 @@ static void SBC(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(C, !new_carry);
     CHANGE_FLAG(H, !aux_carry);
 
-    uint8_t res = *reg + val - carry;
+    u8 res = *reg + val - carry;
     bool overflow = calculateCarry(7, *reg, val - 1, !carry) != calculateCarry(8, *reg, val - 1, !carry);
     CHANGE_FLAG(P, overflow); 
 
@@ -1815,7 +1815,7 @@ static void SBC(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void AND(z80_t* z80, uint8_t* reg, uint8_t val){
+static void AND(z80_t* z80, u8* reg, u8 val){
     *reg &= val;
     setSign8Bit(z80, *reg);
     setZero(z80, *reg);
@@ -1828,7 +1828,7 @@ static void AND(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void XOR(z80_t* z80, uint8_t* reg, uint8_t val){
+static void XOR(z80_t* z80, u8* reg, u8 val){
     *reg ^= val;
     setSign8Bit(z80, *reg);
     setZero(z80, *reg);
@@ -1840,7 +1840,7 @@ static void XOR(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void OR(z80_t* z80, uint8_t* reg, uint8_t val){
+static void OR(z80_t* z80, u8* reg, u8 val){
     *reg |= val;
     setSign8Bit(z80, *reg);
     setZero(z80, *reg);
@@ -1852,8 +1852,8 @@ static void OR(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, *reg & 0b1000);
 }
 
-static void CP(z80_t* z80, uint8_t* reg, uint8_t val){
-    uint8_t copy = *reg;
+static void CP(z80_t* z80, u8* reg, u8 val){
+    u8 copy = *reg;
     SUB(z80, reg, val);
     *reg = copy;
 
@@ -1861,7 +1861,7 @@ static void CP(z80_t* z80, uint8_t* reg, uint8_t val){
     CHANGE_FLAG(X, val & 0b1000);
 }
 
-static void ADC_16(z80_t* z80, uint16_t* reg, uint16_t val){
+static void ADC_16(z80_t* z80, u16* reg, u16 val){
     bool carry = z80->F & SET_C;
 
     bool new_carry = calculateCarry(16, *reg, val, carry);
@@ -1870,7 +1870,7 @@ static void ADC_16(z80_t* z80, uint16_t* reg, uint16_t val){
     bool aux_carry = calculateCarry(12, *reg, val, carry);
     CHANGE_FLAG(H, aux_carry);
 
-    uint16_t res = *reg + val + carry;
+    u16 res = *reg + val + carry;
     bool overflow = calculateCarry(16, *reg, val, carry) != calculateCarry(15, *reg, val, carry);
     CHANGE_FLAG(P, overflow);
            
@@ -1883,7 +1883,7 @@ static void ADC_16(z80_t* z80, uint16_t* reg, uint16_t val){
     CHANGE_FLAG(X, (res >> 8) & 0b1000);
 }
 
-static void SBC_16(z80_t* z80, uint16_t* reg, uint16_t val){
+static void SBC_16(z80_t* z80, u16* reg, u16 val){
     val = ~val + 1;
     bool carry = z80->F & SET_C;
     bool new_carry = calculateCarry(16, *reg, val - 1, !carry);
@@ -1892,7 +1892,7 @@ static void SBC_16(z80_t* z80, uint16_t* reg, uint16_t val){
     CHANGE_FLAG(C, !new_carry);
     CHANGE_FLAG(H, !aux_carry);
 
-    uint16_t res = *reg + val - carry;
+    u16 res = *reg + val - carry;
     bool overflow = calculateCarry(16, *reg, val - 1, !carry) != calculateCarry(15, *reg, val - 1, !carry);
     CHANGE_FLAG(P, overflow);  
 
@@ -1905,8 +1905,8 @@ static void SBC_16(z80_t* z80, uint16_t* reg, uint16_t val){
     CHANGE_FLAG(X, (res >> 8) & 0b1000);
 }
 
-static void NEG(z80_t* z80, uint8_t* reg){
-    uint8_t tmp = *reg;
+static void NEG(z80_t* z80, u8* reg){
+    u8 tmp = *reg;
     *reg = 0;
     SUB(z80, reg, tmp);
 }
@@ -1921,13 +1921,13 @@ static void RETN(z80_t* z80){
     z80->IFF1 = z80->IFF2;
 }
 
-static void IM(z80_t* z80, uint8_t im_mode){
+static void IM(z80_t* z80, u8 im_mode){
     z80->INTERRUPT_MODE = im_mode;
 }
 
 static void RRD(z80_t* z80){
-    uint8_t tmpA = z80->A;
-    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    u8 tmpA = z80->A;
+    u8 val = z80->readMemory(z80->ctx, z80->HL);
     z80->A = (tmpA & 0xF0) | (val & 0xF);
     z80->writeMemory(z80->ctx,  z80->HL, (val >> 4) | (tmpA << 4) );
     setSign8Bit(z80, z80->A);
@@ -1940,8 +1940,8 @@ static void RRD(z80_t* z80){
 }
 
 static void RLD(z80_t* z80){
-    uint8_t tmpA = z80->A;
-    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    u8 tmpA = z80->A;
+    u8 val = z80->readMemory(z80->ctx, z80->HL);
     z80->A = (tmpA & 0xF0) | (val >> 4);
     z80->writeMemory(z80->ctx, z80->HL, (val << 4) | (tmpA & 0xF));
     setSign8Bit(z80, z80->A);
@@ -1956,7 +1956,7 @@ static void RLD(z80_t* z80){
 // block instructions
 
 static void LDI(z80_t* z80){
-    uint8_t hl_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 hl_val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeMemory(z80->ctx, z80->DE, hl_val);
     z80->DE += 1;
     z80->HL += 1;
@@ -1968,7 +1968,7 @@ static void LDI(z80_t* z80){
 
     z80->cycles += 16;
 
-    uint8_t res = z80->A + hl_val;
+    u8 res = z80->A + hl_val;
     CHANGE_FLAG(X, res & (1 << 3));
     CHANGE_FLAG(Y, res & (1 << 1));
 }
@@ -1980,7 +1980,7 @@ static void LDD(z80_t* z80){
 }
 
 static void LDIR(z80_t* z80){
-    uint8_t hl_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 hl_val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeMemory(z80->ctx, z80->DE, hl_val);
     z80->DE += 1;
     z80->HL += 1;
@@ -1997,7 +1997,7 @@ static void LDIR(z80_t* z80){
         CHANGE_FLAG(Y, z80->PC & (1 << 13));
         z80->cycles += 21;
     } else {
-        uint8_t res = z80->A + hl_val;
+        u8 res = z80->A + hl_val;
         CHANGE_FLAG(X, res & (1 << 3));
         CHANGE_FLAG(Y, res & (1 << 1));
         z80->cycles += 16;
@@ -2005,7 +2005,7 @@ static void LDIR(z80_t* z80){
 }
 
 static void LDDR(z80_t* z80){
-    uint8_t hl_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 hl_val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeMemory(z80->ctx, z80->DE, hl_val);
     z80->DE -= 1;
     z80->HL -= 1;
@@ -2023,7 +2023,7 @@ static void LDDR(z80_t* z80){
         CHANGE_FLAG(Y, z80->PC & (1 << 13));
         z80->cycles += 21;
     } else {
-        uint8_t res = z80->A + hl_val;
+        u8 res = z80->A + hl_val;
         CHANGE_FLAG(X, res & (1 << 3));
         CHANGE_FLAG(Y, res & (1 << 1));
         z80->cycles += 16;
@@ -2032,7 +2032,7 @@ static void LDDR(z80_t* z80){
 
 static void CPI(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL += 1;
     z80->BC -= 1;
@@ -2042,7 +2042,7 @@ static void CPI(z80_t* z80){
     SET_FLAG(N);
 
     bool aux_carry = (bool)(z80->F & SET_H);
-    uint8_t val = z80->A - memory_val - aux_carry;
+    u8 val = z80->A - memory_val - aux_carry;
     
     CHANGE_FLAG(Y, val & 0b10);
     CHANGE_FLAG(X, val & 0b1000);
@@ -2053,7 +2053,7 @@ static void CPI(z80_t* z80){
 
 static void CPD(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL -= 1;
     z80->BC -= 1;
@@ -2063,7 +2063,7 @@ static void CPD(z80_t* z80){
     SET_FLAG(N);
 
     bool aux_carry = (bool)(z80->F & SET_H);
-    uint8_t val = z80->A - memory_val - aux_carry;
+    u8 val = z80->A - memory_val - aux_carry;
     
     CHANGE_FLAG(Y, val & 0b10);
     CHANGE_FLAG(X, val & 0b1000);
@@ -2074,7 +2074,7 @@ static void CPD(z80_t* z80){
 
 static void CPIR(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL += 1;
     z80->BC -= 1;
@@ -2084,7 +2084,7 @@ static void CPIR(z80_t* z80){
     SET_FLAG(N);
 
     bool aux_carry = (bool)(z80->F & SET_H);
-    uint8_t val = z80->A - memory_val - aux_carry;
+    u8 val = z80->A - memory_val - aux_carry;
     
     if(z80->BC != 0 && !(bool)(z80->F & SET_Z)){
         z80->PC -= 1;
@@ -2103,7 +2103,7 @@ static void CPIR(z80_t* z80){
 
 static void CPDR(z80_t* z80){
     bool carry = (bool)(z80->F & SET_C);
-    uint8_t memory_val = z80->readMemory(z80->ctx, z80->HL);
+    u8 memory_val = z80->readMemory(z80->ctx, z80->HL);
     CP(z80, &z80->A, memory_val);
     z80->HL -= 1;
     z80->BC -= 1;
@@ -2121,7 +2121,7 @@ static void CPDR(z80_t* z80){
         z80->cycles += 21;
     } else {
         bool aux_carry = (bool)(z80->F & SET_H);
-        uint8_t val = z80->A - memory_val - aux_carry;
+        u8 val = z80->A - memory_val - aux_carry;
         CHANGE_FLAG(Y, val & 0b10);
         CHANGE_FLAG(X, val & 0b1000);
         z80->cycles += 16;
@@ -2129,7 +2129,7 @@ static void CPDR(z80_t* z80){
 }
 
 static void INI(z80_t* z80){
-    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    u8 val = z80->readIO(z80->ctx, z80->BC);
     z80->writeMemory(z80->ctx, z80->HL, val);
     z80->WZ = z80->BC + 1;
     z80->HL += 1;  
@@ -2141,7 +2141,7 @@ static void INI(z80_t* z80){
     CHANGE_FLAG(Y, z80->B & 0b100000);
     CHANGE_FLAG(X, z80->B & 0b1000);
 
-    uint16_t flag_calc = (val + ((z80->C + 1) & 255)); 
+    u16 flag_calc = (val + ((z80->C + 1) & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2152,7 +2152,7 @@ static void INI(z80_t* z80){
 }
 
 static void IND(z80_t* z80){
-    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    u8 val = z80->readIO(z80->ctx, z80->BC);
     z80->writeMemory(z80->ctx, z80->HL, val);
     z80->WZ = z80->BC - 1;
     z80->B -= 1;
@@ -2164,7 +2164,7 @@ static void IND(z80_t* z80){
     CHANGE_FLAG(Y, z80->B & 0b100000);
     CHANGE_FLAG(X, z80->B & 0b1000);
 
-    uint16_t flag_calc = (val + ((z80->C - 1) & 255)); 
+    u16 flag_calc = (val + ((z80->C - 1) & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2175,7 +2175,7 @@ static void IND(z80_t* z80){
 }
 
 static void INIR(z80_t* z80){
-    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    u8 val = z80->readIO(z80->ctx, z80->BC);
     z80->writeMemory(z80->ctx, z80->HL, val);
     z80->HL += 1;  
     z80->B -= 1;
@@ -2183,7 +2183,7 @@ static void INIR(z80_t* z80){
     setSign8Bit(z80, z80->B);
     setZero(z80, z80->B);
 
-    uint16_t flag_calc = (val + ((z80->C + 1) & 255)); 
+    u16 flag_calc = (val + ((z80->C + 1) & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2225,7 +2225,7 @@ static void INIR(z80_t* z80){
 }
 
 static void INDR(z80_t* z80){
-    uint8_t val = z80->readIO(z80->ctx, z80->BC);
+    u8 val = z80->readIO(z80->ctx, z80->BC);
     z80->writeMemory(z80->ctx, z80->HL, val);
     
     z80->B -= 1;
@@ -2234,7 +2234,7 @@ static void INDR(z80_t* z80){
     setSign8Bit(z80, z80->B);
     setZero(z80, z80->B);
 
-    uint16_t flag_calc = (val + ((z80->C - 1) & 255)); 
+    u16 flag_calc = (val + ((z80->C - 1) & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2278,7 +2278,7 @@ static void INDR(z80_t* z80){
 static void OUTI(z80_t* z80){
     z80->B -= 1;
     z80->WZ = z80->BC + 1;
-    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    u8 val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL += 1;
     z80->cycles += 16;
@@ -2289,7 +2289,7 @@ static void OUTI(z80_t* z80){
     CHANGE_FLAG(Y, z80->B & 0b100000);
     CHANGE_FLAG(X, z80->B & 0b1000);
 
-    uint16_t flag_calc = (val + (z80->L & 255)); 
+    u16 flag_calc = (val + (z80->L & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2300,7 +2300,7 @@ static void OUTI(z80_t* z80){
 static void OUTD(z80_t* z80){
     z80->B -= 1;
     z80->WZ = z80->BC - 1;
-    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    u8 val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL -= 1;
     z80->cycles += 16;
@@ -2311,7 +2311,7 @@ static void OUTD(z80_t* z80){
     CHANGE_FLAG(Y, z80->B & 0b100000);
     CHANGE_FLAG(X, z80->B & 0b1000);
 
-    uint16_t flag_calc = (val + (z80->L & 255)); 
+    u16 flag_calc = (val + (z80->L & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2321,14 +2321,14 @@ static void OUTD(z80_t* z80){
 
 static void OTIR(z80_t* z80){
     z80->B -= 1;
-    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    u8 val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL += 1;
 
     setSign8Bit(z80, z80->B);
     setZero(z80, z80->B);
 
-    uint16_t flag_calc = (val + (z80->L & 255)); 
+    u16 flag_calc = (val + (z80->L & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2371,14 +2371,14 @@ static void OTIR(z80_t* z80){
 
 static void OTDR(z80_t* z80){
     z80->B -= 1;
-    uint8_t val = z80->readMemory(z80->ctx, z80->HL);
+    u8 val = z80->readMemory(z80->ctx, z80->HL);
     z80->writeIO(z80->ctx, z80->BC, val);
     z80->HL -= 1;
 
     setSign8Bit(z80, z80->B);
     setZero(z80, z80->B);
 
-    uint16_t flag_calc = (val + (z80->L & 255)); 
+    u16 flag_calc = (val + (z80->L & 255)); 
     bool hcf = (flag_calc > 255);
     CHANGE_FLAG(H, hcf);
     CHANGE_FLAG(C, hcf);
@@ -2418,11 +2418,11 @@ static void OTDR(z80_t* z80){
     }
 }
 
-static void incrementR(uint8_t* R){
+static void incrementR(u8* R){
     *R = ((*R + 1) & 0x7F) | (*R & 0x80);
 }
 
-static void setParity(z80_t* z80, uint8_t val){
+static void setParity(z80_t* z80, u8 val){
     int counter = 0;
     while(val != 0){
         counter += (val & 0x1);
@@ -2432,31 +2432,31 @@ static void setParity(z80_t* z80, uint8_t val){
     CHANGE_FLAG(P, parity);
 }
 
-static void setZero(z80_t* z80, uint16_t val){
+static void setZero(z80_t* z80, u16 val){
     CHANGE_FLAG(Z, val == 0);
 }
 
-static void setSign8Bit(z80_t* z80, uint8_t val){
+static void setSign8Bit(z80_t* z80, u8 val){
     CHANGE_FLAG(S, val & 0x80);
 }
 
-static void setSign16Bit(z80_t* z80, uint16_t val){
+static void setSign16Bit(z80_t* z80, u16 val){
     CHANGE_FLAG(S, val & 0x8000);
 }
 
-static bool calculateCarry(int bit, uint16_t a, uint16_t b, bool cy) {
+static bool calculateCarry(int bit, u16 a, u16 b, bool cy) {
   int32_t result = a + b + cy;
   int32_t carry = result ^ a ^ b;
   return carry & (1 << bit);
 }
 
-static uint16_t readHalfWord(z80_t* z80, uint16_t addr){
-    uint8_t lo = z80->readMemory(z80->ctx, addr);
-    uint8_t hi = z80->readMemory(z80->ctx, addr+1);
+static u16 readHalfWord(z80_t* z80, u16 addr){
+    u8 lo = z80->readMemory(z80->ctx, addr);
+    u8 hi = z80->readMemory(z80->ctx, addr+1);
     return (hi << 8) | lo;
 }
 
-static void writeHalfWord(z80_t* z80, uint16_t addr, uint16_t halfword){
+static void writeHalfWord(z80_t* z80, u16 addr, u16 halfword){
     z80->writeMemory(z80->ctx, addr, halfword);
     z80->writeMemory(z80->ctx, addr+1, halfword >> 8);
 }

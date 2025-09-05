@@ -223,7 +223,7 @@ int main(int argc, char* argv[]){
             if(ms - deltaTime > 1.0f)
                 SDL_Delay(ms - deltaTime - 1);
         }
-    };
+    }
     #endif
 
     SDL_DestroyTexture(drawBuffer);

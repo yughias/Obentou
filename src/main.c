@@ -7,6 +7,7 @@
 #include "cores/bytepusher/interface.h"
 #include "cores/tms80/interface.h"
 #include "cores/nes/interface.h"
+#include "cores/gbc/interface.h"
 
 const core_t cores[] = {
     LOAD_CORE(watara),
@@ -14,7 +15,8 @@ const core_t cores[] = {
     LOAD_CORE(pce),
     LOAD_CORE(bytepusher),
     LOAD_CORE(tms80),
-    LOAD_CORE(nes)
+    LOAD_CORE(nes),
+    LOAD_CORE(gbc)
 };
 
 void* emu;

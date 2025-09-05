@@ -6,7 +6,6 @@
 void tms80_run_frame(void* ctx);
 void* tms80_init(const char* filename, SDL_AudioDeviceID device_id);
 bool tms80_detect(const char* filename);
-void tms80_psg_callback(void *userdata, Uint8 * stream, int len);
 
 
 #define tms80_width 256

@@ -1,28 +1,27 @@
 #ifndef _Z80_H_
 #define _Z80_H_
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "types.h"
 
 typedef struct z80_t z80_t;
-typedef uint8_t (*readFunc)(void*, uint16_t);
-typedef void (*writeFunc)(void*, uint16_t, uint8_t);
+typedef u8 (*readFunc)(void*, u16);
+typedef void (*writeFunc)(void*, u16, u8);
 
 #define Z80_REG(a, b) \
 union { \
-    uint16_t a ## b; \
+    u16 a ## b; \
     struct { \
-        uint8_t b; \
-        uint8_t a; \
+        u8 b; \
+        u8 a; \
     }; \
 };
 
 #define Z80_XY_REG(name) \
 union { \
-    uint16_t name; \
+    u16 name; \
     struct { \
-        uint8_t name ## L; \
-        uint8_t name ## H; \
+        u8 name ## L; \
+        u8 name ## H; \
     }; \
 };
 
@@ -32,8 +31,8 @@ typedef struct z80_t {
     bool     IFF1, IFF2;
     bool     INTERRUPT_DELAY;
     bool     INTERRUPT_PENDING;
-    uint8_t  INTERRUPT_MODE;
-    uint8_t INTERRUPT_VECT;
+    u8  INTERRUPT_MODE;
+    u8 INTERRUPT_VECT;
 
     // 16 bit regs 
     Z80_REG(A, F);
@@ -46,20 +45,20 @@ typedef struct z80_t {
 
     Z80_REG(W, Z);
 
-    uint16_t AF_;
-    uint16_t BC_;
-    uint16_t DE_;
-    uint16_t HL_;
+    u16 AF_;
+    u16 BC_;
+    u16 DE_;
+    u16 HL_;
 
-    uint16_t SP;
-    uint16_t PC;
+    u16 SP;
+    u16 PC;
 
-    uint8_t I;
-    uint8_t R;
+    u8 I;
+    u8 R;
 
     bool Q;
 
-    uint8_t aux_reg;
+    u8 aux_reg;
 
     readFunc readMemory;
     writeFunc writeMemory;
