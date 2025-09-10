@@ -3,16 +3,17 @@
 
 #include "interface.h"
 
-void pce_run_frame(void* ctx);
-void* pce_init(const char* filename, SDL_AudioDeviceID device_id);
-bool pce_detect(const char* filename);
+void PCE_run_frame(void* ctx);
+void* PCE_init(const char* filename);
+bool PCE_detect(const char* filename);
 
 
-#define pce_width 256
-#define pce_height 242
-#define pce_fps 59.8337024193
+#define PCE_WIDTH 256
+#define PCE_HEIGHT 242
+#define PCE_FPS 59.8337024193
+#define PCE_SOUND_PUSH_RATE (7.16e6/44100.0f)
 
-#define pce_audio_spec \
+#define PCE_AUDIO_SPEC \
 { \
     .callback = NULL, \
     .channels = 2, \

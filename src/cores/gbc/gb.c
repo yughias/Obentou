@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void gbc_run_frame(gb_t* gb){
+void GBC_run_frame(gb_t* gb){
     sm83_t* cpu = &gb->cpu;
     while(cpu->cycles < CYCLES_PER_FRAME){
         #ifdef DEBUG
@@ -44,7 +44,7 @@ static void tickHardware(void* ctx, int ticks){
     }
 }
 
-void* gbc_init(const char* filename, SDL_AudioDeviceID device_id){
+void* GBC_init(const char* filename){
     gb_t* gb = malloc(sizeof(gb_t));
     memset(gb, 0, sizeof(gb_t));
     sm83_t* cpu = &gb->cpu;
@@ -63,13 +63,11 @@ void* gbc_init(const char* filename, SDL_AudioDeviceID device_id){
     gb->ppu.workingBufferPtr = gb->ppu.workingBuffer;
     gb->ppu.renderBufferPtr = gb->ppu.renderBuffer;
     gb_renderLcdOff(&gb->ppu);
-    
-    gb->apu.audioDev = device_id;
 
     return gb;
 }
 
-bool gbc_detect(const char* filename){
+bool GBC_detect(const char* filename){
     bool out = false;
     out |= SDL_strcasestr(filename, ".gb") != NULL;
     out |= SDL_strcasestr(filename, ".gbc") != NULL;

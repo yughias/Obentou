@@ -3,13 +3,6 @@
 
 #include "types.h"
 
-#include "SDL2/SDL.h"
-
-#define AUDIO_FREQUENCY   44100
-#define AUDIO_SAMPLES     4096
-#define AUDIO_BUFFER_SIZE  (AUDIO_SAMPLES*2)
-#define PUSH_RATE_RELOAD   ((float)APU_FREQUENCY/AUDIO_FREQUENCY)
-
 #define APU_FREQUENCY 4194304
 
 #define NR52_ADDR 0xFF26
@@ -113,16 +106,9 @@ typedef struct apu_t {
     u8 ch4_envelope_pace;
     size_t ch4_envelope_counter;
     int8_t ch4_sample;
-
-    SDL_AudioDeviceID audioDev;
-    int16_t buffer[AUDIO_BUFFER_SIZE];
-    size_t bufIdx;
-    float push_rate_counter;
-    float push_rate_reload;
 } apu_t;
 
 void gb_initAudio(apu_t*);
-void gb_freeAudio(apu_t*);
 void gb_convertAudio(apu_t*);
 void gb_emulateApu(apu_t*);
 

@@ -28,7 +28,4 @@ typedef struct pv1000_t
     u8 status;
 } pv1000_t;
 
-void* pv1000_init(const char* filename, SDL_AudioDeviceID device_id);
-void pv1000_run_frame(pv1000_t* pv1000);
-
 #endif

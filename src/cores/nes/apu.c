@@ -1,4 +1,5 @@
 #include "cores/nes/nes.h"
+#include "peripherals/sound.h"
 
 static const bool duty_lut[4][8] = {
     {0, 1, 0, 0, 0, 0, 0, 0},
@@ -98,27 +99,8 @@ void nes_apu_sync(apu_t* apu){
 }
 
 void nes_apu_push_sample(apu_t* apu){
-    if(apu->push_rate_counter <= 0){
-        apu->push_rate_counter += apu->push_rate_reload;
-        float sample = nes_apu_get_sample(apu);
-
-        #ifdef __EMSCRIPTEN__
-        if(apu->buffer_idx < SAMPLE_BUFFER_SIZE)
-            apu->buffer[apu->buffer_idx++] = sample;
-        if(SDL_GetQueuedAudioSize(apu->audioDev) <= SAMPLE_BUFFER_SIZE * sizeof(float)){
-            SDL_QueueAudio(apu->audioDev, apu->buffer, apu->buffer_idx * sizeof(float));
-            apu->buffer_idx = 0;
-        }
-        #else
-        apu->buffer[apu->buffer_idx++] = sample;
-        if(apu->buffer_idx == SAMPLE_BUFFER_SIZE){
-            SDL_QueueAudio(apu->audioDev, apu->buffer, apu->buffer_idx*sizeof(float));
-            apu->buffer_idx = 0;
-            while(SDL_GetQueuedAudioSize(apu->audioDev) > SAMPLE_BUFFER_SIZE*sizeof(float));
-        }
-        #endif
-    }
-    apu->push_rate_counter -= 1;
+    float sample;
+    sound_push_sample(1, sizeof(float), apu, &sample, nes_apu_get_sample);
 }
 
 void nes_apu_write_pulse_0(pulse_t* pulse, u8 byte){
@@ -289,7 +271,9 @@ void nes_apu_update_dmc(apu_t* apu){
     }
 }
 
-float nes_apu_get_sample(apu_t* apu){
+void nes_apu_get_sample(void* ctx, void* s){
+    apu_t* apu = (apu_t*)ctx;
+    float* sample = (float*)s;
     u8 ch[5]; 
 
     ch[0] = apu->mute[0] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[0], 0);
@@ -307,7 +291,7 @@ float nes_apu_get_sample(apu_t* apu){
 
     float pulse_out = pulse_table[ch[0] + ch[1]];
     float tnd_out = tnd_table[3*ch[2] + 2*ch[3] + ch[4]];
-    return (tnd_out + pulse_out);
+    *sample = (tnd_out + pulse_out);
 }
 
 u8 nes_apu_get_pulse_sample(pulse_t* pulse, bool idx){

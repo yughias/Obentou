@@ -6,7 +6,7 @@
 static void pce_write_regs(void* ctx, u16 offset, u8 value);
 static u8 pce_read_regs(void* ctx, u16 offset);
 
-void* pce_init(const char* rom_path, SDL_AudioDeviceID device_id) {
+void* PCE_init(const char* rom_path) {
     pce_t* p = malloc(sizeof(pce_t));
     FILE* fptr = fopen(rom_path, "rb");
     if (!fptr) {
@@ -36,10 +36,8 @@ void* pce_init(const char* rom_path, SDL_AudioDeviceID device_id) {
     p->vdc.vce = &p->vce;
     p->vdc.ctx = p;
 
-    p->psg.push_rate_reload = AUDIO_PUSH_RATE;
     p->psg.lfsr[0].seed = 1;
     p->psg.lfsr[1].seed = 1;
-    p->psg.audio_dev = device_id;
 
     h6280_reset(&p->cpu);
 
@@ -269,7 +267,7 @@ static u8 pce_read_regs(void* ctx, u16 offset){
     return 0xFF;
 }
 
-void pce_run_frame(pce_t* p) {
+void PCE_run_frame(pce_t* p) {
     h6280_t* h = &p->cpu;
     vdc_t* vdc = &p->vdc;
     vce_t* vce = &p->vce;
@@ -375,6 +373,6 @@ void pce_notify_line(pce_t* p, int frame_line, int* line, int w){
     }
 }
 
-bool pce_detect(const char* filename){
+bool PCE_detect(const char* filename){
     return SDL_strcasestr(filename, ".pce") != NULL;
 }

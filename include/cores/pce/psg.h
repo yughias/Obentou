@@ -51,12 +51,6 @@ typedef struct psg_t {
 
     ch_t ch[PSG_CHANNELS];
     lfsr_t lfsr[2];
-
-    SDL_AudioDeviceID audio_dev;
-    sample_t buffer[SAMPLE_BUFFER_SIZE];
-    int buffer_idx;
-    float push_rate_counter;
-    float push_rate_reload;
 } psg_t;
 
 void pce_psg_write(psg_t* psg, u8 offset, u8 value);

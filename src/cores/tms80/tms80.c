@@ -1,5 +1,7 @@
 #include "cores/tms80/tms80.h"
 #include "cores/tms80/memory.h"
+#include "peripherals/sound.h"
+#include "peripherals/controls.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -7,34 +9,34 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KEY(x) SDL_SCANCODE_ ## x
-#define NO_KEY KEY(UNKNOWN)
+#define KEY(x) CONTROL_TMS80_ ## x
+#define NO_KEY CONTROL_NONE
 
 #define tms80_SET_REGION(tms80, zone) \
 tms80->cycles_per_frame = zone ## _CYCLES_PER_FRAME; \
 tms80->refresh_rate = zone ## _REFRESH_RATE; \
 tms80->vdp.region = REGION_ ## zone;
 
-static SDL_Scancode keypad_row_a[8][8] = {
-    { KEY(1),  KEY(Q),    KEY(A),    KEY(Z),     KEY(RCTRL),     KEY(COMMA),  KEY(K),            KEY(I)           },
-    { KEY(2),  KEY(W),    KEY(S),    KEY(X),     KEY(SPACE),     KEY(PERIOD), KEY(L),            KEY(O)           },
-    { KEY(3),  KEY(E),    KEY(D),    KEY(C),     KEY(DELETE),    KEY(SLASH),  KEY(SEMICOLON),    KEY(P)           },
-    { KEY(4),  KEY(R),    KEY(F),    KEY(V),     KEY(BACKSPACE), KEY(RALT),   KEY(APOSTROPHE),   KEY(BACKSLASH)   },
-    { KEY(5),  KEY(T),    KEY(G),    KEY(B),     NO_KEY,         KEY(DOWN),   KEY(RIGHTBRACKET), KEY(LEFTBRACKET) },
-    { KEY(6),  KEY(Y),    KEY(H),    KEY(N),     NO_KEY,         KEY(LEFT),   KEY(RETURN),       NO_KEY           },
-    { KEY(7),  KEY(U),    KEY(J),    KEY(M),     NO_KEY,         KEY(RIGHT),  KEY(UP),           NO_KEY           },
-    { KEY(UP), KEY(DOWN), KEY(LEFT), KEY(RIGHT), KEY(Z),         KEY(X),      NO_KEY,            NO_KEY           }
+static control_t keypad_row_a[8][8] = {
+    { KEY(1),  KEY(Q),    KEY(A),    KEY(Z),     KEY(ED),    KEY(COMMA),     KEY(K),             KEY(I)            },
+    { KEY(2),  KEY(W),    KEY(S),    KEY(X),     KEY(SPC),   KEY(DOT),       KEY(L),             KEY(O)            },
+    { KEY(3),  KEY(E),    KEY(D),    KEY(C),     KEY(HC),    KEY(SLASH),     KEY(SEMICOLON),     KEY(P)            },
+    { KEY(4),  KEY(R),    KEY(F),    KEY(V),     KEY(ID),    KEY(PI),        KEY(COLON),         KEY(AT)           },
+    { KEY(5),  KEY(T),    KEY(G),    KEY(B),     NO_KEY,     KEY(DA),        KEY(CLOSE_BRACKET), KEY(OPEN_BRACKET) },
+    { KEY(6),  KEY(Y),    KEY(H),    KEY(N),     NO_KEY,     KEY(LA),        KEY(CR),            NO_KEY            },
+    { KEY(7),  KEY(U),    KEY(J),    KEY(M),     NO_KEY,     KEY(RA),        KEY(UA),            NO_KEY            },
+    { KEY(UP), KEY(DOWN), KEY(LEFT), KEY(RIGHT), KEY(BTN_1), KEY(BTN_2),     NO_KEY,             NO_KEY            }
 };
 
-static SDL_Scancode keypad_row_b[8][4] = {
-    { KEY(8),         NO_KEY,    NO_KEY,     NO_KEY      },
-    { KEY(9),         NO_KEY,    NO_KEY,     NO_KEY      },
-    { KEY(0),         NO_KEY,    NO_KEY,     NO_KEY      },
-    { KEY(MINUS),     NO_KEY,    NO_KEY,     NO_KEY      },
-    { KEY(EQUALS),    NO_KEY,    NO_KEY,     NO_KEY      },
-    { KEY(GRAVE),     NO_KEY,    NO_KEY,     KEY(TAB)    },
-    { KEY(RSHIFT),    KEY(LALT), KEY(LCTRL), KEY(LSHIFT) },
-    { NO_KEY,         NO_KEY,    NO_KEY,     NO_KEY      }
+static control_t keypad_row_b[8][4] = {
+    { KEY(8),      NO_KEY,   NO_KEY,   NO_KEY   },
+    { KEY(9),      NO_KEY,   NO_KEY,   NO_KEY   },
+    { KEY(0),      NO_KEY,   NO_KEY,   NO_KEY   },
+    { KEY(MINUS),  NO_KEY,   NO_KEY,   NO_KEY   },
+    { KEY(CARET),  NO_KEY,   NO_KEY,   NO_KEY   },
+    { KEY(YEN),    NO_KEY,   NO_KEY,   KEY(FNC) },
+    { KEY(BRK),    KEY(GRP), KEY(CTL), KEY(SHF) },
+    { NO_KEY,      NO_KEY,   NO_KEY,   NO_KEY   }
 };
 
 static void load_file(const char* filename, u8** buffer, size_t* size){
@@ -53,8 +55,8 @@ static void load_file(const char* filename, u8** buffer, size_t* size){
     fclose(fptr);
 }
 
-void* tms80_init(const char* rom_path, SDL_AudioDeviceID device_id){
-    // stub
+void* TMS80_init(const char* rom_path){
+    // TODO stub
     const char* bios_path = "";
 
     tms80_t* tms80 = malloc(sizeof(tms80_t));
@@ -133,15 +135,9 @@ void* tms80_init(const char* rom_path, SDL_AudioDeviceID device_id){
     } else {
         SN76489_SET_TYPE(apu, GENERIC);
     }
-    
-    apu->audioSpec.freq = 44100;
-    apu->audioSpec.channels = 1;
-    apu->audioSpec.format = AUDIO_S16;
-    apu->audioSpec.samples = SAMPLE_BUFFER_SIZE;
-    apu->audioSpec.callback = NULL;
-    apu->audioDev = device_id;
 
-    apu->push_rate_reload = tms80->refresh_rate * tms80->cycles_per_frame / apu->audioSpec.freq;
+    float push_rate = tms80->refresh_rate * tms80->cycles_per_frame / 44100.0f;
+    sound_set_push_rate(push_rate);
 
     if(tms80->vdp.cram_size == CRAM_SIZE_GG){
         size(SCREEN_WIDTH_GG, SCREEN_HEIGHT_GG);
@@ -149,6 +145,7 @@ void* tms80_init(const char* rom_path, SDL_AudioDeviceID device_id){
         size(SCREEN_WIDTH_SMS, SCREEN_HEIGHT_SMS);
         
     setAspectRatio(ASPECT_RATIO);
+    frameRate(tms80->refresh_rate);
 
     return tms80;
 }
@@ -204,49 +201,41 @@ u8 tms80_get_keypad_a(tms80_t* tms80){
         return x;
     }
 
-    const Uint8* keystate = SDL_GetKeyboardState(NULL);
     u8 row = tms80->keypad_reg & 0b111;
     u8 out = 0xFF;
 
     for(int i = 0; i < 8; i++)
-        if(keystate[ keypad_row_a[row][i] ])
+        if(controls_pressed(keypad_row_a[row][i]))
             out &= ~(1 << i);
 
     return out;
 }
 
 u8 tms80_get_keypad_b(tms80_t* tms80){
-    const Uint8* keystate = SDL_GetKeyboardState(NULL);
     u8 row = tms80->keypad_reg & 0b111;
     u8 out = 0xFF;
 
     for(int i = 0; i < 4; i++)
-        if(keystate[ keypad_row_b[row][i] ])
+        if(controls_pressed(keypad_row_b[row][i]))
             out &= ~(1 << i);
 
     return out;
 }
 
 u8 tms80_gg_get_start_button(){
-    const Uint8* keystate = SDL_GetKeyboardState(NULL);
-
-    if(keystate[SDL_SCANCODE_RETURN])
+    if(controls_pressed(CONTROL_TMS80_START_PAUSE))
         return 0x40;
 
     return 0xC0;
 }
 
-void tms80_run_frame(tms80_t* tms80){
+void TMS80_run_frame(tms80_t* tms80){
     z80_t* z80 = &tms80->z80;
     vdp_t* vdp = &tms80->vdp;
     sn76489_t* apu = &tms80->apu;
 
-    static bool prev_nmi;
-    const Uint8* ks = SDL_GetKeyboardState(NULL);
-    if(!prev_nmi && ks[SDL_SCANCODE_F1])
+    if(tms80->type != GG && controls_released(CONTROL_TMS80_START_PAUSE))
         z80_nmi(z80);
-    prev_nmi = ks[SDL_SCANCODE_F1];
-
 
     while(z80->cycles < tms80->cycles_per_frame){
         u32 old_cycles = z80->cycles;
@@ -291,6 +280,6 @@ void tms80_run_frame(tms80_t* tms80){
     tms80_vdp_show_frame(vdp);
 }
 
-bool tms80_detect(const char* filename){
+bool TMS80_detect(const char* filename){
     return tms80_detect_type(filename) != TMS80_UNKNOWN;
 }

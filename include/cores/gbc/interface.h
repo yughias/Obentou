@@ -3,15 +3,16 @@
 
 #include "interface.h"
 
-void gbc_run_frame(void* ctx);
-void* gbc_init(const char* filename, SDL_AudioDeviceID device_id);
-bool gbc_detect(const char* filename);
+void GBC_run_frame(void* ctx);
+void* GBC_init(const char* filename);
+bool GBC_detect(const char* filename);
 
-#define gbc_width 160
-#define gbc_height 144
-#define gbc_fps 59.727500569606
+#define GBC_WIDTH 160
+#define GBC_HEIGHT 144
+#define GBC_FPS 59.727500569606
+#define GBC_SOUND_PUSH_RATE (4194304.0f/44100.0f)
 
-#define gbc_audio_spec \
+#define GBC_AUDIO_SPEC \
 { \
     .callback = NULL, \
     .channels = 2, \

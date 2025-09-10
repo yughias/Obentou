@@ -3,16 +3,16 @@
 
 #include "interface.h"
 
-void tms80_run_frame(void* ctx);
-void* tms80_init(const char* filename, SDL_AudioDeviceID device_id);
-bool tms80_detect(const char* filename);
+void TMS80_run_frame(void* ctx);
+void* TMS80_init(const char* filename);
+bool TMS80_detect(const char* filename);
 
+#define TMS80_WIDTH 256
+#define TMS80_HEIGHT 192
+#define TMS80_FPS 59.9227434033
+#define TMS80_SOUND_PUSH_RATE (3579545.0f/44100.0f)
 
-#define tms80_width 256
-#define tms80_height 192
-#define tms80_fps 59.9227434033
-
-#define tms80_audio_spec \
+#define TMS80_AUDIO_SPEC \
 { \
     .callback = NULL, \
     .channels = 1, \

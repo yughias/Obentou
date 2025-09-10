@@ -27,7 +27,7 @@ static void send_silence(psg_t* psg, Uint8 * stream, int len){
     psg->time_elapsed = 0;
 }
 
-void pv1000_psg_callback(void *userdata, Uint8 * stream, int len){
+void PV1000_psg_callback(void *userdata, Uint8 * stream, int len){
     pv1000_t* pv1000 = userdata;
     psg_t* psg = &pv1000->psg;
 

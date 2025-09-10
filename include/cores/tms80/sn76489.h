@@ -5,7 +5,6 @@
 
 #include "types.h"
 
-#define SAMPLE_BUFFER_SIZE 4096
 #define DISPLAY_BUFFER_SIZE 1024
 
 #define SN76489_SMS_TAPPED_BITS 0x09
@@ -29,13 +28,6 @@ typedef struct lfsr_t {
 } lfsr_t;
 
 typedef struct sn76489_t {
-    SDL_AudioDeviceID audioDev;
-    SDL_AudioSpec audioSpec;
-    float push_rate_reload;
-    float push_rate_counter;
-    sample_t buffer[SAMPLE_BUFFER_SIZE];
-    int buffer_idx;
-
     int counter[4];
     int freq[4];
     int attenuation[4];
@@ -51,7 +43,6 @@ typedef struct sn76489_t {
 } sn76489_t;
 
 void tms80_sn76489_push_sample(sn76489_t* sn, int cycles);
-sample_t tms80_sn76489_get_sample(sn76489_t* sn);
 void tms80_sn76489_update(sn76489_t* sn, int cycles);
 void tms80_sn76489_write(sn76489_t* sn, u8 byte);
 

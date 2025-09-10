@@ -1,4 +1,6 @@
 #include "cores/watara/apu.h"
+#include "peripherals/sound.h"
+
 #include "SDL_MAINLOOP.h"
 
 #include <stdio.h>
@@ -137,7 +139,8 @@ void watara_apu_step(apu_t* apu, int cycles){
     }
 }
 
-static sample_t apu_get_sample(apu_t* apu){
+static void apu_get_sample(void* ctx, void* data){
+    apu_t* apu = (apu_t*)ctx;
     sample_t sample;
     u8 waves[2] = { apu_wave_get_sample(&apu->waves[0]), apu_wave_get_sample(&apu->waves[1]) };
     sample.r = waves[0];
@@ -171,32 +174,12 @@ static sample_t apu_get_sample(apu_t* apu){
         apu->display_idx += 1;
     }
 
-    return sample;
+    memcpy(data, &sample, sizeof(sample_t));
 }
 
 void watara_apu_push_sample(apu_t* apu, int cycles){
-    apu->push_counter -= cycles;
-    if(apu->push_counter <= 0){
-        apu->push_counter += apu->push_reload;
-        sample_t sample = apu_get_sample(apu);
-
-        #ifdef __EMSCRIPTEN__
-        if(apu->buffer_size < AUDIO_BUFFER_SIZE)
-            apu->buffer[apu->buffer_size++] = sample;
-        if(SDL_GetQueuedAudioSize(apu->audio_dev) <= AUDIO_BUFFER_SIZE * sizeof(sample_t)){
-            SDL_QueueAudio(apu->audio_dev, apu->buffer, apu->buffer_size * sizeof(sample_t));
-            apu->buffer_size = 0;
-        }
-        #else
-        apu->buffer[apu->buffer_size++] = sample;
-        if(apu->buffer_size == AUDIO_BUFFER_SIZE){
-            SDL_QueueAudio(apu->audio_dev, apu->buffer, apu->buffer_size*sizeof(sample_t));
-            apu->buffer_size = 0;
-            while(SDL_GetQueuedAudioSize(apu->audio_dev) > AUDIO_BUFFER_SIZE*sizeof(sample_t));
-        }
-        #endif
-
-    }
+    sample_t sample;
+    sound_push_sample(cycles, sizeof(sample_t), apu, &sample, apu_get_sample);
 }
 
 static void apu_draw_wave(int x0, int y0, u8* buffer, SDL_Surface* s, int scale){

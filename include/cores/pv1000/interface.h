@@ -3,19 +3,20 @@
 
 #include "interface.h"
 
-void pv1000_run_frame(void* ctx);
-void* pv1000_init(const char* filename, SDL_AudioDeviceID device_id);
-bool pv1000_detect(const char* filename);
-void pv1000_psg_callback(void *userdata, Uint8 * stream, int len);
+void PV1000_run_frame(void* ctx);
+void* PV1000_init(const char* filename);
+bool PV1000_detect(const char* filename);
+void PV1000_psg_callback(void *userdata, Uint8 * stream, int len);
 
 
-#define pv1000_width 224
-#define pv1000_height 192
-#define pv1000_fps 59.9227434033
+#define PV1000_WIDTH 224
+#define PV1000_HEIGHT 192
+#define PV1000_FPS 59.9227434033
+#define PV1000_SOUND_PUSH_RATE -1
 
-#define pv1000_audio_spec \
+#define PV1000_AUDIO_SPEC \
 { \
-    .callback = pv1000_psg_callback, \
+    .callback = PV1000_psg_callback, \
     .channels = 1, \
     .format = AUDIO_S8, \
     .freq = 44100, \

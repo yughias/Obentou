@@ -9,11 +9,9 @@ typedef void (*mapper_init_func)(nes_t*);
 
 #define GET_IRQ(n) (n->cart_irq || n->apu.frame_irq || n->apu.dmc.irq)
 
-void* nes_init(const char* filename, SDL_AudioDeviceID device_id){
+void* NES_init(const char* filename){
     nes_t* nes = malloc(sizeof(nes_t));
     memset(nes, 0, sizeof(nes_t));
-    nes->apu.audioDev = device_id;
-    nes->apu.push_rate_reload = PUSH_RATE_RELOAD;
     nes_ines_load(&nes->cart, filename);
     nes->ppu.vram_size = nes->cart.vram_align == VRAM_4 ? EXTENDED_VRAM_SIZE : BASIC_VRAM_SIZE;
     nes->ppu.vram = malloc(nes->ppu.vram_size);
@@ -69,9 +67,7 @@ void nes_reset(nes_t* nes){
     ppu->write = ppu_write;
     ppu->ctx = (void*)nes;
     apu_t* apu = &nes->apu;
-    SDL_AudioDeviceID apu_dev = apu->audioDev;
     memset(apu, 0, sizeof(apu_t));
-    apu->audioDev = apu_dev;
     apu->sequencer_mode = 4;
     apu->noise.lfsr = 1;
     apu->dmc.silence_flag = true;
@@ -79,7 +75,7 @@ void nes_reset(nes_t* nes){
     apu->ctx = (void*)nes;
 }
 
-void nes_run_frame(nes_t* nes){
+void NES_run_frame(nes_t* nes){
     m6502_t* cpu = &nes->cpu;
     ppu_t* ppu = &nes->ppu;
     
@@ -118,6 +114,6 @@ void nes_sync(nes_t* nes){
     nes_ppu_sync(&nes->ppu);
 }
 
-bool nes_detect(const char* filename){
+bool NES_detect(const char* filename){
     return SDL_strcasestr(filename, ".nes") != NULL;
 }

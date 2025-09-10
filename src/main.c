@@ -1,26 +1,11 @@
 #include "SDL_MAINLOOP.h"
+#include "peripherals/sound.h"
+#include "peripherals/controls.h"
 
 #include "cores.h"
-#include "cores/watara/interface.h"
-#include "cores/pv1000/interface.h"
-#include "cores/pce/interface.h"
-#include "cores/bytepusher/interface.h"
-#include "cores/tms80/interface.h"
-#include "cores/nes/interface.h"
-#include "cores/gbc/interface.h"
 
-const core_t cores[] = {
-    LOAD_CORE(watara),
-    LOAD_CORE(pv1000),
-    LOAD_CORE(pce),
-    LOAD_CORE(bytepusher),
-    LOAD_CORE(tms80),
-    LOAD_CORE(nes),
-    LOAD_CORE(gbc)
-};
-
-void* emu;
-const core_t* core = NULL;
+static void* emu;
+static const core_t* core = NULL;
 
 static void detect_core(const char* filename){
     for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
@@ -47,20 +32,19 @@ void setup(){
     frameRate(core->fps);
 
     SDL_AudioSpec audio_spec = core->audio_spec;
-    SDL_AudioDeviceID audio_dev = 0;
 
-    if(audio_spec.callback){
-        emu = core->init(getArgv(1), 0);
-        audio_spec.userdata = emu;
-        audio_dev = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
-    }  else {
-        audio_dev = SDL_OpenAudioDevice(NULL, 0, &audio_spec, NULL, 0);
-        emu = core->init(getArgv(1), audio_dev);
-    }
+    emu = core->init(getArgv(1));
+    audio_spec.userdata = emu;
 
-    SDL_PauseAudioDevice(audio_dev, 0);
+    sound_open(&audio_spec);
+    if(!sound_is_push_rate_set())
+        sound_set_push_rate(core->sound_push_rate);
+
+    controls_init(core->control_begin, core->control_end);
 }
 
 void loop(){
+    controls_update();
+
     core->run_frame(emu);
 }

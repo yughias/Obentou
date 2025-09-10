@@ -5,10 +5,6 @@
 
 #include "types.h"
 
-#define AUDIO_FREQ 44100
-#define AUDIO_BUFFER_SIZE 4096
-#define AUDIO_CYCLES_PER_SAMPLE (4e6 / AUDIO_FREQ)
-
 #define DISPLAY_BUFFER_SIZE 1024
 
 typedef u8 (*apu_read_func)(void* ctx, u16 addr);
@@ -60,12 +56,6 @@ typedef struct noise_t {
 } noise_t;
 
 typedef struct apu_t {
-    SDL_AudioDeviceID audio_dev;
-    sample_t buffer[AUDIO_BUFFER_SIZE];
-    int buffer_size;
-    float push_reload;
-    float push_counter;
-
     wave_t waves[2];
     ch3_t ch3;
     noise_t noise;

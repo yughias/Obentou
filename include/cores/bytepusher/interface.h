@@ -1,15 +1,16 @@
 #ifndef __BYTEPUSHER_INTERFACE_H__
 #define __BYTEPUSHER_INTERFACE_H__
 
-void bytepusher_run_frame(void* ctx);
-void* bytepusher_init(const char* filename, SDL_AudioDeviceID device_id);
-bool bytepusher_detect(const char* filename);
+void BYTEPUSHER_run_frame(void* ctx);
+void* BYTEPUSHER_init(const char* filename);
+bool BYTEPUSHER_detect(const char* filename);
 
-#define bytepusher_width 256
-#define bytepusher_height 256
-#define bytepusher_fps 60
+#define BYTEPUSHER_WIDTH 256
+#define BYTEPUSHER_HEIGHT 256
+#define BYTEPUSHER_FPS 60
+#define BYTEPUSHER_SOUND_PUSH_RATE -1
 
-#define bytepusher_audio_spec \
+#define BYTEPUSHER_AUDIO_SPEC \
 { \
     .callback = NULL, \
     .channels = 1, \

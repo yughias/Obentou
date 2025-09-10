@@ -1,7 +1,6 @@
 #ifndef _BYTEPUSHER_H_
 #define _BYTEPUSHER_H_
 
-#include <SDL_MAINLOOP.h>
 #include "types.h"
 
 #define HERTZ_PER_FRAME 65536
@@ -11,7 +10,6 @@
 
 typedef struct bytepusher_t {
     u8 memory[MEMORY_SIZE];
-    SDL_AudioDeviceID audio_dev;
 } bytepusher_t;
 
 #endif

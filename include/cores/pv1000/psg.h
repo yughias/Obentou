@@ -18,6 +18,6 @@ typedef struct psg_t {
     bool mixer;
 } psg_t;
 
-void pv1000_psg_callback(void *userdata, Uint8 * stream, int len);
+void PV1000_psg_callback(void *userdata, Uint8 * stream, int len);
 
 #endif

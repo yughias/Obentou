@@ -3,15 +3,16 @@
 
 #include "interface.h"
 
-void nes_run_frame(void* ctx);
-void* nes_init(const char* filename, SDL_AudioDeviceID device_id);
-bool nes_detect(const char* filename);
+void NES_run_frame(void* ctx);
+void* NES_init(const char* filename);
+bool NES_detect(const char* filename);
 
-#define nes_width 256
-#define nes_height 240
-#define nes_fps 60.0988
+#define NES_WIDTH 256
+#define NES_HEIGHT 240
+#define NES_FPS 60.0988
+#define NES_SOUND_PUSH_RATE (1.789773e6/2.0/44100.0f)
 
-#define nes_audio_spec \
+#define NES_AUDIO_SPEC \
 { \
     .callback = NULL, \
     .channels = 1, \

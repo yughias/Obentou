@@ -3,16 +3,17 @@
 
 #include "types.h"
 
-void watara_run_frame(void* ctx);
-bool watara_detect(const char* filename);
-void* watara_init(const char* filename, SDL_AudioDeviceID device_id);
+void WATARA_run_frame(void* ctx);
+bool WATARA_detect(const char* filename);
+void* WATARA_init(const char* filename);
 
 
-#define watara_width 160
-#define watara_height 160
-#define watara_fps 61.04
+#define WATARA_WIDTH 160
+#define WATARA_HEIGHT 160
+#define WATARA_FPS 61.04
+#define WATARA_SOUND_PUSH_RATE (4e6/44100.0f)
 
-#define watara_audio_spec \
+#define WATARA_AUDIO_SPEC \
 { \
     .callback = NULL, \
     .channels = 2, \

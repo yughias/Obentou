@@ -1,4 +1,5 @@
 #include "cores/tms80/sn76489.h"
+#include "peripherals/sound.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -20,29 +21,22 @@ static inline bool parity(int val) {
 	return val & 1;
 };
 
-void tms80_sn76489_push_sample(sn76489_t* sn, int cycles){
-    sn->push_rate_counter -= cycles;
-    if(sn->push_rate_counter <= 0){
-        sn->push_rate_counter += sn->push_rate_reload;
-        #ifdef __EMSCRIPTEN__
-        if(sn->buffer_idx < SAMPLE_BUFFER_SIZE){
-            sample_t sample = tms80_sn76489_get_sample(sn);
-            sn->buffer[sn->buffer_idx++] = sample;
+static void sn76489_get_sample(void* ctx, void* data){
+    sn76489_t* sn = (sn76489_t*)ctx;
+    sample_t* sample = (sample_t*)data;
+
+    for(int i = 0; i < 4; i++){
+        u16 ch_sample = sn->sample[i]*sn->attenuation[i];
+        *sample += ch_sample;
+        if(sn->display_idx[i] != DISPLAY_BUFFER_SIZE){
+            sn->display_buffers[i][sn->display_idx[i]++] = ch_sample;
         }
-        if(SDL_GetQueuedAudioSize(sn->audioDev) <= SAMPLE_BUFFER_SIZE * sizeof(u16)){
-            SDL_QueueAudio(sn->audioDev, sn->buffer, sn->buffer_idx * sizeof(u16));
-            sn->buffer_idx = 0;
-        }
-        #else
-        sample_t sample = tms80_sn76489_get_sample(sn);
-        sn->buffer[sn->buffer_idx++] = sample;
-        if(sn->buffer_idx == SAMPLE_BUFFER_SIZE){
-            SDL_QueueAudio(sn->audioDev, sn->buffer, sn->buffer_idx*sizeof(u16));
-            sn->buffer_idx = 0;
-            while(SDL_GetQueuedAudioSize(sn->audioDev) > SAMPLE_BUFFER_SIZE*sizeof(u16));
-        }
-        #endif
     }
+}
+
+void tms80_sn76489_push_sample(sn76489_t* sn, int cycles){
+    sample_t sample;
+    sound_push_sample(cycles, sizeof(sample_t), sn, &sample, sn76489_get_sample);
 }
 
 void tms80_sn76489_update(sn76489_t* sn, int cycles){
@@ -112,20 +106,6 @@ void tms80_sn76489_write(sn76489_t* sn, u8 byte){
         sn->lfsr.white_noise = byte & 0b100;
         sn->lfsr.reg = (1 << sn->lfsr.feedback_bit);
     }
-}
-
-sample_t tms80_sn76489_get_sample(sn76489_t* sn){
-    sample_t sample = 0;
-
-    for(int i = 0; i < 4; i++){
-        u16 ch_sample = sn->sample[i]*sn->attenuation[i];
-        sample += ch_sample;
-        if(sn->display_idx[i] != DISPLAY_BUFFER_SIZE){
-            sn->display_buffers[i][sn->display_idx[i]++] = ch_sample;
-        }
-    }
-
-    return sample;
 }
 
 static void sn76489_draw_wave(int x0, int y0, u16* buffer, int buffer_len, SDL_Surface* s){

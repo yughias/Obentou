@@ -1,4 +1,5 @@
 #include "cores/gbc/joypad.h"
+#include "peripherals/controls.h"
 
 #include <SDL2/SDL.h>
 
@@ -6,9 +7,6 @@ static void emulateJoypad(joypad_t*);
 
 const Uint8* keystate;
 SDL_GameController* gameController;
-
-bool a_turbo_btn = false;
-bool b_turbo_btn = false;
 
 void gb_initJoypad(){
     keystate = SDL_GetKeyboardState(NULL);
@@ -18,66 +16,24 @@ void gb_initJoypad(){
 }
 
 static void emulateJoypad(joypad_t* joy){
+    control_t controls[8] = {
+        CONTROL_GBC_A, CONTROL_GBC_B, CONTROL_GBC_SELECT, CONTROL_GBC_START,
+        CONTROL_GBC_RIGHT, CONTROL_GBC_LEFT, CONTROL_GBC_UP, CONTROL_GBC_DOWN
+    };
+
     u8 new_arrow_btn = 0x0F;
     u8 new_action_btn = 0x0F;
-    Sint16 x_axis = 0;
-    Sint16 y_axis = 0;
 
-    if(gameController){
-        x_axis = SDL_GameControllerGetAxis(gameController, 0);
-        y_axis = SDL_GameControllerGetAxis(gameController, 1);
-        NORM_AXIS(x_axis);
-        NORM_AXIS(y_axis);
-    }
+    for(int i = 0; i < 4; i++){
+        if(controls_pressed(controls[i]))
+            new_action_btn &= ~(1 << i);
 
-    if(keystate[A_KEY] || GAMECONTROLLER_CHECK(B))
-        new_action_btn &= 0b1110;
-
-    if(keystate[B_KEY] || GAMECONTROLLER_CHECK(A))
-        new_action_btn &= 0b1101;
-    
-    if(keystate[SELECT_KEY] || GAMECONTROLLER_CHECK(BACK))
-        new_action_btn &= 0b1011;
-
-    // map select key to both left and right shift key for emscripten
-    #ifdef __EMSCRIPTEN__
-    if(keystate[SDL_SCANCODE_LSHIFT] || keystate[SDL_SCANCODE_RSHIFT])
-        new_action_btn &= 0b1011;
-    #endif
-
-    if(keystate[START_KEY] || GAMECONTROLLER_CHECK(START))
-        new_action_btn &= 0b0111;
-
-    if(keystate[RIGHT_KEY] || GAMECONTROLLER_CHECK(DPAD_RIGHT) || x_axis == 1)
-        new_arrow_btn &= 0b1110;
-
-    if(keystate[LEFT_KEY] || GAMECONTROLLER_CHECK(DPAD_LEFT) || x_axis == -1)
-        new_arrow_btn &= 0b1101;
-    
-    if(keystate[UP_KEY] || GAMECONTROLLER_CHECK(DPAD_UP) || y_axis == -1)
-        new_arrow_btn &= 0b1011;
-
-    if(keystate[DOWN_KEY] || GAMECONTROLLER_CHECK(DPAD_DOWN) || y_axis == 1)
-        new_arrow_btn &= 0b0111;
-
-    
-    if(keystate[TURBO_A_KEY] || GAMECONTROLLER_CHECK(Y)){
-        new_action_btn &= 0b1110;
-        new_action_btn |= a_turbo_btn;
-    }
-
-    if(keystate[TURBO_B_KEY] || GAMECONTROLLER_CHECK(X)){
-        new_action_btn &= 0b1110;
-        new_action_btn |= b_turbo_btn;
+        if(controls_pressed(controls[i + 4]))
+            new_arrow_btn &= ~(1 << i);
     }
 
     joy->ARROW_BTN = new_arrow_btn;
     joy->ACTION_BTN = new_action_btn;
-}
-
-void emulateTurboButton(){
-    a_turbo_btn ^= 1;
-    b_turbo_btn ^= 1;
 }
 
 u8 gb_getJoypadRegister(joypad_t* joy){

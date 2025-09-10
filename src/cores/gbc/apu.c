@@ -1,4 +1,5 @@
 #include "cores/gbc/apu.h"
+#include "peripherals/sound.h"
 
 #include <stdio.h>
 #include <SDL2/SDL.h>
@@ -15,7 +16,7 @@ static bool getSweepDirection(u8);
 static u8 getSweepSlope(u8);
 static size_t getShiftCounter(u8);
 static void resetApuRegisters(apu_t* apu);
-static void apuMixer(apu_t*, int16_t*);
+static void apuMixer(void*, void*);
 
 static bool waveforms[4][8] = {
     { 0, 0, 0, 0, 0, 0, 0, 1 },
@@ -117,8 +118,6 @@ else if(!apu->ch ## n ## _envelope_counter){ \
 } \
 
 void gb_initAudio(apu_t* apu){
-    apu->push_rate_reload = PUSH_RATE_RELOAD;
-    apu->push_rate_counter = apu->push_rate_reload;
     apu->ch4_lfsr = 0xFFFF;
 }
 
@@ -205,25 +204,8 @@ void gb_emulateApu(apu_t* apu){
 }
 
 void gb_convertAudio(apu_t* apu){
-    if(apu->push_rate_counter <= 0){
-        apu->push_rate_counter += apu->push_rate_reload;
-        int16_t sample[2];
-        apuMixer(apu, sample);
-
-        apu->buffer[apu->bufIdx++] = sample[0];
-        apu->buffer[apu->bufIdx++] = sample[1];
-
-        if(apu->bufIdx == AUDIO_BUFFER_SIZE){
-            SDL_QueueAudio(apu->audioDev, apu->buffer, apu->bufIdx * 2);
-            apu->bufIdx = 0;
-        }
-    }
-
-    apu->push_rate_counter -= 1;
-}
-
-void gb_freeAudio(apu_t* apu){
-    SDL_CloseAudioDevice(apu->audioDev);
+    int16_t sample[2];
+    sound_push_sample(1, 4, apu, sample, apuMixer);
 }
 
 static size_t getWavedutyIdx(u8 reg){
@@ -270,7 +252,9 @@ static size_t getShiftCounter(u8 reg){
     return noise_divisor[r] << s;
 }
 
-static void apuMixer(apu_t* apu, int16_t* samples){
+static void apuMixer(void* ctx, void* s){
+    apu_t* apu = ctx;
+    int16_t* samples = s;
     samples[0] = 0;
     samples[1] = 0;
 

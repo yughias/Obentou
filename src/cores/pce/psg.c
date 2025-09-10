@@ -1,4 +1,5 @@
 #include "cores/pce/psg.h"
+#include "peripherals/sound.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -99,7 +100,8 @@ static u8 psg_update_lfsr(lfsr_t* lfsr) {
     return lfsr->seed & 1 ? 0x1F : 0x00;
 }
 
-static sample_t psg_get_sample(psg_t* psg){
+static void psg_get_sample(void* ctx, void* data){
+    psg_t* psg = (psg_t*)ctx;
     static float volume_lut[32] = {
         0.005208f, 0.004382f, 0.003687f, 0.003102f, 0.002610f, 0.002196f, 0.001848f, 0.001555f,
         0.001308f, 0.001101f, 0.000926f, 0.000779f, 0.000656f, 0.000552f, 0.000464f, 0.000391f,
@@ -122,22 +124,13 @@ static sample_t psg_get_sample(psg_t* psg){
         sample.left += ch->dac * volume_lut[left_idx];
         sample.right += ch->dac * volume_lut[right_idx];
     }
-    return sample;
+    
+    memcpy(data, &sample, sizeof(sample_t));
 }
 
 static void psg_push_sample(psg_t* psg, u32 cycles) {
-    psg->push_rate_counter -= cycles;
-    if(psg->push_rate_counter <= 0) {
-        psg->push_rate_counter += psg->push_rate_reload;
-
-        sample_t sample = psg_get_sample(psg);
-        
-        psg->buffer[psg->buffer_idx++] = sample;
-        if(psg->buffer_idx == SAMPLE_BUFFER_SIZE){
-            psg->buffer_idx = 0;
-            SDL_QueueAudio(psg->audio_dev, psg->buffer, SAMPLE_BUFFER_SIZE * sizeof(sample_t));
-        }
-    }
+    sample_t sample;
+    sound_push_sample(cycles, sizeof(sample_t), psg, &sample, psg_get_sample);
 }
 
 void pce_psg_step(psg_t* psg, u32 cycles) {

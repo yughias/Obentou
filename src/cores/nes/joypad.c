@@ -1,25 +1,11 @@
 #include "cores/nes/joypad.h"
+#include "peripherals/controls.h"
+
 #include "SDL_MAINLOOP.h"
 
-#define NES_A       SDL_SCANCODE_X
-#define NES_B       SDL_SCANCODE_Z
-#define NES_SELECT  SDL_SCANCODE_RSHIFT
-#define NES_START   SDL_SCANCODE_RETURN
-#define NES_UP      SDL_SCANCODE_UP
-#define NES_DOWN    SDL_SCANCODE_DOWN
-#define NES_LEFT    SDL_SCANCODE_LEFT
-#define NES_RIGHT   SDL_SCANCODE_RIGHT
-
-static SDL_GameController* controller;
-
-static SDL_Scancode keymaps[] = {
-    NES_A, NES_B, NES_SELECT, NES_START,
-    NES_UP, NES_DOWN, NES_LEFT, NES_RIGHT
-};
-
-static SDL_GameControllerButton buttons[] = {
-    SDL_CONTROLLER_BUTTON_B, SDL_CONTROLLER_BUTTON_A, SDL_CONTROLLER_BUTTON_X, SDL_CONTROLLER_BUTTON_Y,
-    SDL_CONTROLLER_BUTTON_DPAD_UP, SDL_CONTROLLER_BUTTON_DPAD_DOWN, SDL_CONTROLLER_BUTTON_DPAD_LEFT, SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+static control_t maps[] = {
+    CONTROL_NES_A, CONTROL_NES_B, CONTROL_NES_SELECT, CONTROL_NES_START,
+    CONTROL_NES_UP, CONTROL_NES_DOWN, CONTROL_NES_LEFT, CONTROL_NES_RIGHT
 };
 
 u8 nes_joypad_read_1(joypad_t* joypad){
@@ -41,11 +27,7 @@ u8 nes_joypad_read_2(joypad_t* joypad){
 void nes_joypad_write(joypad_t* joypad, u8 byte){
     joypad->strobe = byte & 1;
     if(joypad->strobe){
-        const Uint8* ks = SDL_GetKeyboardState(NULL);
-        for(int i = 0; i < 8; i++){
-            joypad->controller_1_shifter |= ks[keymaps[i]] << i;
-            if(controller)
-                joypad->controller_1_shifter |= SDL_GameControllerGetButton(controller, buttons[i]) << i;
-        }
+        for(int i = 0; i < 8; i++)
+            joypad->controller_1_shifter |= controls_pressed(maps[i]) << i;
     }
 }

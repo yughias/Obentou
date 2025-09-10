@@ -1,4 +1,5 @@
 #include "cores/watara/watara.h"
+#include "peripherals/controls.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -233,7 +234,7 @@ static void watara_write(void* ctx, u16 addr, u8 byte){
     //exit(EXIT_FAILURE);
 }
 
-void* watara_init(const char* filename, SDL_AudioDeviceID device_id){
+void* WATARA_init(const char* filename){
     watara_t* w = (watara_t*)malloc(sizeof(watara_t));
     memset(w, 0, sizeof(watara_t));
 
@@ -264,13 +265,10 @@ void* watara_init(const char* filename, SDL_AudioDeviceID device_id){
     w->dma.write = watara_write;
     w->dma.ctx = (void*)w;
 
-    w->apu.audio_dev = device_id;
-    w->apu.push_reload = AUDIO_CYCLES_PER_SAMPLE;
-
     return w;
 }
 
-void watara_run_frame(watara_t* w){
+void WATARA_run_frame(watara_t* w){
     w65c02_t* cpu = &w->cpu;
     tmr_t* tmr = &w->tmr;
     apu_t* apu = &w->apu;
@@ -289,20 +287,18 @@ void watara_run_frame(watara_t* w){
 }
 
 static u8 watara_get_controller(){
-    const SDL_Scancode keys[8] = {
-        SDL_SCANCODE_RIGHT, SDL_SCANCODE_LEFT, SDL_SCANCODE_DOWN, SDL_SCANCODE_UP,
-        SDL_SCANCODE_Z, SDL_SCANCODE_X, SDL_SCANCODE_RSHIFT, SDL_SCANCODE_RETURN
+    const control_t controls[8] = {
+        CONTROL_WATARA_RIGHT, CONTROL_WATARA_LEFT, CONTROL_WATARA_DOWN, CONTROL_WATARA_UP,
+        CONTROL_WATARA_B, CONTROL_WATARA_A, CONTROL_WATARA_SELECT, CONTROL_WATARA_START
     };
 
     u8 out = 0xFF;
-    const Uint8* keystate = SDL_GetKeyboardState(NULL);
-
     for(int i = 0; i < 8; i++)
-        out &= ~( ((bool)keystate[keys[i]]) << i );
+        out &= ~(controls_pressed(controls[i]) << i);
 
     return out;
 }
 
-bool watara_detect(const char* filename){
+bool WATARA_detect(const char* filename){
     return SDL_strcasestr(filename, ".sv") != NULL;
 }

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void* pv1000_init(const char* filename, SDL_AudioDeviceID device_id){
+void* PV1000_init(const char* filename){
     pv1000_t* pv1000 = malloc(sizeof(pv1000_t));
     memset(pv1000, 0x00, sizeof(pv1000_t));
     
@@ -37,7 +37,7 @@ void* pv1000_init(const char* filename, SDL_AudioDeviceID device_id){
     return pv1000;
 }
 
-void pv1000_run_frame(pv1000_t* pv1000){
+void PV1000_run_frame(pv1000_t* pv1000){
     z80_t* z80 = &pv1000->z80;
     vdp_t* vdp = &pv1000->vdp;
 
@@ -65,7 +65,7 @@ void pv1000_run_frame(pv1000_t* pv1000){
     pv1000_vdp_render(vdp, pv1000->memory);
 }
 
-bool pv1000_detect(const char* filename){
+bool PV1000_detect(const char* filename){
     if(SDL_strcasestr(filename, ".pv"))
         return true;
 
