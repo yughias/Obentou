@@ -9,7 +9,7 @@
 #include "cores/pce/psg.h"
 #include "cores/pce/controller.h"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 typedef struct pce_t {
     h6280_t cpu;

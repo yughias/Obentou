@@ -253,7 +253,7 @@ void watara_apu_draw_waves(apu_t* apu, SDL_Window** win){
         return;
     SDL_Surface* s = SDL_GetWindowSurface(*win);
     int* pixels = (int*)s->pixels;
-    SDL_FillRect(s, NULL, 0);
+    SDL_FillSurfaceRect(s, NULL, 0);
     for(int y = 0; y < 2; y++){
         for(int x = 0; x < 2; x++){
             int idx =  x + y*2;

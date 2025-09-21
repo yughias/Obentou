@@ -75,8 +75,8 @@ void gb_mbc7_ram_write(gb_t* gb, u16 addr, u8 byte){
             int dx = 0;
             int dy = 0;
             // TODO
-            Uint32 ms = SDL_GetMouseState(NULL, NULL);
-            bool isMousePressed = ms & SDL_BUTTON(SDL_BUTTON_LEFT);
+            SDL_MouseButtonFlags ms = SDL_GetMouseState(NULL, NULL);
+            bool isMousePressed = ms & SDL_BUTTON_LMASK;
             if(isMousePressed){
                 dx = -(mouseX - width / 2);
                 dy = -(mouseY - height / 2);

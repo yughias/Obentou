@@ -20,6 +20,8 @@ void pv1000_vdp_render(vdp_t* vdp, u8* memory){
             render_tile(tile, x*8, y*8);
         }
     }
+
+    renderPixels();
 }
 
 static void render_tile(u8* tile, int x0, int y0){

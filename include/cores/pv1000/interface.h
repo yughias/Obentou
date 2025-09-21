@@ -6,8 +6,7 @@
 void PV1000_run_frame(void* ctx);
 void* PV1000_init(const char* filename);
 bool PV1000_detect(const char* filename);
-void PV1000_psg_callback(void *userdata, Uint8 * stream, int len);
-
+void PV1000_sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 
 #define PV1000_WIDTH 224
 #define PV1000_HEIGHT 192
@@ -16,11 +15,9 @@ void PV1000_psg_callback(void *userdata, Uint8 * stream, int len);
 
 #define PV1000_AUDIO_SPEC \
 { \
-    .callback = PV1000_psg_callback, \
     .channels = 1, \
-    .format = AUDIO_S8, \
+    .format = SDL_AUDIO_S8, \
     .freq = 44100, \
-    .samples = 512, \
 } \
 
 #endif

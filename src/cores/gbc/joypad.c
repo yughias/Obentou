@@ -1,19 +1,9 @@
 #include "cores/gbc/joypad.h"
 #include "peripherals/controls.h"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 static void emulateJoypad(joypad_t*);
-
-const Uint8* keystate;
-SDL_GameController* gameController;
-
-void gb_initJoypad(){
-    keystate = SDL_GetKeyboardState(NULL);
-    gameController = SDL_GameControllerOpen(0);
-    if(gameController)
-        SDL_GameControllerSetSensorEnabled(gameController, SDL_SENSOR_ACCEL, SDL_TRUE);
-}
 
 static void emulateJoypad(joypad_t* joy){
     control_t controls[8] = {
@@ -56,13 +46,4 @@ u8 gb_getJoypadRegister(joypad_t* joy){
         output_val = 0xFF;
 
     return output_val;
-}
-
-void gb_setGameControllerLed(){
-    SDL_JoystickPowerLevel controllerBattery = SDL_JoystickCurrentPowerLevel(SDL_GameControllerGetJoystick(gameController));
-    int red = 255;
-    int led_values[4] = {5, 60, 100, 255};
-    if(controllerBattery >= SDL_JOYSTICK_POWER_EMPTY && controllerBattery <= SDL_JOYSTICK_POWER_FULL)
-        red = led_values[controllerBattery];
-    SDL_GameControllerSetLED(gameController, red, 0, 0);
 }

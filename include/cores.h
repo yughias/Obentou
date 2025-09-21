@@ -1,7 +1,7 @@
 #ifndef __CORES_H__
 #define __CORES_H__
 
-#include "SDL2/SDL.h"
+#include "SDL3/SDL.h"
 
 #include "types.h"
 
@@ -19,6 +19,7 @@ typedef struct core_t {
     const float fps;
     const float sound_push_rate;
     SDL_AudioSpec audio_spec;
+    SDL_AudioStreamCallback sound_callback;
     control_t control_begin;
     control_t control_end;
 } core_t;
@@ -33,6 +34,7 @@ typedef struct core_t {
     .fps = name##_FPS, \
     .audio_spec = name##_AUDIO_SPEC, \
     .sound_push_rate = name##_SOUND_PUSH_RATE, \
+    .sound_callback = name##_sound_callback, \
     .control_begin = CONTROL_##name##_BEGIN, \
     .control_end = CONTROL_##name##_END \
 }

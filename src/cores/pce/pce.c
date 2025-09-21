@@ -303,6 +303,8 @@ void PCE_run_frame(pce_t* p) {
     }
 
     h->cycles -= CYCLES_PER_FRAME;
+
+    renderPixels();
 }
 
 void pce_notify_event(pce_t* gr, u8 r, u8 p, u8 b){

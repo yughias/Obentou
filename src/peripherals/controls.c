@@ -1,20 +1,22 @@
 #include "peripherals/controls.h"
 
-#include "SDL2/SDL.h"
+#include "SDL3/SDL.h"
 
 #include "minIni.h"
+
+#include <stdlib.h>
 
 #define ACTIVE_BUTTONS (end - begin + 1)
 
 static SDL_Scancode control_scancode_maps[CONTROL_COUNT];
-static SDL_GameControllerButton control_gamepad_maps[CONTROL_COUNT];
+static SDL_GamepadButton control_gamepad_maps[CONTROL_COUNT];
 static control_t begin;
 static control_t end;
 
 static bool* pressed;
 static bool* prev_pressed;
 
-static SDL_GameController* controller = NULL;
+static SDL_Gamepad* gamepad = NULL;
 
 #define INI_FILE "config.ini"
 
@@ -32,10 +34,10 @@ static SDL_GameController* controller = NULL;
 #define LOAD_GAMEPAD(console, button, default) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_GAMEPAD_" #button, default, name, 64, INI_FILE); \
-    SDL_GameControllerButton pad_btn = SDL_GameControllerGetButtonFromString(name); \
-    if(pad_btn == SDL_CONTROLLER_BUTTON_INVALID) { \
+    SDL_GamepadButton pad_btn = SDL_GetGamepadButtonFromString(name); \
+    if(pad_btn == SDL_GAMEPAD_BUTTON_INVALID) { \
         printf("Unknown gamepad button for %s: %s, using %s\n", #console "_" #button, name, default); \
-        pad_btn = SDL_GameControllerGetButtonFromString(default); \
+        pad_btn = SDL_GetGamepadButtonFromString(default); \
     } \
     control_gamepad_maps[CONTROL_ ## console ## _ ## button] = pad_btn;\
 }
@@ -246,20 +248,23 @@ void controls_init(control_t begin_, control_t end_) {
 void controls_update(){
     memcpy(prev_pressed, pressed, ACTIVE_BUTTONS * sizeof(bool));
 
-    if(!controller){
-        if(SDL_NumJoysticks()){
-            controller = SDL_GameControllerOpen(0);
-            printf("opened %p\n", controller);
+    if(!gamepad){
+        int num_gamepads;
+        SDL_JoystickID* gamepads = SDL_GetGamepads(&num_gamepads);
+        if(num_gamepads){
+            gamepad = SDL_OpenGamepad(gamepads[0]);
+            SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, true);
+            printf("opened %p\n", gamepad);
         }
-    } else if(!SDL_GameControllerGetAttached(controller)){
-        controller = NULL;
-        printf("closed %p\n", controller);
+    } else if(!SDL_GamepadConnected(gamepad)){
+        gamepad = NULL;
+        printf("closed %p\n", gamepad);
     }
 
-    const Uint8* keystate = SDL_GetKeyboardState(NULL);
+    const bool* keystate = SDL_GetKeyboardState(NULL);
 
     for(int i = begin; i <= end; i++){
-        pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GameControllerGetButton(controller, control_gamepad_maps[i]);
+        pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
     }
 }
 
@@ -278,16 +283,16 @@ bool controls_released(control_t control){
 }
 
 bool controls_gamepad_connected(){
-    return controller;
+    return gamepad;
 }
 
 bool controls_rumble(u16 low, u16 hi, u32 duration){
-    return SDL_GameControllerRumble(controller, low, hi, duration);
+    return SDL_RumbleGamepad(gamepad, low, hi, duration);
 }
 
 void controls_get_gamepad_accelerometer(float* sensors){
     sensors[0] = 0.0f;
     sensors[1] = 0.0f;
     sensors[2] = 0.0f;
-    SDL_GameControllerGetSensorData(controller, SDL_SENSOR_ACCEL, sensors, 3);
+    SDL_GetGamepadSensorData(gamepad, SDL_SENSOR_ACCEL, sensors, 3);
 }

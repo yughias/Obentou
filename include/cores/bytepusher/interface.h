@@ -9,14 +9,13 @@ bool BYTEPUSHER_detect(const char* filename);
 #define BYTEPUSHER_HEIGHT 256
 #define BYTEPUSHER_FPS 60
 #define BYTEPUSHER_SOUND_PUSH_RATE -1
+#define BYTEPUSHER_sound_callback NULL
 
 #define BYTEPUSHER_AUDIO_SPEC \
 { \
-    .callback = NULL, \
     .channels = 1, \
-    .format = AUDIO_S8, \
+    .format = SDL_AUDIO_S8, \
     .freq = 15360, \
-    .samples = 1024, \
 } \
 
 #endif

@@ -11,14 +11,13 @@ bool GBC_detect(const char* filename);
 #define GBC_HEIGHT 144
 #define GBC_FPS 59.727500569606
 #define GBC_SOUND_PUSH_RATE (4194304.0f/44100.0f)
+#define GBC_sound_callback NULL
 
 #define GBC_AUDIO_SPEC \
 { \
-    .callback = NULL, \
     .channels = 2, \
-    .format = AUDIO_S16, \
+    .format = SDL_AUDIO_S16, \
     .freq = 44100, \
-    .samples = 4096, \
 } \
 
 

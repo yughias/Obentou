@@ -194,8 +194,8 @@ u8 tms80_get_keypad_a(tms80_t* tms80){
         if(!tms80->paddle_status)
             x &= ~(1 << 5);
         x |= !tms80->paddle_status ? (mouseX & 0xF) : (mouseX >> 4);
-        int ms = SDL_GetMouseState(NULL, NULL);
-        if(ms & SDL_BUTTON(SDL_BUTTON_LEFT))
+        SDL_MouseButtonFlags ms = SDL_GetMouseState(NULL, NULL);
+        if(ms & SDL_BUTTON_LMASK)
             x &= ~(1 << 4);
         tms80->paddle_status ^= 1;
         return x;

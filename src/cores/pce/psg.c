@@ -161,7 +161,7 @@ void pce_psg_draw_waveforms(SDL_Window** win, psg_t* psg){
         return;
     }
     SDL_Surface* s = SDL_GetWindowSurface(*win);
-    SDL_FillRect(s, NULL, color(0, 0, 0));
+    SDL_FillSurfaceRect(s, NULL, color(0, 0, 0));
 
     int* pixels = (int*)s->pixels;
 

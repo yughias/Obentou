@@ -304,17 +304,3 @@ void gb_hleDmgColorization(gb_t* gb){
         gb_writeColorToCRAM((obj1_col >> 16) & 0xFF, (obj1_col >> 8) & 0xFF, obj1_col & 0xFF, gb->OBP_CRAM, j + 4);
     }
 }
-
-#ifdef __EMSCRIPTEN__
-extern gb_t gb;
-void switchCompatibilityMode(){
-    if(gb.console_type == DMG_TYPE){
-        gb.console_type = DMG_ON_CGB_TYPE;
-        hleDmgColorization(&gb);
-    } else if(gb.console_type == DMG_ON_CGB_TYPE){
-        gb.console_type = DMG_TYPE;
-    }
-
-    initColorPalette(&gb);
-}
-#endif

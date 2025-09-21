@@ -1,7 +1,7 @@
 #ifndef __APU_H__
 #define __APU_H__
 
-#include "SDL2/SDL.h"
+#include "SDL3/SDL.h"
 
 #include "types.h"
 

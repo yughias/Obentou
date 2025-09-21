@@ -33,4 +33,6 @@ void watara_screen_update(lcd_t* lcd){
         Vstart += ((lcd->x_size > 0xC3) ? 0x60 : 0x30) & 0x1FFF;    // add 30/60 and keep in 8K range
         if (Vstart == 0x1FE0) Vstart = 0;
     }
+
+    renderPixels();
 }

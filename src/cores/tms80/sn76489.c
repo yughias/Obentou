@@ -177,7 +177,7 @@ void tms80_sn76489_draw_waves(sn76489_t* sn, SDL_Window** win){
     }
     SDL_Surface* s = SDL_GetWindowSurface(*win);
     int* pixels = (int*)s->pixels;
-    SDL_FillRect(s, NULL, 0);
+    SDL_FillSurfaceRect(s, NULL, 0);
 
     for(int y = 0; y < 2; y++){
         for(int x = 0; x < 2; x++){

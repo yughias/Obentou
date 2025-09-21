@@ -6,7 +6,7 @@
 #include "types.h"
 #include "cores/pce/timings.h"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 typedef enum PSG_REGS_IDX {
     PSG_SELECTOR = 0,

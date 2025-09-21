@@ -5,7 +5,7 @@
 
 #include "peripherals/controls.h"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 u8 gb_mbc5_4000_7FFF(gb_t* gb, u16 addr){
     mbc_t* mbc = &gb->mbc;

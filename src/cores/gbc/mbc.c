@@ -47,16 +47,8 @@ void gb_detectConsoleAndMbc(gb_t* gb){
     gb->console_type = CGB_TYPE;
 
     // TODO
-    //if(gb->ROM[0x143] != 0xC0)
+    //if(config_force_dmg_when_possible &&gb->ROM[0x143] != 0xC0)
     //    gb->console_type = DMG_TYPE;
-
-
-    // in emscripten we don't have config file
-    // DMG is emulated if ROM doesn't have any CGB enhancements
-    #ifdef __EMSCRIPTEN__
-    if(gb->ROM[0x143] < 0x80)
-        gb->console_type = DMG_TYPE;
-    #endif
 
     // MBC for megaduck
     if(!gb_containNintendoLogo(gb->ROM)){

@@ -2,7 +2,7 @@
 #include "peripherals/sound.h"
 
 #include <stdio.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 // apu internal variables and functions
 static size_t getWavedutyIdx(u8);

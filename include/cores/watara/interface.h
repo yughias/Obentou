@@ -12,14 +12,13 @@ void* WATARA_init(const char* filename);
 #define WATARA_HEIGHT 160
 #define WATARA_FPS 61.04
 #define WATARA_SOUND_PUSH_RATE (4e6/44100.0f)
+#define WATARA_sound_callback NULL
 
 #define WATARA_AUDIO_SPEC \
 { \
-    .callback = NULL, \
     .channels = 2, \
-    .format = AUDIO_S8, \
+    .format = SDL_AUDIO_S8, \
     .freq = 44100, \
-    .samples = 4096, \
 } \
 
 #endif

@@ -11,14 +11,13 @@ bool TMS80_detect(const char* filename);
 #define TMS80_HEIGHT 192
 #define TMS80_FPS 59.9227434033
 #define TMS80_SOUND_PUSH_RATE (3579545.0f/44100.0f)
+#define TMS80_sound_callback NULL
 
 #define TMS80_AUDIO_SPEC \
 { \
-    .callback = NULL, \
     .channels = 1, \
-    .format = AUDIO_S16, \
+    .format = SDL_AUDIO_S16, \
     .freq = 44100, \
-    .samples = 4096, \
 } \
 
 #endif

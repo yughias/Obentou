@@ -43,6 +43,7 @@ static void render(const bytepusher_t* bp){
             pixels[x+y*BYTEPUSHER_W] = color(red*255/6, green*255/6, blue*255/6);
         }
     }
+    renderPixels();
 }
 
 void BYTEPUSHER_run_frame(bytepusher_t* bp){

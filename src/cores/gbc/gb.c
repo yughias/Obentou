@@ -16,6 +16,7 @@ void GBC_run_frame(gb_t* gb){
 
     // copy framebuffer to pixels
     memcpy(pixels, gb->ppu.renderBufferPtr, sizeof(int)*LCD_WIDTH*LCD_HEIGHT);
+    renderPixels();
 }
 
 static void tickHardware(void* ctx, int ticks){
@@ -57,7 +58,6 @@ void* GBC_init(const char* filename){
     gb_initAudio(&gb->apu);
     gb_initHDMA(&gb->dma);
     gb_initSerial();
-    gb_initJoypad();
     gb_initLcdcMasks(gb);
     gb_initColorPalette(gb);
     gb->ppu.workingBufferPtr = gb->ppu.workingBuffer;

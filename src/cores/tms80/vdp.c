@@ -539,4 +539,5 @@ void tms80_vdp_show_frame(const vdp_t* vdp){
         for(int i = 0; i < width*height; i++)
             pixels[i] = vdp->framebuffer[i];
     }
+    renderPixels();
 }

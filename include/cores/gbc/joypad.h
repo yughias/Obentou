@@ -13,8 +13,6 @@ typedef struct joypad_t {
     u8 ACTION_BTN;
 } joypad_t;
 
-void gb_initJoypad();
 u8 gb_getJoypadRegister(joypad_t*);
-void gb_setGameControllerLed();
 
 #endif

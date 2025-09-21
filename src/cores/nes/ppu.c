@@ -264,7 +264,7 @@ void nes_ppu_draw_oam(ppu_t* ppu, SDL_Window** win){
 
     int magenta = color(255, 0, 255);
     int grey = color(100, 100, 100);
-    SDL_FillRect(s, NULL, magenta);
+    SDL_FillSurfaceRect(s, NULL, magenta);
 
     for(int i = 0; i  < 8; i++){
         for(int j = 0; j < s->w; j++){

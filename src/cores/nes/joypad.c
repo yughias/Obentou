@@ -16,8 +16,8 @@ u8 nes_joypad_read_1(joypad_t* joypad){
 }
 
 u8 nes_joypad_read_2(joypad_t* joypad){
-    Uint32 s = SDL_GetMouseState(NULL, NULL);
-    bool trigger = !(s & SDL_BUTTON(SDL_BUTTON_LEFT));
+    SDL_MouseButtonFlags s = SDL_GetMouseState(NULL, NULL);
+    bool trigger = !(s & SDL_BUTTON_LMASK);
     bool hit = true;
     if(pixels[mouseX+mouseY*width] == color(252, 252, 252))
         hit = false;

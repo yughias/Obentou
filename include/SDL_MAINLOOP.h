@@ -1,8 +1,7 @@
 #ifndef _SDL_MAINLOOP_H_
 #define _SDL_MAINLOOP_H_
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_opengl.h>
+#include <SDL3/SDL.h>
 
 #ifdef MAINLOOP_WINDOWS
 #include <windows.h>
@@ -25,8 +24,6 @@
 typedef int keyboard;
 typedef Uint32 button;
 
-extern unsigned int displayWidth;
-extern unsigned int displayHeight;
 extern int width;
 extern int height;
 extern int* pixels;
@@ -55,26 +52,19 @@ void getRGB(int, Uint8*, Uint8*, Uint8*);
 void rect(int, int, int, int, int);
 void loadWindowIcon(const char*);
 
-void noRender();
-void autoRender();
 void renderPixels();
 
 // getter for program arguments
 int getArgc();
 char* getArgv(int);
 
-typedef enum {NEAREST, LINEAR, ANISOTROPIC} ScaleMode;
-typedef GLuint* Shader;
-Shader loadShader(const char*);
-void noGlobalShader();
-void setGlobalShader(Shader);
+typedef enum {NEAREST, LINEAR} ScaleMode;
 void setScaleMode(ScaleMode);
-void setVoidColor(int, int, int);
-SDL_Window* createWindowWithIcon(const char* title, int x, int y, int w, int h, Uint32 flags);
+SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags);
 
 typedef size_t menuId;
 typedef size_t buttonId;
-#ifdef MAINLOOP_WINDOWS
+#ifdef _WIN32
 menuId addMenuTo(menuId, const wchar_t*, bool);
 buttonId addButtonTo(menuId, const wchar_t*, void (*callback)());
 void checkRadioButton(buttonId); 

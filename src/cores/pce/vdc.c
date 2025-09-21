@@ -416,7 +416,7 @@ void pce_vdc_draw_tilemap(SDL_Window** win, vdc_t* v){
     SDL_Surface* s = SDL_GetWindowSurface(*win);
     int black = color(0, 0, 0);
     int* pixels = (int*)s->pixels;
-    SDL_FillRect(s, NULL, black);
+    SDL_FillSurfaceRect(s, NULL, black);
 
     for(int ty = 0; ty < h; ty++){
         for(int tx = 0; tx < w; tx++){
@@ -456,7 +456,7 @@ void pce_vdc_draw_sprites(SDL_Window** win, vdc_t* v){
     SDL_Surface* s = SDL_GetWindowSurface(*win);
     int black = color(0, 0, 0);
     int* pixels = (int*)s->pixels;
-    SDL_FillRect(s, NULL, black);
+    SDL_FillSurfaceRect(s, NULL, black);
 
     u16* sat = (u16*)(&v->satb); 
 

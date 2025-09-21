@@ -78,7 +78,7 @@ void pce_vce_draw_palette(SDL_Window** win, vce_t* vce){
             pal_idx <<= 1;
             u16 rgb333 = vce->cram[pal_idx] | (vce->cram[pal_idx | 1] << 8);
             SDL_Rect r = {x * 8, y * 8, 8, 8};
-            SDL_FillRect(s, &r, vce_convert_color(rgb333));
+            SDL_FillSurfaceRect(s, &r, vce_convert_color(rgb333));
         }
     }
     SDL_UpdateWindowSurface(*win);
