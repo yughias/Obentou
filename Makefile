@@ -1,5 +1,4 @@
 SRC := $(shell find src -name '*.c')
-EMCC_SRC = $(filter-out src/escapi.c, $(SRC))
 OBJ := $(patsubst src/%.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
@@ -24,7 +23,7 @@ nes-mappers:
 	rm nes-mappers.exe
 
 emcc:
-	emcc -Iinclude $(EMCC_SRC) -O3 -flto=full \
+	emcc -Iinclude $(SRC) -O3 -flto=full \
 	-sUSE_SDL=3 \
 	-sINVOKE_RUN=0 \
 	-sEXPORTED_FUNCTIONS=[_main] \

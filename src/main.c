@@ -1,6 +1,7 @@
 #include "SDL_MAINLOOP.h"
 #include "peripherals/sound.h"
 #include "peripherals/controls.h"
+#include "peripherals/camera.h"
 
 #include "cores.h"
 
@@ -44,11 +45,12 @@ void setup(){
 
     controls_init(core->control_begin, core->control_end);
 
-    setWindowSize(1024, 1024);
+    setWindowSize(512, 512);
 }
 
 void loop(){
     controls_update();
+    camera_update();
 
     core->run_frame(emu);
 }
