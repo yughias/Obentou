@@ -276,3 +276,18 @@ bool controls_released(control_t control){
 
     return !pressed[control - begin] && prev_pressed[control - begin];
 }
+
+bool controls_gamepad_connected(){
+    return controller;
+}
+
+bool controls_rumble(u16 low, u16 hi, u32 duration){
+    return SDL_GameControllerRumble(controller, low, hi, duration);
+}
+
+void controls_get_gamepad_accelerometer(float* sensors){
+    sensors[0] = 0.0f;
+    sensors[1] = 0.0f;
+    sensors[2] = 0.0f;
+    SDL_GameControllerGetSensorData(controller, SDL_SENSOR_ACCEL, sensors, 3);
+}

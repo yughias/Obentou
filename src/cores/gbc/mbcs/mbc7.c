@@ -3,6 +3,8 @@
 #include "cores/gbc/joypad.h"
 #include "cores/gbc/gb.h"
 
+#include "peripherals/controls.h"
+
 #include "SDL_MAINLOOP.h"
 
 #include <string.h>
@@ -72,18 +74,18 @@ void gb_mbc7_ram_write(gb_t* gb, u16 addr, u8 byte){
         if(byte == 0xAA){
             int dx = 0;
             int dy = 0;
-            //TODO
+            // TODO
             Uint32 ms = SDL_GetMouseState(NULL, NULL);
             bool isMousePressed = ms & SDL_BUTTON(SDL_BUTTON_LEFT);
             if(isMousePressed){
                 dx = -(mouseX - width / 2);
                 dy = -(mouseY - height / 2);
-            }/* else if(gameController){
-                float sensors[3] = { 0.f };
-                SDL_GameControllerGetSensorData(gameController, SDL_SENSOR_ACCEL, sensors, 3);
+            } else if(controls_gamepad_connected()) {
+                float sensors[3];
+                controls_get_gamepad_accelerometer(sensors);
                 dx = sensors[0] * 10;
-                dy = (sensors[2] - 2) * 10;
-            }*/
+                dy = sensors[2] * 10;
+            }
             mbc7->accelerometer_x = 0x81D0 + dx;
             mbc7->accelerometer_y = 0x81D0 + dy;
         }

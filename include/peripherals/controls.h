@@ -160,5 +160,8 @@ void controls_init(control_t begin, control_t end);
 void controls_update();
 bool controls_pressed(control_t input);
 bool controls_released(control_t input);
+bool controls_gamepad_connected();
+bool controls_rumble(u16 low, u16 hi, u32 duration);
+void controls_get_gamepad_accelerometer(float* sensors);
 
 #endif

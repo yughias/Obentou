@@ -3,6 +3,8 @@
 #include "cores/gbc/joypad.h"
 #include "cores/gbc/gb.h"
 
+#include "peripherals/controls.h"
+
 #include <SDL2/SDL.h>
 
 u8 gb_mbc5_4000_7FFF(gb_t* gb, u16 addr){
@@ -52,20 +54,17 @@ void gb_mbc5_registers(gb_t* gb, u16 addr, u8 byte){
         mbc->REG_3000_3FFF = byte;
     else if(addr < 0x6000) {
         mbc->REG_4000_5FFF = byte;
-        //TODO
-        /*
-        if(mbc->hasRumble && gameController){
+        if(mbc->hasRumble && controls_gamepad_connected()){
             if(byte & 0b1000){
-                SDL_GameControllerRumble(gameController, -1, -1, -1);
+                controls_rumble(-1, -1, -1);
                 rumbleTime = gb->startFrame_clock + gb->cpu.cycles;
                 rumbleStarted = true;
             } else if(rumbleStarted){
                 rumbleStarted = false;
                 rumbleTime = (gb->startFrame_clock + gb->cpu.cycles) - rumbleTime ;
                 rumbleTime /= (CYCLES_PER_FRAME * REFRESH_RATE) / 1000;
-                SDL_GameControllerRumble(gameController, -1, -1, rumbleTime);
+                controls_rumble(-1, -1, rumbleTime);
             }
         }
-        */
     }
 }
