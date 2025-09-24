@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "zip.h"
+
 #if defined(_WIN32) || defined(_WIN64)
     #define strcasecmp _stricmp
 #endif
@@ -15,14 +17,31 @@ typedef struct archive {
     files_t files;
 } archive_t;
 
+static void archive_load_zip(archive_t* archive, const char* filename) {
+    struct zip_t *zip = zip_open(filename, 0, 'r');
+    int n = zip_entries_total(zip);
+    for (int i = 0; i < n; ++i) {
+        zip_entry_openbyindex(zip, i);
+        const char *name = zip_entry_name(zip);
+        int isdir = zip_entry_isdir(zip);
+        if (!isdir) {
+            files_push_empty(&archive->files);
+            file_t* file = &archive->files.data[archive->files.size - 1];
+            strcpy(file->path, name);
+            zip_entry_read(zip, (void**)(&file->data), &file->size);
+        }
+        zip_entry_close(zip);
+    }
+zip_close(zip);
+}
+
 archive_t* archive_load(const char* filename) {
     archive_t* archive = malloc(sizeof(archive_t));
     files_init(&archive->files);
     strcpy(archive->path, filename);
     const char* ext = path_get_ext(filename);
     if(!strcmp(ext, "zip")){
-        printf("zip not supported!\n");
-        exit(EXIT_FAILURE);
+        archive_load_zip(archive, filename);
     } else {
         files_push_empty(&archive->files);
         file_t* file = &archive->files.data[0];
