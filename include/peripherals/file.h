@@ -4,7 +4,7 @@
 #include "types.h"
 
 typedef struct file_t {
-    path_t path;
+    char path[FILENAME_MAX];
     u8* data;
     size_t size;
 } file_t;

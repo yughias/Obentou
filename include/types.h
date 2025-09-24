@@ -14,6 +14,4 @@ typedef uint64_t u64;
 typedef int8_t i8;
 typedef int16_t i16;
 
-typedef char path_t[FILENAME_MAX];
-
 #endif

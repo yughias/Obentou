@@ -13,7 +13,7 @@
 DEFINE_VEC(files, file_t)
 
 typedef struct archive {
-    path_t path;
+    char path[FILENAME_MAX];
     files_t files;
 } archive_t;
 
@@ -32,7 +32,7 @@ static void archive_load_zip(archive_t* archive, const char* filename) {
         }
         zip_entry_close(zip);
     }
-zip_close(zip);
+    zip_close(zip);
 }
 
 archive_t* archive_load(const char* filename) {

@@ -13,6 +13,7 @@ typedef void (*run_frame_ptr)(void* ctx);
 typedef bool (*detect_ptr)(const archive_t* rom_archive);
 
 typedef struct core_t {
+    const char name[32];
     detect_ptr detect;
     init_ptr init;
     run_frame_ptr run_frame;
@@ -25,19 +26,20 @@ typedef struct core_t {
     control_t control_end;
 } core_t;
 
-#define LOAD_CORE(name) \
+#define LOAD_CORE(core) \
 { \
-    .init = name##_init, \
-    .detect = name##_detect, \
-    .run_frame = name##_run_frame, \
-    .width = name##_WIDTH, \
-    .height = name##_HEIGHT, \
-    .fps = name##_FPS, \
-    .audio_spec = name##_AUDIO_SPEC, \
-    .sound_push_rate = name##_SOUND_PUSH_RATE, \
-    .sound_callback = name##_sound_callback, \
-    .control_begin = CONTROL_##name##_BEGIN, \
-    .control_end = CONTROL_##name##_END \
+    .name = #core, \
+    .init = core##_init, \
+    .detect = core##_detect, \
+    .run_frame = core##_run_frame, \
+    .width = core##_WIDTH, \
+    .height = core##_HEIGHT, \
+    .fps = core##_FPS, \
+    .audio_spec = core##_AUDIO_SPEC, \
+    .sound_push_rate = core##_SOUND_PUSH_RATE, \
+    .sound_callback = core##_sound_callback, \
+    .control_begin = CONTROL_##core##_BEGIN, \
+    .control_end = CONTROL_##core##_END \
 }
 
 #include "cores/watara/interface.h"

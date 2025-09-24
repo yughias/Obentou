@@ -57,6 +57,7 @@ void renderPixels();
 // getter for program arguments
 int getArgc();
 char* getArgv(int);
+char** getArgvs();
 
 typedef enum {NEAREST, LINEAR} ScaleMode;
 void setScaleMode(ScaleMode);

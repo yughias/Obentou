@@ -11,12 +11,13 @@ static const core_t* core = NULL;
 static void detect_core(const archive_t* rom_archive){
     for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
         if(cores[i].detect(rom_archive)){
+            printf("Detected core: %s\n", cores[i].name);
             core = &cores[i];
             return;
         }
     }
 
-    fprintf(stderr, "Unknown core: %s\n", archive_get_path(rom_archive));
+    printf("Unknown core: %s\n", archive_get_path(rom_archive));
     exit(EXIT_FAILURE);
 }
 
@@ -32,6 +33,7 @@ void setup(){
 
     size(core->width, core->height);
     frameRate(core->fps);
+    setTitle("MULTI-SYSTEM EMU");
 
     SDL_AudioSpec audio_spec = core->audio_spec;
 

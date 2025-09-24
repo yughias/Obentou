@@ -354,6 +354,10 @@ char* getArgv(int idx){
         return main_argv[idx];
 }
 
+char** getArgvs(){
+    return main_argv;
+}
+
 void renderPixels(){
     SDL_UnlockTexture(drawBuffer);
     renderBufferToWindow();

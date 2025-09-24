@@ -2,7 +2,7 @@
 #define __VEC_H__
 
 #define REALLOC_VEC(type) \
-while (!vec->allocated || vec->size > vec->allocated) \
+while (vec->size > vec->allocated) \
 { \
     vec->allocated = vec->allocated ? vec->allocated * 2 : 1; \
     vec->data = realloc(vec->data, sizeof(type) * vec->allocated); \
@@ -31,14 +31,15 @@ static inline void name##_free(name##_t* vec) \
 \
 static inline void name##_push(name##_t* vec, type value) \
 { \
+    vec->size++; \
     REALLOC_VEC(type) \
-    vec->data[vec->size++] = value; \
+    vec->data[vec->size - 1] = value; \
 } \
 \
 static inline void name##_push_empty(name##_t* vec) \
 { \
-    REALLOC_VEC(type) \
     vec->size++; \
+    REALLOC_VEC(type) \
 } \
 \
 static inline void name##_push_array(name##_t* vec, type* values, size_t count) \
