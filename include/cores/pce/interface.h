@@ -4,8 +4,8 @@
 #include "interface.h"
 
 void PCE_run_frame(void* ctx);
-void* PCE_init(const char* filename);
-bool PCE_detect(const char* filename);
+void* PCE_init(const archive_t* rom_archive, const archive_t* bios_archive);
+bool PCE_detect(const archive_t* rom_archive);
 
 #define PCE_WIDTH 256
 #define PCE_HEIGHT 242

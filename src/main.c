@@ -8,20 +8,16 @@
 static void* emu;
 static const core_t* core = NULL;
 
-static void detect_core(const char* filename){
+static void detect_core(const archive_t* rom_archive){
     for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
-        if(cores[i].detect(filename)){
+        if(cores[i].detect(rom_archive)){
             core = &cores[i];
             return;
         }
     }
 
-    fprintf(stderr, "Unknown core: %s\n", filename);
+    fprintf(stderr, "Unknown core: %s\n", archive_get_path(rom_archive));
     exit(EXIT_FAILURE);
-}
-
-void foo(){
-    printf("AH\n");
 }
 
 void setup(){
@@ -30,14 +26,16 @@ void setup(){
         exit(EXIT_FAILURE);
     }
     
-    detect_core(getArgv(1));
+    archive_t* rom_archive = archive_load(getArgv(1));
+
+    detect_core(rom_archive);
 
     size(core->width, core->height);
     frameRate(core->fps);
 
     SDL_AudioSpec audio_spec = core->audio_spec;
 
-    emu = core->init(getArgv(1));
+    emu = core->init(rom_archive, NULL);
 
     sound_open(&audio_spec, core->sound_callback, emu);
     if(!sound_is_push_rate_set())

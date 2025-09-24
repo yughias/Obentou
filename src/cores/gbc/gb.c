@@ -1,5 +1,7 @@
 #include "cores/gbc/gb.h"
 
+#include "peripherals/archive.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -45,7 +47,7 @@ static void tickHardware(void* ctx, int ticks){
     }
 }
 
-void* GBC_init(const char* filename){
+void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive){
     gb_t* gb = malloc(sizeof(gb_t));
     memset(gb, 0, sizeof(gb_t));
     sm83_t* cpu = &gb->cpu;
@@ -54,7 +56,7 @@ void* GBC_init(const char* filename){
     cpu->tickSystem = tickHardware;
     cpu->ctx = gb;
     initCPU(cpu);
-    gb_initMemory(gb, filename);
+    gb_initMemory(gb, rom_archive, bios_archive);
     gb_initAudio(&gb->apu);
     gb_initHDMA(&gb->dma);
     gb_initSerial();
@@ -67,20 +69,15 @@ void* GBC_init(const char* filename){
     return gb;
 }
 
-bool GBC_detect(const char* filename){
+bool GBC_detect(const archive_t* rom_archive){
     bool out = false;
-    out |= SDL_strcasestr(filename, ".gb") != NULL;
-    out |= SDL_strcasestr(filename, ".gbc") != NULL;
-    out |= SDL_strcasestr(filename, ".megaduck") != NULL;
+    out |= archive_get_file_by_ext(rom_archive, "gb") != NULL;
+    out |= archive_get_file_by_ext(rom_archive, "gbc") != NULL;
+    out |= archive_get_file_by_ext(rom_archive, "megaduck") != NULL;
 
-    if(SDL_strcasestr(filename, ".bin") != NULL){
-        FILE* fptr = fopen(filename, "rb");
-        size_t size = 0;
-        if(fptr){
-            fseek(fptr, 0, SEEK_END);
-            size = ftell(fptr);
-            fclose(fptr);
-        }
+    file_t* f;
+    if(f = archive_get_file_by_ext(rom_archive, "bin")){
+        size_t size = f->size;
         out |= size == (1 << 15);
         out |= size == (1 << 16);
         out |= size == (1 << 17);

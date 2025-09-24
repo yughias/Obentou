@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void* PV1000_init(const char* filename){
+#include "peripherals/archive.h"
+
+void* PV1000_init(const archive_t* rom_archive, const archive_t* bios_archive){
     pv1000_t* pv1000 = malloc(sizeof(pv1000_t));
     memset(pv1000, 0x00, sizeof(pv1000_t));
     
@@ -17,22 +19,14 @@ void* PV1000_init(const char* filename){
     z80->ctx = pv1000;
     pv1000->psg.updateRate = 1.0f / 44100.0f;
 
-    z80_init(z80);
-
-    FILE* fptr = fopen(filename, "r");
-    if(!fptr){
-        printf("can't open rom!\n");
-        fflush(stdout);
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fptr, 0, SEEK_END);
-    size_t size = ftell(fptr);
-    rewind(fptr);
-
+    
     memset(pv1000->memory, 0xFF, 0x1000);
-    fread(pv1000->memory, 1, size, fptr);
-    fclose(fptr);
+    file_t* f = archive_get_file_by_ext(rom_archive, "pv");
+    if(!f)
+        f = archive_get_file_by_ext(rom_archive, "bin");
+    memcpy(pv1000->memory, f->data, f->size);
+    
+    z80_init(z80);
 
     return pv1000;
 }
@@ -65,17 +59,13 @@ void PV1000_run_frame(pv1000_t* pv1000){
     pv1000_vdp_render(vdp, pv1000->memory);
 }
 
-bool PV1000_detect(const char* filename){
-    if(SDL_strcasestr(filename, ".pv"))
+bool PV1000_detect(const archive_t* rom_archive){
+    if(archive_get_file_by_ext(rom_archive, "pv"))
         return true;
-
-    if(SDL_strcasestr(filename, ".bin")){
-        FILE* fptr = fopen(filename, "rb");
-        if(!fptr)
-            return false;
-        fseek(fptr, 0, SEEK_END);
-        size_t size = ftell(fptr);
-        fclose(fptr);
+    
+    file_t* f;
+    if(f = archive_get_file_by_ext(rom_archive, "bin")){
+        size_t size = f->size;
         if(size == (1 << 13) || size == (1 << 14))
             return true;
     }

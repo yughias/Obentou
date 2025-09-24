@@ -1,31 +1,24 @@
 #include "cores/pce/pce.h"
 
+#include "peripherals/archive.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
 static void pce_write_regs(void* ctx, u16 offset, u8 value);
 static u8 pce_read_regs(void* ctx, u16 offset);
 
-void* PCE_init(const char* rom_path) {
+void* PCE_init(const archive_t* rom_archive, const archive_t* bios_archive) {
     pce_t* p = malloc(sizeof(pce_t));
-    FILE* fptr = fopen(rom_path, "rb");
-    if (!fptr) {
-        printf("Failed to open ROM file: %s\n", rom_path);
-        exit(EXIT_FAILURE);
-    }
-    fseek(fptr, 0, SEEK_END);
-    p->rom_size = ftell(fptr);
-    rewind(fptr);
+    file_t* rom = archive_get_file_by_ext(rom_archive, "pce");
+    p->rom = rom->data;
+    p->rom_size = rom->size;
 
     // strip header
     if(p->rom_size & 512){
         p->rom_size &= ~512;
-        fseek(fptr, 512, SEEK_SET);
+        p->rom += 512;
     }
-
-    p->rom = malloc(p->rom_size);
-    fread(p->rom, 1, p->rom_size, fptr);
-    fclose(fptr);
 
     h6280_init(&p->cpu);
     p->cpu.ctx = p;
@@ -375,6 +368,6 @@ void pce_notify_line(pce_t* p, int frame_line, int* line, int w){
     }
 }
 
-bool PCE_detect(const char* filename){
-    return SDL_strcasestr(filename, ".pce") != NULL;
+bool PCE_detect(const archive_t* rom_archive){
+    return archive_get_file_by_ext(rom_archive, "pce");
 }

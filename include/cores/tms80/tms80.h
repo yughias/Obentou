@@ -49,7 +49,6 @@ typedef struct tms80_t
     u8 RAM[RAM_SIZE];
 } tms80_t;
 
-TMS80_TYPE tms80_detect_type(const char* filename);
 bool tms80_detect_ram_adapter(u8* cartridge, size_t cartridge_size);
 
 u8 tms80_get_keypad_a(tms80_t* tms80);

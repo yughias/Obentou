@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-void gb_initMemory(gb_t* gb, const char* romName){
-    gb_loadRom(gb, romName);
+void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios_archive) {
+    gb_loadRom(gb, rom_archive);
     ppu_t* ppu = &gb->ppu;
     ppu->LY_REG = 0;
     ppu->STAT_REG = 0;
@@ -99,19 +99,16 @@ void gb_writeByte(void* ctx, u16 address, u8 byte){
     (*gb->writeTable[address >> 8])((gb_t*)ctx, address, byte);
 }
 
-void gb_loadRom(gb_t* gb, const char* filename){
-    FILE* fptr = fopen(filename, "rb");
-    if(!fptr){
-        printf("Failed to open ROM file\n");
-        exit(EXIT_FAILURE);
-    }
-    fseek(fptr, 0, SEEK_END);
-    gb->ROM_SIZE = ftell(fptr);
-    rewind(fptr);
-
-    gb->ROM = (u8*)malloc(gb->ROM_SIZE);
-    fread(gb->ROM, 1, gb->ROM_SIZE, fptr);
-    fclose(fptr);
+void gb_loadRom(gb_t* gb, const archive_t* rom_archive){
+    file_t* f = archive_get_file_by_ext(rom_archive, "gb");
+    if(!f)
+        f = archive_get_file_by_ext(rom_archive, "gbc");
+    if(!f)
+        f = archive_get_file_by_ext(rom_archive, "megaduck");
+    if(!f)
+        f = archive_get_file_by_ext(rom_archive, "bin");
+    gb->ROM_SIZE = f->size;
+    gb->ROM = f->data;
 }
 
 bool gb_loadBootRom(gb_t* gb, const char* filename){

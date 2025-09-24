@@ -4,8 +4,8 @@
 #include "interface.h"
 
 void NES_run_frame(void* ctx);
-void* NES_init(const char* filename);
-bool NES_detect(const char* filename);
+void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive);
+bool NES_detect(const archive_t* rom_archive);
 
 #define NES_WIDTH 256
 #define NES_HEIGHT 240

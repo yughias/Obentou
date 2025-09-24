@@ -6,10 +6,11 @@
 #include "types.h"
 
 #include "peripherals/controls.h"
+#include "peripherals/archive.h"
 
-typedef void* (*init_ptr)(const char* filename);
+typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*run_frame_ptr)(void* ctx);
-typedef bool (*detect_ptr)(const char* filename);
+typedef bool (*detect_ptr)(const archive_t* rom_archive);
 
 typedef struct core_t {
     detect_ptr detect;

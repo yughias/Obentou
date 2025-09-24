@@ -2,6 +2,7 @@
 #define _MEMORY_H_
 
 #include "types.h"
+#include "peripherals/archive.h"
 
 #define BOOTROM_DISABLE_ADDR 0xFF50
 
@@ -21,8 +22,8 @@
 
 typedef struct gb_t gb_t;
 
-void gb_initMemory(gb_t*, const char*);
-void gb_loadRom(gb_t*, const char*);
+void gb_initMemory(gb_t*, const archive_t* rom_archive, const archive_t* bios_archive);
+void gb_loadRom(gb_t*, const archive_t* rom_archive);
 bool gb_loadBootRom(gb_t*, const char*);
 void gb_loadSav(gb_t*, const char*);
 void gb_saveSav(gb_t*, const char*);

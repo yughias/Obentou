@@ -284,13 +284,11 @@ void size(int w, int h){
 
         SDL_SetEventFilter(filterResize, NULL);
     } else {
-        #ifndef __EMSCRIPTEN__
         SDL_DestroyTexture(drawBuffer);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
         setScaleMode(scale_mode);
         SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
         pixels = surface->pixels;
-        #endif
     }
 
     setScaleMode(scale_mode);

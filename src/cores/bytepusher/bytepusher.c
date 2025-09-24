@@ -1,14 +1,14 @@
 #include "cores/bytepusher/bytepusher.h"
 #include "peripherals/sound.h"
 #include "peripherals/controls.h"
+#include "peripherals/archive.h"
 
 #include "SDL_MAINLOOP.h"
 
-void* BYTEPUSHER_init(const char* filename){
+void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archive){
     bytepusher_t* bp = malloc(sizeof(bytepusher_t));
-    FILE* fp = fopen(filename, "rb");
-    fread(bp->memory, 1, MEMORY_SIZE, fp);
-    fclose(fp);
+    file_t* rom = archive_get_file_by_ext(rom_archive, "bytepusher");
+    memcpy(bp->memory, rom->data, MEMORY_SIZE);
     
     return bp;
 }
@@ -60,6 +60,6 @@ void BYTEPUSHER_run_frame(bytepusher_t* bp){
     play_sound_data(bp);
 }
 
-bool BYTEPUSHER_detect(const char* filename){
-    return SDL_strcasestr(filename, ".bytepusher") != NULL;
+bool BYTEPUSHER_detect(const archive_t* rom_archive){
+    return archive_get_file_by_ext(rom_archive, "bytepusher") != NULL;
 }

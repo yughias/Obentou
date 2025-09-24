@@ -111,7 +111,8 @@ static void controls_load_scancode_maps(){
     LOAD_SCANCODE(TMS80, RIGHT, "right");
     LOAD_SCANCODE(TMS80, BTN_1, "z");
     LOAD_SCANCODE(TMS80, BTN_2, "x");
-    LOAD_SCANCODE(TMS80, START_PAUSE, "f1");
+    LOAD_SCANCODE(TMS80, PAUSE, "f1");
+    LOAD_SCANCODE(TMS80, GG_START, "return");
 
     // load tms80 keyboard config
     LOAD_SCANCODE(TMS80, 1, "1");
@@ -230,7 +231,7 @@ static void controls_load_gamepad_maps(){
     LOAD_GAMEPAD(TMS80, RIGHT, "dpright");
     LOAD_GAMEPAD(TMS80, BTN_1, "a");
     LOAD_GAMEPAD(TMS80, BTN_2, "b");
-    LOAD_GAMEPAD(TMS80, START_PAUSE, "start");
+    LOAD_GAMEPAD(TMS80, GG_START, "start");
 }
 
 void controls_init(control_t begin_, control_t end_) {

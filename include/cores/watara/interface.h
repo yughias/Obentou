@@ -4,8 +4,8 @@
 #include "types.h"
 
 void WATARA_run_frame(void* ctx);
-bool WATARA_detect(const char* filename);
-void* WATARA_init(const char* filename);
+bool WATARA_detect(const archive_t* rom_archive);
+void* WATARA_init(const archive_t* rom_archive, const archive_t* bios_archive);
 
 
 #define WATARA_WIDTH 160

@@ -23,6 +23,6 @@ typedef struct ines_t {
     u8* prg_ram;
 } ines_t;
 
-void nes_ines_load(ines_t* ines, const char* filename);
+void nes_ines_load(ines_t* ines, u8* file, size_t size);
 
 #endif

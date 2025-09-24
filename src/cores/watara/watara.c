@@ -1,5 +1,6 @@
 #include "cores/watara/watara.h"
 #include "peripherals/controls.h"
+#include "peripherals/archive.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -234,22 +235,15 @@ static void watara_write(void* ctx, u16 addr, u8 byte){
     //exit(EXIT_FAILURE);
 }
 
-void* WATARA_init(const char* filename){
+void* WATARA_init(const archive_t* rom_archive, const archive_t* bios_archive){
     watara_t* w = (watara_t*)malloc(sizeof(watara_t));
     memset(w, 0, sizeof(watara_t));
 
-    FILE* fptr = fopen(filename, "rb");
-    if(!fptr){
-        printf("cannot open rom...\n");
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fptr, 0, SEEK_END);
-    w->rom_size = ftell(fptr);
-    rewind(fptr);
-
-    w->rom = (u8*)malloc(w->rom_size);
-    fread(w->rom, 1, w->rom_size, fptr);   
+    file_t* f = archive_get_file_by_ext(rom_archive, "watara");
+    if(!f)
+        f = archive_get_file_by_ext(rom_archive, "sv");
+    w->rom = f->data;
+    w->rom_size = f->size;
 
     w->cpu.ctx = (void*)w;
     w->cpu.read = watara_read;
@@ -299,6 +293,6 @@ static u8 watara_get_controller(){
     return out;
 }
 
-bool WATARA_detect(const char* filename){
-    return SDL_strcasestr(filename, ".sv") != NULL;
+bool WATARA_detect(const archive_t* rom_archive){
+    return archive_get_file_by_ext(rom_archive, "watara") || archive_get_file_by_ext(rom_archive, "sv");
 }

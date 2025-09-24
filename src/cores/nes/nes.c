@@ -1,18 +1,20 @@
 #include "cores/nes/nes.h"
 #include "cores/nes/memory.h"
-
 #include "cores/nes/mappers.h"
 
 #include <string.h>
+
+#include "peripherals/archive.h"
 
 typedef void (*mapper_init_func)(nes_t*);
 
 #define GET_IRQ(n) (n->cart_irq || n->apu.frame_irq || n->apu.dmc.irq)
 
-void* NES_init(const char* filename){
+void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive){
     nes_t* nes = malloc(sizeof(nes_t));
+    file_t* rom = archive_get_file_by_ext(rom_archive, "nes");
     memset(nes, 0, sizeof(nes_t));
-    nes_ines_load(&nes->cart, filename);
+    nes_ines_load(&nes->cart, rom->data, rom->size);
     nes->ppu.vram_size = nes->cart.vram_align == VRAM_4 ? EXTENDED_VRAM_SIZE : BASIC_VRAM_SIZE;
     nes->ppu.vram = malloc(nes->ppu.vram_size);
     m6502_t* cpu = &nes->cpu;
@@ -114,6 +116,6 @@ void nes_sync(nes_t* nes){
     nes_ppu_sync(&nes->ppu);
 }
 
-bool NES_detect(const char* filename){
-    return SDL_strcasestr(filename, ".nes") != NULL;
+bool NES_detect(const archive_t* rom_archive){
+    return archive_get_file_by_ext(rom_archive, "nes");
 }

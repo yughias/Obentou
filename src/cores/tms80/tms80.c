@@ -2,6 +2,7 @@
 #include "cores/tms80/memory.h"
 #include "peripherals/sound.h"
 #include "peripherals/controls.h"
+#include "peripherals/archive.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -39,6 +40,23 @@ static control_t keypad_row_b[8][4] = {
     { NO_KEY,      NO_KEY,   NO_KEY,   NO_KEY   }
 };
 
+static TMS80_TYPE detect_type(const archive_t* rom_archive){
+    if(archive_get_file_by_ext(rom_archive, "sg"))
+        return SG1000;
+
+    if(archive_get_file_by_ext(rom_archive, "sc"))
+        return SC3000;
+
+    
+    if(archive_get_file_by_ext(rom_archive, "sms"))
+        return SMS;
+
+    if(archive_get_file_by_ext(rom_archive, "gg"))
+        return GG;
+
+    return TMS80_UNKNOWN;
+}
+
 static void load_file(const char* filename, u8** buffer, size_t* size){
     FILE* fptr = fopen(filename, "rb");
     if(!fptr){
@@ -55,7 +73,7 @@ static void load_file(const char* filename, u8** buffer, size_t* size){
     fclose(fptr);
 }
 
-void* TMS80_init(const char* rom_path){
+void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
     // TODO stub
     const char* bios_path = "";
 
@@ -68,9 +86,18 @@ void* TMS80_init(const char* rom_path){
 
     tms80->keypad_reg = 0x7;
 
+    file_t* rom_file = archive_get_file_by_ext(rom_archive, "sg");
+    if(!rom_file)
+        rom_file = archive_get_file_by_ext(rom_archive, "sc");
+    if(!rom_file)
+        rom_file = archive_get_file_by_ext(rom_archive, "sms");
+    if(!rom_file)
+        rom_file = archive_get_file_by_ext(rom_archive, "gg");
+
     if(
-        strstr(rom_path, "(Europe)") || strstr(rom_path, "(E)") ||
-        strstr(rom_path, "(Brazil)") || strstr(rom_path, "[E]")
+        rom_file &&
+        strstr(rom_file->path, "(Europe)") || strstr(rom_file->path, "(E)") ||
+        strstr(rom_file->path, "(Brazil)") || strstr(rom_file->path, "[E]")
     ){
         tms80_SET_REGION(tms80, PAL);
         printf("PAL!\n");
@@ -82,9 +109,10 @@ void* TMS80_init(const char* rom_path){
     for(int i = 0; i < 3; i++)
         tms80->banks[i] = i;
 
-    if(strcmp(rom_path, ""))
-        load_file(rom_path, &tms80->cartridge, &tms80->cartridge_size);
-    else {
+    if(rom_file){
+        tms80->cartridge = rom_file->data;
+        tms80->cartridge_size = rom_file->size;
+    } else {
         tms80->cartridge = malloc(1 << 10);
         memset(tms80->cartridge, 0xFF, 1 << 10);
         tms80->cartridge_size = 1 << 10;
@@ -92,9 +120,9 @@ void* TMS80_init(const char* rom_path){
 
     if(strcmp(bios_path, "")){
         load_file(bios_path, &tms80->bios, &tms80->bios_size);
-        tms80->type = tms80_detect_type(bios_path);
+        tms80->type = detect_type(bios_archive);
     } else
-        tms80->type = tms80_detect_type(rom_path);
+        tms80->type = detect_type(rom_archive);
     
     tms80->has_keyboard = tms80->type == SC3000;
     tms80->vdp.cram_size = tms80->type == GG ? CRAM_SIZE_GG : CRAM_SIZE_SMS;
@@ -166,28 +194,6 @@ bool tms80_detect_ram_adapter(u8* cartridge, size_t cartridge_size){
     return false;
 }
 
-TMS80_TYPE tms80_detect_type(const char* rom_path){
-    const char* dot = strrchr(rom_path, '.');
-
-    if(!dot || dot == rom_path)
-        return TMS80_UNKNOWN;
-
-    if(!strcmp(dot, ".sg"))
-        return SG1000;
-
-    if(!strcmp(dot, ".sc"))
-        return SC3000;
-
-    
-    if(!strcmp(dot, ".sms"))
-        return SMS;
-
-    if(!strcmp(dot, ".gg"))
-        return GG;
-
-    return TMS80_UNKNOWN;
-}
-
 u8 tms80_get_keypad_a(tms80_t* tms80){
     if(tms80->force_paddle_controller){
         u8 x = 0xF0;
@@ -223,7 +229,7 @@ u8 tms80_get_keypad_b(tms80_t* tms80){
 }
 
 u8 tms80_gg_get_start_button(){
-    if(controls_pressed(CONTROL_TMS80_START_PAUSE))
+    if(controls_pressed(CONTROL_TMS80_GG_START))
         return 0x40;
 
     return 0xC0;
@@ -234,7 +240,7 @@ void TMS80_run_frame(tms80_t* tms80){
     vdp_t* vdp = &tms80->vdp;
     sn76489_t* apu = &tms80->apu;
 
-    if(tms80->type != GG && controls_released(CONTROL_TMS80_START_PAUSE))
+    if(tms80->type != GG && controls_released(CONTROL_TMS80_PAUSE))
         z80_nmi(z80);
 
     while(z80->cycles < tms80->cycles_per_frame){
@@ -280,6 +286,6 @@ void TMS80_run_frame(tms80_t* tms80){
     tms80_vdp_show_frame(vdp);
 }
 
-bool TMS80_detect(const char* filename){
-    return tms80_detect_type(filename) != TMS80_UNKNOWN;
+bool TMS80_detect(const archive_t* rom_archive){
+    return detect_type(rom_archive) != TMS80_UNKNOWN;
 }

@@ -2,8 +2,8 @@
 #define __BYTEPUSHER_INTERFACE_H__
 
 void BYTEPUSHER_run_frame(void* ctx);
-void* BYTEPUSHER_init(const char* filename);
-bool BYTEPUSHER_detect(const char* filename);
+void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archive);
+bool BYTEPUSHER_detect(const archive_t* rom_archive);
 
 #define BYTEPUSHER_WIDTH 256
 #define BYTEPUSHER_HEIGHT 256

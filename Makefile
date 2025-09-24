@@ -1,10 +1,12 @@
-SRC := $(shell find src -name '*.c')
-OBJ := $(patsubst src/%.c, obj/%.o, $(SRC))
+SRC := $(shell find src -name '*.c') \
+       $(shell find ext -name '*.c')
+OBJ := $(patsubst %.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
+
 
 CC := gcc
 EXE := a.exe
-CFLAGS := -Iinclude -O3 -flto=auto
+CFLAGS := -Iinclude -Iext/include -O3 -flto=auto
 DEBUG_FLAGS := -pg -no-pie
 LIBS := -Llib -lSDL3.dll -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
 
@@ -13,7 +15,7 @@ all: $(EXE)
 $(EXE): $(OBJ)
 	$(CC) $(OBJ) $(CFLAGS) $(LIBS) -o $(EXE)
 
-obj/%.o: src/%.c
+obj/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) -c -MMD -MP $(CFLAGS) $< -o $@
 
@@ -23,7 +25,7 @@ nes-mappers:
 	rm nes-mappers.exe
 
 emcc:
-	emcc -Iinclude $(SRC) -O3 -flto=full \
+	emcc -Iinclude -Iext/include $(SRC) -O3 -flto=full \
 	-sUSE_SDL=3 \
 	-sINVOKE_RUN=0 \
 	-sEXPORTED_FUNCTIONS=[_main] \
