@@ -69,7 +69,7 @@ void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive){
     return gb;
 }
 
-bool GBC_detect(const archive_t* rom_archive){
+bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     bool out = false;
     out |= archive_get_file_by_ext(rom_archive, "gb") != NULL;
     out |= archive_get_file_by_ext(rom_archive, "gbc") != NULL;

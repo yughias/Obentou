@@ -8,7 +8,7 @@ CC := gcc
 EXE := a.exe
 CFLAGS := -Iinclude -Iext/include -O3 -flto=auto
 DEBUG_FLAGS := -pg -no-pie
-LIBS := -Llib -lSDL3.dll -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
+LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
 
 all: $(EXE)
 

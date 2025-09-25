@@ -38,6 +38,10 @@ static void archive_load_zip(archive_t* archive, const char* filename) {
 archive_t* archive_load(const char* filename) {
     archive_t* archive = malloc(sizeof(archive_t));
     files_init(&archive->files);
+    if(!filename){
+        strcpy(archive->path, "");
+        return archive;
+    }
     strcpy(archive->path, filename);
     const char* ext = path_get_ext(filename);
     if(!strcmp(ext, "zip")){
@@ -45,13 +49,20 @@ archive_t* archive_load(const char* filename) {
     } else {
         files_push_empty(&archive->files);
         file_t* file = &archive->files.data[0];
-        strcpy(file->path, filename);
-        file_load(file, filename);
+        if(!file_load(file, filename)){
+            files_pop(&archive->files);
+            printf("Failed to load %s\n", filename);
+        }
     }
     return archive;
 }
 
 void archive_free(archive_t* archive) {
+    if(!archive)
+        return;
+    for(int i = 0; i < archive->files.size; i++){
+        file_delete(&archive->files.data[i]);
+    }
     files_free(&archive->files);
     free(archive);
 }

@@ -9,7 +9,7 @@ typedef struct file_t {
     size_t size;
 } file_t;
 
-void file_load(file_t* file, const char* filename);
+bool file_load(file_t* file, const char* filename);
 void file_delete(file_t* file);
 void file_save(file_t* file);
 const char* path_get_ext(const char* path);

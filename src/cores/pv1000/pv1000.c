@@ -59,7 +59,7 @@ void PV1000_run_frame(pv1000_t* pv1000){
     pv1000_vdp_render(vdp, pv1000->memory);
 }
 
-bool PV1000_detect(const archive_t* rom_archive){
+bool PV1000_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     if(archive_get_file_by_ext(rom_archive, "pv"))
         return true;
     

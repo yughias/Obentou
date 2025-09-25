@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 
+#define INI_FILE "config.ini"
 #define ACTIVE_BUTTONS (end - begin + 1)
 
 static SDL_Scancode control_scancode_maps[CONTROL_COUNT];
@@ -18,7 +19,6 @@ static bool* prev_pressed;
 
 static SDL_Gamepad* gamepad = NULL;
 
-#define INI_FILE "config.ini"
 
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \
@@ -43,6 +43,8 @@ static SDL_Gamepad* gamepad = NULL;
 }
 
 static void controls_load_scancode_maps(){
+    control_scancode_maps[CONTROL_NONE] = SDL_SCANCODE_UNKNOWN;
+
     LOAD_SCANCODE(NES, UP, "up");
     LOAD_SCANCODE(NES, DOWN, "down");
     LOAD_SCANCODE(NES, LEFT, "left");
@@ -180,6 +182,8 @@ static void controls_load_scancode_maps(){
 }
 
 static void controls_load_gamepad_maps(){
+    control_gamepad_maps[CONTROL_NONE] = SDL_GAMEPAD_BUTTON_INVALID;
+
     LOAD_GAMEPAD(GBC, A, "b");
     LOAD_GAMEPAD(GBC, B, "a");
     LOAD_GAMEPAD(GBC, SELECT, "back");
@@ -234,16 +238,24 @@ static void controls_load_gamepad_maps(){
     LOAD_GAMEPAD(TMS80, GG_START, "start");
 }
 
+void controls_load_maps(){
+    controls_load_scancode_maps();
+    controls_load_gamepad_maps();
+}
+
 void controls_init(control_t begin_, control_t end_) {
+    controls_free();
     begin = begin_;
     end = end_;
     pressed = malloc(ACTIVE_BUTTONS * sizeof(bool));
     prev_pressed = malloc(ACTIVE_BUTTONS * sizeof(bool));
     memset(pressed, 0, ACTIVE_BUTTONS * sizeof(bool));
     memset(prev_pressed, 0, ACTIVE_BUTTONS * sizeof(bool));
+}
 
-    controls_load_gamepad_maps();
-    controls_load_scancode_maps();
+void controls_free(){
+    free(pressed);
+    free(prev_pressed);
 }
 
 void controls_update(){

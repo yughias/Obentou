@@ -5,7 +5,7 @@
 
 void TMS80_run_frame(void* ctx);
 void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive);
-bool TMS80_detect(const archive_t* rom_archive);
+bool TMS80_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 
 #define TMS80_WIDTH 256
 #define TMS80_HEIGHT 192

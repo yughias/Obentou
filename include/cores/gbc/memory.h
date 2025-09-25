@@ -24,7 +24,7 @@ typedef struct gb_t gb_t;
 
 void gb_initMemory(gb_t*, const archive_t* rom_archive, const archive_t* bios_archive);
 void gb_loadRom(gb_t*, const archive_t* rom_archive);
-bool gb_loadBootRom(gb_t*, const char*);
+void gb_loadBootRom(gb_t*, file_t* file);
 void gb_loadSav(gb_t*, const char*);
 void gb_saveSav(gb_t*, const char*);
 void gb_freeMemory(gb_t* gb);

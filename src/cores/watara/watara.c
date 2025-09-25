@@ -293,6 +293,6 @@ static u8 watara_get_controller(){
     return out;
 }
 
-bool WATARA_detect(const archive_t* rom_archive){
+bool WATARA_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "watara") || archive_get_file_by_ext(rom_archive, "sv");
 }

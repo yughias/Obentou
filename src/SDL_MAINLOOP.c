@@ -81,6 +81,7 @@ void updateMenuVect(HMENU, bool);
 
 #endif
 
+void check_for_mainloop();
 void mainloop();
 
 // variables used for run loop at correct framerate
@@ -116,7 +117,7 @@ void emscripten_mainloop(){
 }
 #endif
 
-int main(int argc, char* argv[]){
+int main(int argc, char** argv){
     main_argc = argc;
     main_argv = argv;
 
@@ -137,6 +138,10 @@ int main(int argc, char* argv[]){
     SDL_SetHintWithPriority(SDL_HINT_JOYSTICK_ENHANCED_REPORTS, "1", SDL_HINT_OVERRIDE);
 
     strcpy(windowName, "window");
+    
+    #ifndef __EMSCRIPTEN__
+    SDL_SetEventFilter(filterResize, NULL);
+    #endif
 
     setup();
 
@@ -162,20 +167,8 @@ int main(int argc, char* argv[]){
     b_clock = SDL_GetPerformanceCounter();
 
     running = true;
-    while(running){
-        a_clock = SDL_GetPerformanceCounter();
-        deltaTime = (float)(a_clock - b_clock)/SDL_GetPerformanceFrequency()*1000;
-
-        if(deltaTime > 1000.0f / frameRate){
-            mainloop();
-
-            b_clock = a_clock;
-        } else {
-            float ms = 1000.0f/frameRate;
-            if(ms - deltaTime > 1.0f)
-                SDL_Delay(ms - deltaTime - 1);
-        }
-    }
+    while(running)
+        check_for_mainloop();
     #endif
 
     SDL_DestroyTexture(drawBuffer);
@@ -254,6 +247,21 @@ void mainloop(){
     loop();
 }
 
+void check_for_mainloop(){
+    a_clock = SDL_GetPerformanceCounter();
+    deltaTime = (float)(a_clock - b_clock)/SDL_GetPerformanceFrequency()*1000;
+
+    if(deltaTime > 1000.0f / frameRate){
+        mainloop();
+
+        b_clock = a_clock;
+    } else {
+        float ms = 1000.0f/frameRate;
+        if(ms - deltaTime > 1.0f)
+            SDL_Delay(ms - deltaTime - 1);
+    }
+}
+
 SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags){
     SDL_Window* win = SDL_CreateWindow(title, w, h, flags);
     if(windowIcon)
@@ -281,8 +289,6 @@ void size(int w, int h){
         SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
 
         pixels = surface->pixels;
-
-        SDL_SetEventFilter(filterResize, NULL);
     } else {
         SDL_DestroyTexture(drawBuffer);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
@@ -419,8 +425,14 @@ void renderBufferToWindow(){
 }
 
 bool filterResize(void* userdata, SDL_Event* event){
-    if(event->type == SDL_EVENT_WINDOW_RESIZED || event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED){
-        renderBufferToWindow();
+    if(
+        event->type == SDL_EVENT_WINDOW_EXPOSED ||
+        event->type == SDL_EVENT_WINDOW_MOVED ||
+        event->type == SDL_EVENT_WINDOW_RESIZED ||
+        event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
+    ){
+        if(running)
+            check_for_mainloop();
         return false;
     }
 

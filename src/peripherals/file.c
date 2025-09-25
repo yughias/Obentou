@@ -2,10 +2,11 @@
 
 #include "SDL3/SDL.h"
 
-void file_load(file_t* file, const char* filename){
+bool file_load(file_t* file, const char* filename){
     memset(file, 0, sizeof(file_t));
     strcpy(file->path, filename);
     file->data = SDL_LoadFile(filename, &file->size);
+    return file->data;
 }
 
 void file_save(file_t* file){
@@ -18,6 +19,6 @@ void file_delete(file_t* file){
 
 const char* path_get_ext(const char* path){
     const char* dot = strrchr(path, '.');
-    if(!dot) return NULL;
+    if(!dot) return "";
     return dot + 1;
 }

@@ -4,7 +4,7 @@
 #include "types.h"
 
 void WATARA_run_frame(void* ctx);
-bool WATARA_detect(const archive_t* rom_archive);
+bool WATARA_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 void* WATARA_init(const archive_t* rom_archive, const archive_t* bios_archive);
 
 

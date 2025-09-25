@@ -8,9 +8,17 @@
 #include "peripherals/controls.h"
 #include "peripherals/archive.h"
 
+#include "cores/watara/interface.h"
+#include "cores/pv1000/interface.h"
+#include "cores/pce/interface.h"
+#include "cores/bytepusher/interface.h"
+#include "cores/tms80/interface.h"
+#include "cores/nes/interface.h"
+#include "cores/gbc/interface.h"
+
 typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*run_frame_ptr)(void* ctx);
-typedef bool (*detect_ptr)(const archive_t* rom_archive);
+typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 
 typedef struct core_t {
     const char name[32];
@@ -42,14 +50,6 @@ typedef struct core_t {
     .control_end = CONTROL_##core##_END \
 }
 
-#include "cores/watara/interface.h"
-#include "cores/pv1000/interface.h"
-#include "cores/pce/interface.h"
-#include "cores/bytepusher/interface.h"
-#include "cores/tms80/interface.h"
-#include "cores/nes/interface.h"
-#include "cores/gbc/interface.h"
-
 static const core_t cores[] = {
     LOAD_CORE(WATARA),
     LOAD_CORE(PV1000),
@@ -59,5 +59,20 @@ static const core_t cores[] = {
     LOAD_CORE(NES),
     LOAD_CORE(GBC)
 };
+
+#undef LOAD_CORE
+
+typedef struct core_ctx_t {
+    const core_t* core;
+    const archive_t* rom;
+    const archive_t* bios;
+    void* emu;
+} core_ctx_t;
+
+const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core);
+void core_restart(core_ctx_t* ctx);
+void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path, const char* force_core);
+void core_ctx_run_frame(core_ctx_t* ctx);
+
 
 #endif

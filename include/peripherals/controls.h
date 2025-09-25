@@ -158,6 +158,8 @@ typedef enum {
 
 void controls_init(control_t begin, control_t end);
 void controls_update();
+void controls_free();
+void controls_load_maps();
 bool controls_pressed(control_t input);
 bool controls_released(control_t input);
 bool controls_gamepad_connected();

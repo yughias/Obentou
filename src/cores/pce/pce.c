@@ -368,6 +368,6 @@ void pce_notify_line(pce_t* p, int frame_line, int* line, int w){
     }
 }
 
-bool PCE_detect(const archive_t* rom_archive){
+bool PCE_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "pce");
 }

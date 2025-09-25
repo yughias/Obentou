@@ -2,48 +2,28 @@
 #include "peripherals/sound.h"
 #include "peripherals/controls.h"
 #include "peripherals/camera.h"
+#include "peripherals/argument.h"
 
-#include "cores.h"
+#include "core.h"
 
-static void* emu;
-static const core_t* core = NULL;
-
-static void detect_core(const archive_t* rom_archive){
-    for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
-        if(cores[i].detect(rom_archive)){
-            printf("Detected core: %s\n", cores[i].name);
-            core = &cores[i];
-            return;
-        }
-    }
-
-    printf("Unknown core: %s\n", archive_get_path(rom_archive));
-    exit(EXIT_FAILURE);
-}
+static core_ctx_t* emu_ctx;
 
 void setup(){
-    if(getArgc() < 2){
-        fprintf(stderr, "Usage: %s <rom>\n", getArgv(0));
-        exit(EXIT_FAILURE);
-    }
-    
-    archive_t* rom_archive = archive_load(getArgv(1));
-
-    detect_core(rom_archive);
-
-    size(core->width, core->height);
-    frameRate(core->fps);
     setTitle("MULTI-SYSTEM EMU");
+    controls_load_maps();
 
-    SDL_AudioSpec audio_spec = core->audio_spec;
+    const char* rom_path;
+    const char* bios_path;
+    const char* force_core;
+    argument_get(&rom_path, &bios_path, &force_core);
+    
+    printf("ROM: %s\n", rom_path);
+    printf("BIOS: %s\n", bios_path);
 
-    emu = core->init(rom_archive, NULL);
+    emu_ctx = malloc(sizeof(core_ctx_t));
+    core_ctx_init(emu_ctx, rom_path, bios_path, force_core);
 
-    sound_open(&audio_spec, core->sound_callback, emu);
-    if(!sound_is_push_rate_set())
-        sound_set_push_rate(core->sound_push_rate);
-
-    controls_init(core->control_begin, core->control_end);
+    core_restart(emu_ctx);
 
     setWindowSize(512, 512);
 }
@@ -52,5 +32,9 @@ void loop(){
     controls_update();
     camera_update();
 
-    core->run_frame(emu);
+    const bool* ks = SDL_GetKeyboardState(NULL);
+    if(ks[SDL_SCANCODE_0])
+        core_restart(emu_ctx);
+
+    core_ctx_run_frame(emu_ctx);
 }

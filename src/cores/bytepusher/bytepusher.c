@@ -60,6 +60,6 @@ void BYTEPUSHER_run_frame(bytepusher_t* bp){
     play_sound_data(bp);
 }
 
-bool BYTEPUSHER_detect(const archive_t* rom_archive){
+bool BYTEPUSHER_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "bytepusher") != NULL;
 }

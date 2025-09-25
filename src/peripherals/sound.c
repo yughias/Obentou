@@ -13,6 +13,8 @@ static float push_rate_counter;
 static float push_rate_reload = -1;
 
 void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, void* userdata) {
+    if(audio_stream)
+        sound_close();
     audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, audio_spec, callback, userdata);
     SDL_ResumeAudioStreamDevice(audio_stream);
 }

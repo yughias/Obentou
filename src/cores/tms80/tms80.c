@@ -74,9 +74,6 @@ static void load_file(const char* filename, u8** buffer, size_t* size){
 }
 
 void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
-    // TODO stub
-    const char* bios_path = "";
-
     tms80_t* tms80 = malloc(sizeof(tms80_t));
     memset(tms80, 0, sizeof(tms80_t));
     z80_init(&tms80->z80);
@@ -96,8 +93,10 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
 
     if(
         rom_file &&
-        strstr(rom_file->path, "(Europe)") || strstr(rom_file->path, "(E)") ||
-        strstr(rom_file->path, "(Brazil)") || strstr(rom_file->path, "[E]")
+        (
+            strstr(rom_file->path, "(Europe)") || strstr(rom_file->path, "(E)") ||
+            strstr(rom_file->path, "(Brazil)") || strstr(rom_file->path, "[E]")
+        )
     ){
         tms80_SET_REGION(tms80, PAL);
         printf("PAL!\n");
@@ -117,15 +116,19 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
         memset(tms80->cartridge, 0xFF, 1 << 10);
         tms80->cartridge_size = 1 << 10;
     }
+    
+    file_t* bios = archive_get_file_by_ext(bios_archive, "sms");
 
-    if(strcmp(bios_path, "")){
-        load_file(bios_path, &tms80->bios, &tms80->bios_size);
+    if(bios){
+        tms80->bios = bios->data;
+        tms80->bios_size = bios->size;
         tms80->type = detect_type(bios_archive);
     } else
         tms80->type = detect_type(rom_archive);
     
     tms80->has_keyboard = tms80->type == SC3000;
     tms80->vdp.cram_size = tms80->type == GG ? CRAM_SIZE_GG : CRAM_SIZE_SMS;
+    
 
     if(tms80->type == TMS80_UNKNOWN){
         printf("can't detect tms80!\n");
@@ -142,7 +145,7 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
 
         case SMS:
         case GG:
-        if(strcmp("", bios_path)){
+        if(bios){
             tms80->z80.readMemory = tms80_sms_bios_readMemory;
             tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
         } else {
@@ -163,6 +166,7 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
     } else {
         SN76489_SET_TYPE(apu, GENERIC);
     }
+
 
     float push_rate = tms80->refresh_rate * tms80->cycles_per_frame / 44100.0f;
     sound_set_push_rate(push_rate);
@@ -286,6 +290,6 @@ void TMS80_run_frame(tms80_t* tms80){
     tms80_vdp_show_frame(vdp);
 }
 
-bool TMS80_detect(const archive_t* rom_archive){
-    return detect_type(rom_archive) != TMS80_UNKNOWN;
+bool TMS80_detect(const archive_t* rom_archive, const archive_t* bios_archive){
+    return (detect_type(rom_archive) != TMS80_UNKNOWN) || (detect_type(bios_archive) != TMS80_UNKNOWN);
 }

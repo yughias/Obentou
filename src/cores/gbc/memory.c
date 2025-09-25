@@ -66,19 +66,21 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     gb_fillWriteTable(writeTable, 0xFE, 0xFE, gb_writeOam);
     gb_fillWriteTable(writeTable, 0xFF, 0xFF, gb_writeIO);
 
-    char bootromName[FILENAME_MAX];
-    char iniName[FILENAME_MAX];
-    getAbsoluteDir(bootromName);
-    // TODO
+    file_t* bootrom = archive_get_file_by_ext(bios_archive, "bin");
+
     if(gb->console_type != MEGADUCK_TYPE){
-        if(gb->console_type == CGB_TYPE){
-            strcat(bootromName, "data/cgb_boot.bin");
-            if(!gb_loadBootRom(gb, bootromName))
-                gb_skipCgbBootrom(gb);
+        if(bootrom){
+            gb_loadBootRom(gb, bootrom);
+            // force dmg if bootrom is 256 bytes
+            if(bootrom->size == 0x100){
+                gb->console_type = DMG_TYPE;
+            }
         } else {
-            strcat(bootromName, "data/dmg_boot.bin");
-            if(!gb_loadBootRom(gb, bootromName))
+            if(gb->console_type == CGB_TYPE){
+                gb_skipCgbBootrom(gb);
+            } else {
                 gb_skipDmgBootrom(gb);
+            }
         }
     }
 }
@@ -111,23 +113,13 @@ void gb_loadRom(gb_t* gb, const archive_t* rom_archive){
     gb->ROM = f->data;
 }
 
-bool gb_loadBootRom(gb_t* gb, const char* filename){
-    FILE* fptr = fopen(filename, "rb");
-    if(!fptr)
-        return false;
+void gb_loadBootRom(gb_t* gb, file_t* file){
+    gb->BOOTROM_SIZE = file->size;
+    gb->BOOTROM = file->data;
 
-    fseek(fptr, 0, SEEK_END);
-    gb->BOOTROM_SIZE = ftell(fptr);
-    rewind(fptr);
-
-    gb->BOOTROM = malloc(gb->BOOTROM_SIZE);
-
-    fread(gb->BOOTROM, 1, gb->BOOTROM_SIZE, fptr);
-    fclose(fptr);
     readGbFunc* readTable = gb->readTable;
     gb_fillReadTable(readTable, 0x00, 0x00, gb_readBootrom);
     gb_fillReadTable(readTable, 0x02, 0x09, gb_readBootrom);
-    return true;
 }
 
 void gb_loadSav(gb_t* gb, const char* filename){

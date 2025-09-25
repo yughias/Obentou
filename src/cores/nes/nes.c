@@ -116,6 +116,6 @@ void nes_sync(nes_t* nes){
     nes_ppu_sync(&nes->ppu);
 }
 
-bool NES_detect(const archive_t* rom_archive){
+bool NES_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "nes");
 }
