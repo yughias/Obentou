@@ -26,7 +26,7 @@ SDL_Window* window;
 SDL_Surface* surface;
 SDL_Surface* windowIcon;
 
-bool running = false;
+bool running;
 
 #ifndef __EMSCRIPTEN__
 Uint32 winFlags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
@@ -81,7 +81,6 @@ void updateMenuVect(HMENU, bool);
 
 #endif
 
-void check_for_mainloop();
 void mainloop();
 
 // variables used for run loop at correct framerate
@@ -167,8 +166,20 @@ int main(int argc, char** argv){
     b_clock = SDL_GetPerformanceCounter();
 
     running = true;
-    while(running)
-        check_for_mainloop();
+    while(running){
+        a_clock = SDL_GetPerformanceCounter();
+        deltaTime = (float)(a_clock - b_clock)/SDL_GetPerformanceFrequency()*1000;
+
+        if(deltaTime > 1000.0f / frameRate){
+            mainloop();
+
+            b_clock = a_clock;
+        } else {
+            float ms = 1000.0f/frameRate;
+            if(ms - deltaTime > 1.0f)
+                SDL_Delay(ms - deltaTime - 1);
+        }
+    }
     #endif
 
     SDL_DestroyTexture(drawBuffer);
@@ -245,21 +256,6 @@ void mainloop(){
     }
 
     loop();
-}
-
-void check_for_mainloop(){
-    a_clock = SDL_GetPerformanceCounter();
-    deltaTime = (float)(a_clock - b_clock)/SDL_GetPerformanceFrequency()*1000;
-
-    if(deltaTime > 1000.0f / frameRate){
-        mainloop();
-
-        b_clock = a_clock;
-    } else {
-        float ms = 1000.0f/frameRate;
-        if(ms - deltaTime > 1.0f)
-            SDL_Delay(ms - deltaTime - 1);
-    }
 }
 
 SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags){
@@ -426,13 +422,12 @@ void renderBufferToWindow(){
 
 bool filterResize(void* userdata, SDL_Event* event){
     if(
-        event->type == SDL_EVENT_WINDOW_EXPOSED ||
         event->type == SDL_EVENT_WINDOW_MOVED ||
         event->type == SDL_EVENT_WINDOW_RESIZED ||
         event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
     ){
         if(running)
-            check_for_mainloop();
+            renderBufferToWindow();
         return false;
     }
 
@@ -440,7 +435,6 @@ bool filterResize(void* userdata, SDL_Event* event){
 }
 
 #ifdef _WIN32
-
 void getAbsoluteDir(char* dst){
     strcpy(dst, absolutePath);
     strcat(dst, "\\");
