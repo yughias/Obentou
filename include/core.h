@@ -19,12 +19,14 @@
 typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*run_frame_ptr)(void* ctx);
 typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
+typedef void (*close_ptr)(void* ctx, const char* sav_path);
 
 typedef struct core_t {
     const char name[32];
     detect_ptr detect;
     init_ptr init;
     run_frame_ptr run_frame;
+    close_ptr close;
     const int width, height;
     const float fps;
     const float sound_push_rate;
@@ -40,6 +42,7 @@ typedef struct core_t {
     .init = core##_init, \
     .detect = core##_detect, \
     .run_frame = core##_run_frame, \
+    .close = core##_close, \
     .width = core##_WIDTH, \
     .height = core##_HEIGHT, \
     .fps = core##_FPS, \
@@ -63,14 +66,17 @@ static const core_t cores[] = {
 #undef LOAD_CORE
 
 typedef struct core_ctx_t {
+    int speed;
+    bool pause;
     const core_t* core;
-    const archive_t* rom;
-    const archive_t* bios;
+    archive_t* rom;
+    archive_t* bios;
     void* emu;
 } core_ctx_t;
 
 const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core);
 void core_restart(core_ctx_t* ctx);
+void core_ctx_close(core_ctx_t* ctx);
 void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path, const char* force_core);
 void core_ctx_run_frame(core_ctx_t* ctx);
 

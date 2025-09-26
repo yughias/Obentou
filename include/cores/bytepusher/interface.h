@@ -4,6 +4,7 @@
 void BYTEPUSHER_run_frame(void* ctx);
 void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool BYTEPUSHER_detect(const archive_t* rom_archive, const archive_t* bios_archive);
+#define BYTEPUSHER_close NULL
 
 #define BYTEPUSHER_WIDTH 256
 #define BYTEPUSHER_HEIGHT 256

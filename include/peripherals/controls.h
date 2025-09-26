@@ -6,6 +6,18 @@
 typedef enum {
     CONTROL_NONE,
 
+    CONTROL_HOTKEY_BEGIN,
+    CONTROL_HOTKEY_PAUSE = CONTROL_HOTKEY_BEGIN,
+    CONTROL_HOTKEY_TURBO,
+    CONTROL_HOTKEY_RESET,
+    CONTROL_HOTKEY_END = CONTROL_HOTKEY_RESET,
+
+    CONTROL_HOTKEY_CMD_BEGIN,
+    CONTROL_HOTKEY_CMD_PAUSE = CONTROL_HOTKEY_CMD_BEGIN,
+    CONTROL_HOTKEY_CMD_TURBO,
+    CONTROL_HOTKEY_CMD_RESET,
+    CONTROL_HOTKEY_CMD_END = CONTROL_HOTKEY_CMD_RESET,
+
     CONTROL_GBC_BEGIN,
     CONTROL_GBC_A = CONTROL_GBC_BEGIN,
     CONTROL_GBC_B,
@@ -162,6 +174,8 @@ void controls_free();
 void controls_load_maps();
 bool controls_pressed(control_t input);
 bool controls_released(control_t input);
+bool hotkeys_pressed(control_t input);
+bool hotkeys_released(control_t input);
 bool controls_gamepad_connected();
 bool controls_rumble(u16 low, u16 hi, u32 duration);
 void controls_get_gamepad_accelerometer(float* sensors);

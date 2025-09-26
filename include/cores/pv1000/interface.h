@@ -7,6 +7,7 @@ void PV1000_run_frame(void* ctx);
 void* PV1000_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool PV1000_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 void PV1000_sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
+#define PV1000_close NULL
 
 #define PV1000_WIDTH 224
 #define PV1000_HEIGHT 192

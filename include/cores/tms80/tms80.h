@@ -32,6 +32,7 @@ typedef struct tms80_t
     vdp_t vdp;
     sn76489_t apu;
 
+    bool no_cartridge;
     u8* cartridge;
     size_t cartridge_size;
 

@@ -14,13 +14,6 @@
 
 #define frameRate(x) frameRate = x
 
-#define LEFT SDLK_LEFT
-#define RIGHT SDLK_RIGHT
-#define UP SDLK_UP
-#define DOWN SDLK_DOWN
-#define BUTTON_LEFT SDL_BUTTON_LEFT
-#define BUTTON_RIGHT SDL_BUTTON_RIGHT
-
 typedef int keyboard;
 typedef Uint32 button;
 
@@ -37,6 +30,8 @@ extern int pmouseY;
 extern int mouseX;
 extern int mouseY;
 extern button exitButton;
+
+extern void (*onExit)();
 
 void setup();
 void loop();

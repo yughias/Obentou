@@ -119,3 +119,11 @@ void nes_sync(nes_t* nes){
 bool NES_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "nes");
 }
+
+void NES_close(nes_t* nes, const char* sav_path){
+    free(nes->mapper);
+    if(nes->cart.is_chr_ram)
+        free(nes->cart.chr);
+    free(nes->cart.prg_ram);
+    free(nes->ppu.vram);
+}

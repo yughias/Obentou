@@ -28,6 +28,8 @@ SDL_Surface* windowIcon;
 
 bool running;
 
+void (*onExit)();
+
 #ifndef __EMSCRIPTEN__
 Uint32 winFlags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
 #else
@@ -191,6 +193,10 @@ int main(int argc, char** argv){
     #endif
 
     SDL_DestroyWindow(window);
+
+    if(onExit)
+        (*onExit)();
+
     SDL_Quit();
 
     return 0;

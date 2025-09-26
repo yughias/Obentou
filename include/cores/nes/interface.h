@@ -6,6 +6,7 @@
 void NES_run_frame(void* ctx);
 void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool NES_detect(const archive_t* rom_archive, const archive_t* bios_archive);
+void NES_close(void* ctx, const char* sav_path);
 
 #define NES_WIDTH 256
 #define NES_HEIGHT 240

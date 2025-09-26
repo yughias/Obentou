@@ -8,6 +8,7 @@
 
 #define INI_FILE "config.ini"
 #define ACTIVE_BUTTONS (end - begin + 1)
+#define HOTKEYS_COUNT (CONTROL_HOTKEY_END - CONTROL_HOTKEY_BEGIN + 1)
 
 static SDL_Scancode control_scancode_maps[CONTROL_COUNT];
 static SDL_GamepadButton control_gamepad_maps[CONTROL_COUNT];
@@ -17,16 +18,21 @@ static control_t end;
 static bool* pressed;
 static bool* prev_pressed;
 
-static SDL_Gamepad* gamepad = NULL;
+static bool hotkeys_pressed_arr[HOTKEYS_COUNT];
+static bool hotkeys_prev_pressed_arr[HOTKEYS_COUNT];
 
+static SDL_Gamepad* gamepad = NULL;
 
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_KEY_" #button, default, name, 64, INI_FILE); \
-    SDL_Scancode scancode = SDL_GetScancodeFromName(name); \
-    if(scancode == SDL_SCANCODE_UNKNOWN) { \
-        printf("Unknown scancode for %s: %s, using %s\n", #console "_" #button, name, default); \
-        scancode = SDL_GetScancodeFromName(default); \
+    SDL_Scancode scancode = SDL_SCANCODE_UNKNOWN; \
+    if(strcmp(name, "none")) { \
+        scancode = SDL_GetScancodeFromName(name); \
+        if(scancode == SDL_SCANCODE_UNKNOWN) { \
+            printf("Unknown scancode for %s: %s\n", #console "_" #button, name); \
+            scancode = SDL_GetScancodeFromName(default); \
+        } \
     } \
     control_scancode_maps[CONTROL_ ## console ## _ ## button] = scancode;\
 }
@@ -34,16 +40,24 @@ static SDL_Gamepad* gamepad = NULL;
 #define LOAD_GAMEPAD(console, button, default) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_GAMEPAD_" #button, default, name, 64, INI_FILE); \
-    SDL_GamepadButton pad_btn = SDL_GetGamepadButtonFromString(name); \
-    if(pad_btn == SDL_GAMEPAD_BUTTON_INVALID) { \
-        printf("Unknown gamepad button for %s: %s, using %s\n", #console "_" #button, name, default); \
-        pad_btn = SDL_GetGamepadButtonFromString(default); \
+    SDL_GamepadButton pad_btn = SDL_GAMEPAD_BUTTON_INVALID; \
+    if(strcmp(name, "none")) { \
+        pad_btn = SDL_GetGamepadButtonFromString(name); \
+        if(pad_btn == SDL_GAMEPAD_BUTTON_INVALID) { \
+            printf("Unknown gamepad button for %s: %s\n", #console "_" #button, name); \
+        } \
     } \
     control_gamepad_maps[CONTROL_ ## console ## _ ## button] = pad_btn;\
 }
 
 static void controls_load_scancode_maps(){
-    control_scancode_maps[CONTROL_NONE] = SDL_SCANCODE_UNKNOWN;
+    
+    LOAD_SCANCODE(HOTKEY, PAUSE, "p");
+    LOAD_SCANCODE(HOTKEY, CMD_PAUSE, "left ctrl");
+    LOAD_SCANCODE(HOTKEY, RESET, "r");
+    LOAD_SCANCODE(HOTKEY, CMD_RESET, "left ctrl");
+    LOAD_SCANCODE(HOTKEY, TURBO, "tab");
+    LOAD_SCANCODE(HOTKEY, CMD_TURBO, "none");
 
     LOAD_SCANCODE(NES, UP, "up");
     LOAD_SCANCODE(NES, DOWN, "down");
@@ -182,7 +196,9 @@ static void controls_load_scancode_maps(){
 }
 
 static void controls_load_gamepad_maps(){
-    control_gamepad_maps[CONTROL_NONE] = SDL_GAMEPAD_BUTTON_INVALID;
+    LOAD_GAMEPAD(HOTKEY, PAUSE, "none");
+    LOAD_GAMEPAD(HOTKEY, RESET, "none");
+    LOAD_GAMEPAD(HOTKEY, TURBO, "none");
 
     LOAD_GAMEPAD(GBC, A, "b");
     LOAD_GAMEPAD(GBC, B, "a");
@@ -256,10 +272,15 @@ void controls_init(control_t begin_, control_t end_) {
 void controls_free(){
     free(pressed);
     free(prev_pressed);
+
+    if(gamepad){
+        SDL_CloseGamepad(gamepad);
+    }
 }
 
 void controls_update(){
     memcpy(prev_pressed, pressed, ACTIVE_BUTTONS * sizeof(bool));
+    memcpy(hotkeys_prev_pressed_arr, hotkeys_pressed_arr, HOTKEYS_COUNT * sizeof(bool));
 
     if(!gamepad){
         int num_gamepads;
@@ -279,6 +300,16 @@ void controls_update(){
     for(int i = begin; i <= end; i++){
         pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
     }
+
+    for(int i = 0; i < HOTKEYS_COUNT; i++){
+        int cmd_idx = CONTROL_HOTKEY_CMD_BEGIN + i;
+        int hotkey_idx = CONTROL_HOTKEY_BEGIN + i;
+        bool active = keystate[control_scancode_maps[cmd_idx]] || (control_scancode_maps[cmd_idx] == SDL_SCANCODE_UNKNOWN);
+        bool key = keystate[control_scancode_maps[hotkey_idx]];
+        bool gamepad_btn = SDL_GetGamepadButton(gamepad, control_gamepad_maps[hotkey_idx]);
+        bool hit = (active && key) || gamepad_btn;
+        hotkeys_pressed_arr[i] = hit;
+    }
 }
 
 bool controls_pressed(control_t control){
@@ -293,6 +324,14 @@ bool controls_released(control_t control){
         return false;
 
     return !pressed[control - begin] && prev_pressed[control - begin];
+}
+
+bool hotkeys_pressed(control_t control){
+    return hotkeys_pressed_arr[control - CONTROL_HOTKEY_BEGIN];
+}
+
+bool hotkeys_released(control_t control){
+    return !hotkeys_pressed_arr[control - CONTROL_HOTKEY_BEGIN] && hotkeys_prev_pressed_arr[control - CONTROL_HOTKEY_BEGIN];
 }
 
 bool controls_gamepad_connected(){

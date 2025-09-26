@@ -8,8 +8,17 @@
 
 static core_ctx_t* emu_ctx;
 
+static void obentou_exit(){
+    sound_close();
+    camera_close();
+    controls_free();
+    core_ctx_close(emu_ctx);
+    free(emu_ctx);
+}
+
 void setup(){
     setTitle("MULTI-SYSTEM EMU");
+    onExit = obentou_exit;
     controls_load_maps();
 
     const char* rom_path;
@@ -31,10 +40,6 @@ void setup(){
 void loop(){
     controls_update();
     camera_update();
-
-    const bool* ks = SDL_GetKeyboardState(NULL);
-    if(ks[SDL_SCANCODE_0])
-        core_restart(emu_ctx);
 
     core_ctx_run_frame(emu_ctx);
 }

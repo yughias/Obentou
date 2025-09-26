@@ -84,3 +84,8 @@ bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     }
     return out;
 }
+
+void GBC_close(gb_t* gb, const char* sav_path){
+    gb_saveSav(gb, sav_path);
+    free(gb->mbc.data);
+}

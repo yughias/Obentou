@@ -143,89 +143,45 @@ static void stepRtc(rtc_t* rtc, uint64_t secs){
 // use BGB 64 bit compatible save format 
 
 void gb_saveRtc(rtc_t* rtc, const char* filename){
-    FILE* fptr = fopen(filename, "ab");
-
-    if(!fptr)
-        return;
-
-    uint32_t tmp_RTC_08 = rtc->REG_08; 
-    uint32_t tmp_RTC_09 = rtc->REG_09; 
-    uint32_t tmp_RTC_0A = rtc->REG_0A; 
-    uint32_t tmp_RTC_0B = rtc->REG_0B; 
-    uint32_t tmp_RTC_0C = rtc->REG_0C; 
-    uint32_t tmp_RTC_08_LATCHED = rtc->REG_08_LATCHED; 
-    uint32_t tmp_RTC_09_LATCHED = rtc->REG_09_LATCHED; 
-    uint32_t tmp_RTC_0A_LATCHED = rtc->REG_0A_LATCHED; 
-    uint32_t tmp_RTC_0B_LATCHED = rtc->REG_0B_LATCHED; 
-    uint32_t tmp_RTC_0C_LATCHED = rtc->REG_0C_LATCHED; 
+    u32 data[12];
 
     stepRtc(rtc, time(NULL) - rtc->timestamp);
     rtc->timestamp = time(NULL);
 
-    fwrite(&tmp_RTC_08, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_09, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_0A, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_0B, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_0C, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_08_LATCHED, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_09_LATCHED, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_0A_LATCHED, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_0B_LATCHED, sizeof(uint32_t), 1, fptr);
-    fwrite(&tmp_RTC_0C_LATCHED, sizeof(uint32_t), 1, fptr);
-    fwrite(&rtc->timestamp, sizeof(rtc->timestamp), 1, fptr);
-    fclose(fptr);
+    data[0] = rtc->REG_08; 
+    data[1] = rtc->REG_09; 
+    data[2] = rtc->REG_0A; 
+    data[3] = rtc->REG_0B; 
+    data[4] = rtc->REG_0C; 
+    data[5] = rtc->REG_08_LATCHED; 
+    data[6] = rtc->REG_09_LATCHED; 
+    data[7] = rtc->REG_0A_LATCHED; 
+    data[8] = rtc->REG_0B_LATCHED; 
+    data[9] = rtc->REG_0C_LATCHED; 
+    data[10] = rtc->timestamp;
+    data[11] = rtc->timestamp >> 32;
+
+    file_append(filename, (u8*)data, sizeof(data));
 }
 
-void gb_loadRtc(rtc_t* rtc, const char* filename){
-    FILE* fptr = fopen(filename, "rb");
-
-    if(!fptr)
+void gb_loadRtc(rtc_t* rtc, u8* sav_data, size_t sav_size){
+    if(sav_size % 8192 != 48)
         return;
 
-    fseek(fptr, 0, SEEK_END);
-    size_t savSize = ftell(fptr);
+    u32* data_ptr = (u32*)(sav_data + sav_size - 48);
 
-    if(savSize % 8192 != 48)
-        return;
-
-    fseek(fptr, savSize - 48, SEEK_SET);
-
-    uint32_t tmp_RTC_08; 
-    uint32_t tmp_RTC_09; 
-    uint32_t tmp_RTC_0A; 
-    uint32_t tmp_RTC_0B; 
-    uint32_t tmp_RTC_0C; 
-    uint32_t tmp_RTC_08_LATCHED; 
-    uint32_t tmp_RTC_09_LATCHED; 
-    uint32_t tmp_RTC_0A_LATCHED; 
-    uint32_t tmp_RTC_0B_LATCHED; 
-    uint32_t tmp_RTC_0C_LATCHED; 
-
-    fread(&tmp_RTC_08, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_09, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_0A, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_0B, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_0C, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_08_LATCHED, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_09_LATCHED, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_0A_LATCHED, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_0B_LATCHED, sizeof(uint32_t), 1, fptr);
-    fread(&tmp_RTC_0C_LATCHED, sizeof(uint32_t), 1, fptr);
-    fread(&rtc->timestamp, sizeof(rtc->timestamp), 1, fptr);
-
-    rtc->REG_08 = tmp_RTC_08; 
-    rtc->REG_09 = tmp_RTC_09; 
-    rtc->REG_0A = tmp_RTC_0A; 
-    rtc->REG_0B = tmp_RTC_0B; 
-    rtc->REG_0C = tmp_RTC_0C; 
-    rtc->REG_08_LATCHED = tmp_RTC_08_LATCHED; 
-    rtc->REG_09_LATCHED = tmp_RTC_09_LATCHED; 
-    rtc->REG_0A_LATCHED = tmp_RTC_0A_LATCHED; 
-    rtc->REG_0B_LATCHED = tmp_RTC_0B_LATCHED; 
-    rtc->REG_0C_LATCHED = tmp_RTC_0C_LATCHED; 
+    rtc->REG_08 = data_ptr[0]; 
+    rtc->REG_09 = data_ptr[1]; 
+    rtc->REG_0A = data_ptr[2]; 
+    rtc->REG_0B = data_ptr[3]; 
+    rtc->REG_0C = data_ptr[4]; 
+    rtc->REG_08_LATCHED = data_ptr[5]; 
+    rtc->REG_09_LATCHED = data_ptr[6]; 
+    rtc->REG_0A_LATCHED = data_ptr[7]; 
+    rtc->REG_0B_LATCHED = data_ptr[8]; 
+    rtc->REG_0C_LATCHED = data_ptr[9];
+    rtc->timestamp = data_ptr[10] | (((u64)data_ptr[11]) << 32);
 
     stepRtc(rtc, time(NULL) - rtc->timestamp);
     rtc->timestamp = time(NULL);
-
-    fclose(fptr);
 }

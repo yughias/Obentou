@@ -11,6 +11,7 @@ static u8 audio_buffer[AUDIO_BUFFER_SIZE];
 static size_t audio_buffer_idx;
 static float push_rate_counter;
 static float push_rate_reload = -1;
+static int push_rate_scaled;
 
 void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, void* userdata) {
     if(audio_stream)
@@ -20,7 +21,6 @@ void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, voi
 }
 
 void sound_close() {
-    SDL_PauseAudioStreamDevice(audio_stream);
     SDL_DestroyAudioStream(audio_stream);
     sound_set_push_rate(-1);
 }
@@ -29,6 +29,11 @@ void sound_set_push_rate(float push_rate) {
     audio_buffer_idx = 0;
     push_rate_counter = 0;
     push_rate_reload = push_rate;
+    push_rate_scaled = push_rate_reload;
+}
+
+void sound_set_push_rate_multiplier(int multiplier) {
+    push_rate_scaled = push_rate_reload * multiplier;
 }
 
 bool sound_is_push_rate_set(){
@@ -38,7 +43,7 @@ bool sound_is_push_rate_set(){
 void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sound_get_sample_ptr func) {
     push_rate_counter -= cycles;
     if(push_rate_counter <= 0) {
-        push_rate_counter += push_rate_reload;
+        push_rate_counter += push_rate_scaled;
         func(ctx, sample);
         memcpy(audio_buffer + audio_buffer_idx, sample, sample_size);
         audio_buffer_idx += sample_size;

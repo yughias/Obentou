@@ -6,6 +6,7 @@
 void GBC_run_frame(void* ctx);
 void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive);
+void GBC_close(void* ctx, const char* sav_path);
 
 #define GBC_WIDTH 160
 #define GBC_HEIGHT 144

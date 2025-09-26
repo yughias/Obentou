@@ -41,11 +41,21 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     gb->ERAM_SIZE = gb_getRamSize(gb->ROM);
     mbc_t* mbc = &gb->mbc;
     gb_detectConsoleAndMbc(gb);
-    // TODO
-    //if(mbc->hasBattery)
-    //    loadSav(gb, savName);
-    //if(mbc->hasRtc)
-    //    loadRtc(mbc->data, savName);
+    
+    file_t* sav_file = malloc(sizeof(file_t));
+    char sav_path[FILENAME_MAX];
+    path_set_ext(archive_get_path(rom_archive), sav_path, "sav");
+
+    if(file_load(sav_file, sav_path)){
+        if(mbc->hasBattery)
+            memcpy(gb->ERAM, sav_file->data, gb->ERAM_SIZE);
+        if(mbc->hasRtc)
+            gb_loadRtc(mbc->data, sav_file->data, sav_file->size);
+
+        file_delete(sav_file);
+    }
+
+    free(sav_file);
 
     readGbFunc* readTable = gb->readTable;
     gb_fillReadTable(readTable, 0x00, 0x40, mbc->mapper_0000_3FFF);
@@ -85,12 +95,6 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     }
 }
 
-void gb_freeMemory(gb_t* gb){
-    free(gb->ROM);
-    free(gb->BOOTROM);
-    free(gb->mbc.data);
-}
-
 u8 gb_readByte(void* ctx, u16 address){
     gb_t* gb = (gb_t*)ctx;
     return (*gb->readTable[address >> 8])((gb_t*)ctx, address);
@@ -122,18 +126,8 @@ void gb_loadBootRom(gb_t* gb, file_t* file){
     gb_fillReadTable(readTable, 0x02, 0x09, gb_readBootrom);
 }
 
-void gb_loadSav(gb_t* gb, const char* filename){
-    FILE* fptr = fopen(filename, "rb");
-    if(!fptr)
-        return;
-    fread(gb->ERAM, 1, gb->ERAM_SIZE, fptr);
-    fclose(fptr);
-}
-
 void gb_saveSav(gb_t* gb, const char* filename){
-    FILE* fptr = fopen(filename, "wb");
-    if(!fptr)
-        return;
-    fwrite(gb->ERAM, 1, gb->ERAM_SIZE, fptr);
-    fclose(fptr);
+    file_save(filename, gb->ERAM, gb->ERAM_SIZE);
+    if(gb->mbc.hasRtc)
+        gb_saveRtc(gb->mbc.data, filename);
 }

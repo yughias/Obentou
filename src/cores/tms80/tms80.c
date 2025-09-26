@@ -112,6 +112,7 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
         tms80->cartridge = rom_file->data;
         tms80->cartridge_size = rom_file->size;
     } else {
+        tms80->no_cartridge = true;
         tms80->cartridge = malloc(1 << 10);
         memset(tms80->cartridge, 0xFF, 1 << 10);
         tms80->cartridge_size = 1 << 10;
@@ -292,4 +293,9 @@ void TMS80_run_frame(tms80_t* tms80){
 
 bool TMS80_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return (detect_type(rom_archive) != TMS80_UNKNOWN) || (detect_type(bios_archive) != TMS80_UNKNOWN);
+}
+
+void TMS80_close(tms80_t* tms80, const char* sav_path){
+    if(tms80->no_cartridge)
+        free(tms80->cartridge);
 }

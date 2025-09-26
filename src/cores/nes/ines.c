@@ -31,7 +31,11 @@ void nes_ines_load(ines_t* ines, u8* data, size_t size){
     ines->trainer = data + HEADER_SIZE;
 
     ines->prg = ines->trainer + ines->trainer_size;
-    ines->chr = ines->prg + ines->prg_size;
+    
+    if(ines->is_chr_ram)
+        ines->chr = malloc(ines->chr_size);
+    else
+        ines->chr = ines->prg + ines->prg_size;
 
     ines->prg_ram_size = 1 << 13;
     ines->prg_ram = malloc(ines->prg_ram_size);
