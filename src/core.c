@@ -3,6 +3,7 @@
 #include "utils/sound.h"
 #include "utils/controls.h"
 #include "utils/menu.h"
+#include "utils/argument.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -29,6 +30,13 @@ void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path,
     ctx->rom = archive_load(rom_path);
     ctx->bios = archive_load(bios_path);
     ctx->core = core_detect(ctx->rom, ctx->bios, force_core);
+
+    if(ctx->core && !bios_path){
+        char default_bios_path[FILENAME_MAX];
+        argument_default_bios(default_bios_path, ctx->core->name);
+        archive_free(ctx->bios);
+        ctx->bios = archive_load(default_bios_path);
+    }
 
     sound_close();
 }

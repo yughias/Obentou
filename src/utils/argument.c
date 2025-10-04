@@ -1,8 +1,10 @@
 #include "utils/argument.h"
 
 #include "SDL_MAINLOOP.h"
+#include "minIni.h"
 
 #include "argparse.h"
+
 
 static const char *const usages[] = {
     "obentou.exe <rom path> [options]",
@@ -35,4 +37,14 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
 
     if(argc)
         *rom_path = argv[0];    
+}
+
+void argument_default_bios(char* path, const char* core_name){
+    char buf[FILENAME_MAX];
+    const char* base_path = SDL_GetBasePath();
+    ini_gets(core_name, "BIOS", "", buf, FILENAME_MAX, "config.ini");
+    if(!buf[0])
+        path[0] = '\0';
+    else
+        snprintf(path, FILENAME_MAX, "%s%s", base_path, buf);
 }
