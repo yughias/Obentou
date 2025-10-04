@@ -8,7 +8,7 @@
 void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archive){
     bytepusher_t* bp = malloc(sizeof(bytepusher_t));
     file_t* rom = archive_get_file_by_ext(rom_archive, "bytepusher");
-    memcpy(bp->memory, rom->data, MEMORY_SIZE);
+    memcpy(bp->memory, rom->data, rom->size);
     
     return bp;
 }

@@ -3,17 +3,18 @@
 #include "peripherals/controls.h"
 #include "peripherals/camera.h"
 #include "peripherals/argument.h"
+#include "peripherals/menu.h"
 
 #include "core.h"
 
-static core_ctx_t* emu_ctx;
+static core_ctx_t emu_ctx;
 
 static void obentou_exit(){
     sound_close();
     camera_close();
     controls_free();
-    core_ctx_close(emu_ctx);
-    free(emu_ctx);
+    core_ctx_close(&emu_ctx);
+    controls_save_maps();
 }
 
 void setup(){
@@ -29,17 +30,40 @@ void setup(){
     printf("ROM: %s\n", rom_path);
     printf("BIOS: %s\n", bios_path);
 
-    emu_ctx = malloc(sizeof(core_ctx_t));
-    core_ctx_init(emu_ctx, rom_path, bios_path, force_core);
+    core_ctx_init(&emu_ctx, rom_path, bios_path, force_core);
 
-    core_restart(emu_ctx);
+    core_restart(&emu_ctx);
 
     setWindowSize(512, 512);
+
+    menu_create(&emu_ctx);
 }
 
 void loop(){
     controls_update();
     camera_update();
 
-    core_ctx_run_frame(emu_ctx);
+    if(hotkeys_released(CONTROL_HOTKEY_OPEN))
+        menu_open_rom(&emu_ctx);
+
+    if(hotkeys_released(CONTROL_HOTKEY_OPEN_BIOS))
+        menu_open_bios(&emu_ctx);
+
+    if(hotkeys_released(CONTROL_HOTKEY_SPEEDUP) && emu_ctx.speed_level < 3){
+        ctx_set_speed_args_t speed_args = {.ctx = &emu_ctx, .speed = emu_ctx.speed_level + 1};
+        core_ctx_set_speed(&speed_args);
+    }
+
+    if(hotkeys_released(CONTROL_HOTKEY_SLOWDOWN) && emu_ctx.speed_level != 0){
+        ctx_set_speed_args_t speed_args = {.ctx = &emu_ctx, .speed = emu_ctx.speed_level - 1};
+        core_ctx_set_speed(&speed_args);
+    }
+
+    if(hotkeys_released(CONTROL_HOTKEY_RESET))
+        core_restart(&emu_ctx);
+
+    if(hotkeys_released(CONTROL_HOTKEY_PAUSE))
+        core_switch_pause(&emu_ctx);
+
+    core_ctx_run_frame(&emu_ctx);
 }

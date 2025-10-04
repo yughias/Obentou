@@ -113,8 +113,14 @@ void gb_loadRom(gb_t* gb, const archive_t* rom_archive){
         f = archive_get_file_by_ext(rom_archive, "megaduck");
     if(!f)
         f = archive_get_file_by_ext(rom_archive, "bin");
-    gb->ROM_SIZE = f->size;
-    gb->ROM = f->data;
+    if(f){
+        gb->ROM = f->data;
+        gb->ROM_SIZE = f->size;
+    } else {
+        gb->noCart = true;
+        gb->ROM = malloc(1 << 15);
+        gb->ROM_SIZE = 1 << 15;
+    }
 }
 
 void gb_loadBootRom(gb_t* gb, file_t* file){

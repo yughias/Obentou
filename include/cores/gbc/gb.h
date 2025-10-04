@@ -41,6 +41,7 @@ typedef struct gb_t {
     
     u8* ROM;
     size_t ROM_SIZE;
+    bool noCart;
     
     size_t ERAM_SIZE;
     u8 ERAM[MAX_ERAM_SIZE];

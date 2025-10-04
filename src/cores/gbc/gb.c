@@ -82,10 +82,20 @@ bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive){
         out |= size == (1 << 16);
         out |= size == (1 << 17);
     }
+
+    if(f = archive_get_file_by_ext(bios_archive, "bin")){
+        if(f->size >= 0x100){
+            // set stack
+            out |= (f->data[0] == 0x31) && (f->data[1] = 0xFE) && (f->data[2] == 0xFF);
+        }
+    }
+
     return out;
 }
 
 void GBC_close(gb_t* gb, const char* sav_path){
     gb_saveSav(gb, sav_path);
     free(gb->mbc.data);
+    if(gb->noCart)
+        free(gb->ROM);
 }

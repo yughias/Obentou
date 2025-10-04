@@ -34,11 +34,5 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
     argc = argparse_parse(&argparse, argc, argv);
 
     if(argc)
-        *rom_path = argv[0];
-
-    if(!(*rom_path) && !(*bios_path)){
-        argparse_usage(&argparse);
-        exit(EXIT_SUCCESS);
-    }
-    
+        *rom_path = argv[0];    
 }

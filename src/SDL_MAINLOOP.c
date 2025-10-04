@@ -21,6 +21,8 @@ int mouseY;
 button exitButton = SDLK_ESCAPE;
 float aspectRatio = -1.0f;
 
+static SDL_AtomicInt is_grabbed;
+
 // not accessible variables
 SDL_Window* window;
 SDL_Surface* surface;
@@ -55,14 +57,13 @@ bool filterResize(void*, SDL_Event*);
 #include <shlwapi.h>
 #include <dwmapi.h>
 
-char absolutePath[1024];
-
 HWND hwnd = NULL;
 HMENU mainMenu = NULL;
 
 typedef struct {
     menuId parent_menu;
-    void (*callback)();
+    void (*callback)(void*);
+    void* arg;
     size_t position;
 } button_t;
 size_t n_button = 0;
@@ -78,7 +79,7 @@ menu_t* menus = NULL;
 
 HWND getWindowHandler();
 void createMainMenu();
-void updateButtonVect(void (*callback)(), menuId);
+void updateButtonVect(void (*callback)(), void*, menuId);
 void updateMenuVect(HMENU, bool);
 
 #endif
@@ -122,11 +123,6 @@ int main(int argc, char** argv){
     main_argc = argc;
     main_argv = argv;
 
-    #ifdef _WIN32
-    GetModuleFileName(NULL, absolutePath, 1024);
-    PathRemoveFileSpec(absolutePath);
-    #endif
-
     SDL_Init(
         SDL_INIT_VIDEO |
         SDL_INIT_AUDIO |
@@ -150,10 +146,6 @@ int main(int argc, char** argv){
     if(mainMenu && !SDL_GetWindowFullscreenMode(window)){
         SetMenu(hwnd, mainMenu);
     }
-
-    int actual_width, actual_height;
-    SDL_GetWindowSize(window, &actual_width, &actual_height);
-    SDL_SetWindowSize(window, actual_width, actual_height);
     #endif
 
     SDL_ShowWindow(window);
@@ -164,22 +156,25 @@ int main(int argc, char** argv){
     b_clock = emscripten_get_now();
     emscripten_set_main_loop(emscripten_mainloop, 0, 1);
     #else 
-    a_clock = SDL_GetPerformanceCounter();
-    b_clock = SDL_GetPerformanceCounter();
+    a_clock = SDL_GetTicksNS();
+    b_clock = SDL_GetTicksNS();
 
     running = true;
-    while(running){
-        a_clock = SDL_GetPerformanceCounter();
-        deltaTime = (float)(a_clock - b_clock)/SDL_GetPerformanceFrequency()*1000;
 
-        if(deltaTime > 1000.0f / frameRate){
+    while (running) {
+        Uint64 targetFrameTime = (Uint64)(1e9 / frameRate);
+        a_clock = SDL_GetTicksNS();
+        Uint64 deltaNS = a_clock - b_clock;
+
+        if (deltaNS >= targetFrameTime) {
+            deltaTime = deltaNS / 1e6f;
             mainloop();
 
             b_clock = a_clock;
         } else {
-            float ms = 1000.0f/frameRate;
-            if(ms - deltaTime > 1.0f)
-                SDL_Delay(ms - deltaTime - 1);
+            Uint64 remaining = targetFrameTime - deltaNS;
+            if(remaining > 1e6)
+                SDL_DelayPrecise(remaining - 1e6);
         }
     }
     #endif
@@ -214,7 +209,7 @@ void mainloop(){
             if(button_id < n_button){
                 checkRadioButton(button_id);
                 if(buttons[button_id].callback)
-                    (*buttons[button_id].callback)();
+                    (*buttons[button_id].callback)(buttons[button_id].arg);
             }
         }
 
@@ -238,10 +233,12 @@ void mainloop(){
         mouseX = width-1;
     if(mouseY >= height)
         mouseY = height-1;
+    SDL_SetAtomicInt(&is_grabbed, 0);
     SDL_Event event;
     while(SDL_PollEvent(&event)){
         switch(event.type){
             case SDL_EVENT_QUIT:
+            SDL_SetAtomicInt(&is_grabbed, 1);
             running = 0;
             break;
 
@@ -264,6 +261,10 @@ void mainloop(){
     loop();
 }
 
+SDL_Window* getMainWindow(){
+    return window;
+}
+
 SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags){
     SDL_Window* win = SDL_CreateWindow(title, w, h, flags);
     if(windowIcon)
@@ -281,9 +282,6 @@ void size(int w, int h){
 
         #ifdef _WIN32
         hwnd = getWindowHandler();
-        // make menu bar and window of same color
-        BOOL dark = FALSE;
-        DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
         #endif
 
         renderer = SDL_CreateRenderer(window, NULL);
@@ -319,7 +317,7 @@ float millis(){
 }
 
 void fullScreen(){
-    bool is_fullscreen = SDL_GetWindowFullscreenMode(window);
+    static bool is_fullscreen = false;
 
     #ifdef _WIN32
     if(hwnd && window && mainMenu){
@@ -327,11 +325,12 @@ void fullScreen(){
             SetMenu(hwnd, mainMenu);
         else
             SetMenu(hwnd, NULL);
-        SDL_SetWindowSize(window, width, height);
     }
     #endif
 
-    SDL_SetWindowFullscreen(window, !is_fullscreen);
+    is_fullscreen ^= 1; 
+
+    SDL_SetWindowFullscreen(window, is_fullscreen);
 }
 
 void background(int col){
@@ -430,8 +429,10 @@ bool filterResize(void* userdata, SDL_Event* event){
     if(
         event->type == SDL_EVENT_WINDOW_MOVED ||
         event->type == SDL_EVENT_WINDOW_RESIZED ||
-        event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
+        event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || 
+        event->type == SDL_EVENT_WINDOW_EXPOSED
     ){
+        SDL_SetAtomicInt(&is_grabbed, 1);
         if(running)
             renderBufferToWindow();
         return false;
@@ -440,12 +441,11 @@ bool filterResize(void* userdata, SDL_Event* event){
     return true;
 }
 
-#ifdef _WIN32
-void getAbsoluteDir(char* dst){
-    strcpy(dst, absolutePath);
-    strcat(dst, "\\");
+bool isGrabbed(){
+    return SDL_GetAtomicInt(&is_grabbed);
 }
 
+#ifdef _WIN32
 HWND getWindowHandler(){
     SDL_PropertiesID props = SDL_GetWindowProperties(window);
     return SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
@@ -456,16 +456,23 @@ void createMainMenu(){
         mainMenu = CreateMenu();
 }
 
-void updateButtonVect(void (*callback)(), menuId parentMenu){
+void updateButtonVect(void (*callback)(), void* arg, menuId parentMenu){
     if(!buttons)
         buttons = (button_t*)malloc(sizeof(button_t));
     else
         buttons = (button_t*)realloc(buttons, (n_button+1)*sizeof(button_t));
+
     buttons[n_button].callback = callback;
+    buttons[n_button].arg = arg;
     buttons[n_button].parent_menu = parentMenu;
+
     if(parentMenu != -1){
-      buttons[n_button].position = menus[parentMenu].n_button-1;  
+        buttons[n_button].position = menus[parentMenu].n_button; 
+        menus[parentMenu].n_button++; 
+    } else {
+        buttons[n_button].position = 0;
     }
+
     n_button++;
 }
 
@@ -491,39 +498,56 @@ menuId addMenuTo(menuId parentId, const wchar_t* string, bool isRadio){
     HMENU new_menu = CreateMenu();
     AppendMenuW(parent, MF_POPUP, (UINT_PTR) new_menu, string);
     updateMenuVect(new_menu, isRadio);
+    updateButtonVect(NULL, NULL, parentId);
     return n_menu-1;
 }
 
-buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)()){
+buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(), void* arg){
     HMENU parent = NULL;
+
     if(parentId < n_menu){
         parent = menus[parentId].hMenu;
-        menus[parentId].n_button++;
     }
+
     if(!parent){
         createMainMenu();
         parent = mainMenu;
     }
+
     AppendMenuW(parent, MF_STRING, n_button, string);
-    updateButtonVect(callback, parentId);
+    updateButtonVect(callback, arg, parentId);
+
     return n_button-1;
 }
 
 void checkRadioButton(buttonId button_id){
-    if(button_id < n_button){
-        menuId menu_id = buttons[button_id].parent_menu;
-        if(menu_id < n_menu && menus[menu_id].is_radio)
-            CheckMenuRadioItem(menus[menu_id].hMenu, 0, menus[menu_id].n_button-1, buttons[button_id].position, MF_BYPOSITION);
-    }
+   if(button_id >= n_button) return;
+
+    menuId menu_id = buttons[button_id].parent_menu;
+    if(menu_id >= n_menu) return;
+
+    if(menus[menu_id].is_radio)
+        CheckMenuRadioItem(
+            menus[menu_id].hMenu,             // menu handle
+            0,                                // first item
+            menus[menu_id].n_button - 1,      // last item
+            buttons[button_id].position,      // position within the menu
+            MF_BYPOSITION
+        );
 }
 
 void tickButton(buttonId button_id, bool state){
+    if(button_id >= n_button) return;
+
     button_t* b = &buttons[button_id];
-    if(button_id < n_button){
-        menuId menu_id = b->parent_menu;
-        if(menu_id < n_menu){
-            CheckMenuItem(menus[menu_id].hMenu, b->position, MF_BYPOSITION | (state ? MF_CHECKED : MF_UNCHECKED) );
-        }
-    }
+    menuId menu_id = b->parent_menu;
+
+    if(menu_id >= n_menu) return;
+
+    CheckMenuItem(
+        menus[menu_id].hMenu,
+        b->position,
+        MF_BYPOSITION | (state ? MF_CHECKED : MF_UNCHECKED)
+    );
 }
 #endif

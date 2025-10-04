@@ -10,13 +10,21 @@ typedef enum {
     CONTROL_HOTKEY_PAUSE = CONTROL_HOTKEY_BEGIN,
     CONTROL_HOTKEY_TURBO,
     CONTROL_HOTKEY_RESET,
-    CONTROL_HOTKEY_END = CONTROL_HOTKEY_RESET,
+    CONTROL_HOTKEY_SLOWDOWN,
+    CONTROL_HOTKEY_SPEEDUP,
+    CONTROL_HOTKEY_OPEN,
+    CONTROL_HOTKEY_OPEN_BIOS,
+    CONTROL_HOTKEY_END = CONTROL_HOTKEY_OPEN_BIOS,
 
     CONTROL_HOTKEY_CMD_BEGIN,
     CONTROL_HOTKEY_CMD_PAUSE = CONTROL_HOTKEY_CMD_BEGIN,
     CONTROL_HOTKEY_CMD_TURBO,
     CONTROL_HOTKEY_CMD_RESET,
-    CONTROL_HOTKEY_CMD_END = CONTROL_HOTKEY_CMD_RESET,
+    CONTROL_HOTKEY_CMD_SLOWDOWN,
+    CONTROL_HOTKEY_CMD_SPEEDUP,
+    CONTROL_HOTKEY_CMD_OPEN,
+    CONTROL_HOTKEY_CMD_OPEN_BIOS,
+    CONTROL_HOTKEY_CMD_END = CONTROL_HOTKEY_CMD_OPEN_BIOS,
 
     CONTROL_GBC_BEGIN,
     CONTROL_GBC_A = CONTROL_GBC_BEGIN,
@@ -172,6 +180,7 @@ void controls_init(control_t begin, control_t end);
 void controls_update();
 void controls_free();
 void controls_load_maps();
+void controls_save_maps();
 bool controls_pressed(control_t input);
 bool controls_released(control_t input);
 bool hotkeys_pressed(control_t input);

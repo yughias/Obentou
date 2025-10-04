@@ -46,6 +46,9 @@ void gb_detectConsoleAndMbc(gb_t* gb){
 
     gb->console_type = CGB_TYPE;
 
+    if(gb->noCart)
+        return;
+
     // TODO
     //if(config_force_dmg_when_possible &&gb->ROM[0x143] != 0xC0)
     //    gb->console_type = DMG_TYPE;

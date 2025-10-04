@@ -39,9 +39,11 @@ void size(int, int);
 void setTitle(const char*);
 void setWindowSize(int, int);
 void setAspectRatio(float);
+SDL_Window* getMainWindow();
 float millis();
 void fullScreen();
 void background(int);
+bool isGrabbed();
 int color(int, int, int);
 void getRGB(int, Uint8*, Uint8*, Uint8*);
 void rect(int, int, int, int, int);
@@ -62,16 +64,15 @@ typedef size_t menuId;
 typedef size_t buttonId;
 #ifdef _WIN32
 menuId addMenuTo(menuId, const wchar_t*, bool);
-buttonId addButtonTo(menuId, const wchar_t*, void (*callback)());
+buttonId addButtonTo(menuId, const wchar_t*, void (*callback)(void*), void*);
 void checkRadioButton(buttonId); 
 void tickButton(buttonId, bool);
-void getAbsoluteDir(char*); 
+
 #else
 #define addMenuTo(a, b, c) 0
-#define addButtonTo(a, b, c) 0 
+#define addButtonTo(a, b, c, d) 0 
 #define checkRadioButton(a); 
 #define tickButton(a, b); 
-#define getAbsoluteDir(a);
 #endif
 
 #endif

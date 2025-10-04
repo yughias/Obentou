@@ -6,6 +6,10 @@
 
 #include <stdlib.h>
 
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#endif
+
 #define INI_FILE "config.ini"
 #define ACTIVE_BUTTONS (end - begin + 1)
 #define HOTKEYS_COUNT (CONTROL_HOTKEY_END - CONTROL_HOTKEY_BEGIN + 1)
@@ -23,11 +27,223 @@ static bool hotkeys_prev_pressed_arr[HOTKEYS_COUNT];
 
 static SDL_Gamepad* gamepad = NULL;
 
+#define SCANCODES(XYZ) \
+XYZ(HOTKEY, PAUSE, "p"); \
+XYZ(HOTKEY, CMD_PAUSE, "left ctrl"); \
+XYZ(HOTKEY, RESET, "r"); \
+XYZ(HOTKEY, CMD_RESET, "left ctrl"); \
+XYZ(HOTKEY, TURBO, "tab"); \
+XYZ(HOTKEY, CMD_TURBO, "none"); \
+XYZ(HOTKEY, OPEN, "o"); \
+XYZ(HOTKEY, CMD_OPEN, "left ctrl"); \
+XYZ(HOTKEY, SPEEDUP, "="); \
+XYZ(HOTKEY, CMD_SPEEDUP, "none"); \
+XYZ(HOTKEY, SLOWDOWN, "-"); \
+XYZ(HOTKEY, CMD_SLOWDOWN, "none"); \
+XYZ(HOTKEY, OPEN_BIOS, "b"); \
+XYZ(HOTKEY, CMD_OPEN_BIOS, "left ctrl"); \
+\
+XYZ(NES, UP, "up"); \
+XYZ(NES, DOWN, "down"); \
+XYZ(NES, LEFT, "left"); \
+XYZ(NES, RIGHT, "right"); \
+XYZ(NES, A, "x"); \
+XYZ(NES, B, "z"); \
+XYZ(NES, SELECT, "right shift"); \
+XYZ(NES, START, "return"); \
+\
+XYZ(WATARA, UP, "up"); \
+XYZ(WATARA, DOWN, "down"); \
+XYZ(WATARA, LEFT, "left"); \
+XYZ(WATARA, RIGHT, "right"); \
+XYZ(WATARA, A, "x"); \
+XYZ(WATARA, B, "z"); \
+XYZ(WATARA, SELECT, "right shift"); \
+XYZ(WATARA, START, "return"); \
+\
+XYZ(GBC, UP, "up"); \
+XYZ(GBC, DOWN, "down"); \
+XYZ(GBC, LEFT, "left"); \
+XYZ(GBC, RIGHT, "right"); \
+XYZ(GBC, A, "x"); \
+XYZ(GBC, B, "z"); \
+XYZ(GBC, SELECT, "right shift"); \
+XYZ(GBC, START, "return"); \
+\
+XYZ(PV1000, UP, "up"); \
+XYZ(PV1000, DOWN, "down"); \
+XYZ(PV1000, LEFT, "left"); \
+XYZ(PV1000, RIGHT, "right"); \
+XYZ(PV1000, BTN_1, "z"); \
+XYZ(PV1000, BTN_2, "x"); \
+XYZ(PV1000, SELECT, "right shift"); \
+XYZ(PV1000, START, "return"); \
+\
+XYZ(BYTEPUSHER, 1, "1"); \
+XYZ(BYTEPUSHER, 2, "2"); \
+XYZ(BYTEPUSHER, 3, "3"); \
+XYZ(BYTEPUSHER, C, "4"); \
+XYZ(BYTEPUSHER, 4, "q"); \
+XYZ(BYTEPUSHER, 5, "w"); \
+XYZ(BYTEPUSHER, 6, "e"); \
+XYZ(BYTEPUSHER, D, "r"); \
+XYZ(BYTEPUSHER, 7, "a"); \
+XYZ(BYTEPUSHER, 8, "s"); \
+XYZ(BYTEPUSHER, 9, "d"); \
+XYZ(BYTEPUSHER, E, "f"); \
+XYZ(BYTEPUSHER, A, "z"); \
+XYZ(BYTEPUSHER, 0, "x"); \
+XYZ(BYTEPUSHER, B, "c"); \
+XYZ(BYTEPUSHER, F, "v"); \
+\
+XYZ(PCE, UP, "up"); \
+XYZ(PCE, DOWN, "down"); \
+XYZ(PCE, LEFT, "left"); \
+XYZ(PCE, RIGHT, "right"); \
+XYZ(PCE, BTN_2, "z"); \
+XYZ(PCE, BTN_1, "x"); \
+XYZ(PCE, SELECT, "right shift"); \
+XYZ(PCE, START, "return"); \
+\
+XYZ(TMS80, UP, "up"); \
+XYZ(TMS80, DOWN, "down"); \
+XYZ(TMS80, LEFT, "left"); \
+XYZ(TMS80, RIGHT, "right"); \
+XYZ(TMS80, BTN_1, "z"); \
+XYZ(TMS80, BTN_2, "x"); \
+XYZ(TMS80, PAUSE, "f1"); \
+XYZ(TMS80, GG_START, "return"); \
+\
+XYZ(TMS80, 1, "1"); \
+XYZ(TMS80, Q, "q"); \
+XYZ(TMS80, A, "a"); \
+XYZ(TMS80, Z, "z"); \
+XYZ(TMS80, ED, "right ctrl"); \
+XYZ(TMS80, COMMA, ","); \
+XYZ(TMS80, K, "k"); \
+XYZ(TMS80, I, "i"); \
+XYZ(TMS80, 8, "8"); \
+XYZ(TMS80, 2, "2"); \
+XYZ(TMS80, W, "w"); \
+XYZ(TMS80, S, "s"); \
+XYZ(TMS80, X, "x"); \
+XYZ(TMS80, SPC, "space"); \
+XYZ(TMS80, DOT, "."); \
+XYZ(TMS80, L, "l"); \
+XYZ(TMS80, O, "o"); \
+XYZ(TMS80, 9, "9"); \
+XYZ(TMS80, 3, "3"); \
+XYZ(TMS80, E, "e"); \
+XYZ(TMS80, D, "d"); \
+XYZ(TMS80, C, "c"); \
+XYZ(TMS80, HC, "delete"); \
+XYZ(TMS80, SLASH, "/"); \
+XYZ(TMS80, SEMICOLON, ";"); \
+XYZ(TMS80, P, "p"); \
+XYZ(TMS80, 0, "0"); \
+XYZ(TMS80, 4, "4"); \
+XYZ(TMS80, R, "r"); \
+XYZ(TMS80, F, "f"); \
+XYZ(TMS80, V, "v"); \
+XYZ(TMS80, ID, "backspace"); \
+XYZ(TMS80, PI, "right alt"); \
+XYZ(TMS80, COLON, "\'"); \
+XYZ(TMS80, AT, "\\"); \
+XYZ(TMS80, MINUS, "-"); \
+XYZ(TMS80, 5, "5"); \
+XYZ(TMS80, T, "t"); \
+XYZ(TMS80, G, "g"); \
+XYZ(TMS80, B, "b"); \
+XYZ(TMS80, DA, "down"); \
+XYZ(TMS80, CLOSE_BRACKET, "]"); \
+XYZ(TMS80, OPEN_BRACKET, "["); \
+XYZ(TMS80, CARET, "="); \
+XYZ(TMS80, 6, "6"); \
+XYZ(TMS80, Y, "y"); \
+XYZ(TMS80, H, "h"); \
+XYZ(TMS80, N, "n"); \
+XYZ(TMS80, LA, "left"); \
+XYZ(TMS80, CR, "return"); \
+XYZ(TMS80, YEN, "`"); \
+XYZ(TMS80, FNC, "tab"); \
+XYZ(TMS80, 7, "7"); \
+XYZ(TMS80, U, "u"); \
+XYZ(TMS80, J, "j"); \
+XYZ(TMS80, M, "m"); \
+XYZ(TMS80, RA, "right"); \
+XYZ(TMS80, UA, "up"); \
+XYZ(TMS80, BRK, "right shift"); \
+XYZ(TMS80, GRP, "left alt"); \
+XYZ(TMS80, CTL, "left ctrl"); \
+XYZ(TMS80, SHF, "left shift");
+
+#define GAMEPADS(XYZ) \
+XYZ(HOTKEY, PAUSE, "none"); \
+XYZ(HOTKEY, RESET, "none"); \
+XYZ(HOTKEY, TURBO, "none"); \
+XYZ(HOTKEY, OPEN,  "none"); \
+XYZ(HOTKEY, SPEEDUP, "none"); \
+XYZ(HOTKEY, SLOWDOWN, "none"); \
+XYZ(HOTKEY, OPEN_BIOS, "none"); \
+\
+XYZ(GBC, A, "b"); \
+XYZ(GBC, B, "a"); \
+XYZ(GBC, SELECT, "back"); \
+XYZ(GBC, START, "start"); \
+XYZ(GBC, UP, "dpup"); \
+XYZ(GBC, DOWN, "dpdown"); \
+XYZ(GBC, LEFT, "dpleft"); \
+XYZ(GBC, RIGHT, "dpright"); \
+\
+XYZ(PV1000, BTN_1, "a"); \
+XYZ(PV1000, BTN_2, "b"); \
+XYZ(PV1000, SELECT, "back"); \
+XYZ(PV1000, START, "start"); \
+XYZ(PV1000, UP, "dpup"); \
+XYZ(PV1000, DOWN, "dpdown"); \
+XYZ(PV1000, LEFT, "dpleft"); \
+XYZ(PV1000, RIGHT, "dpright"); \
+\
+XYZ(WATARA, A, "b"); \
+XYZ(WATARA, B, "a"); \
+XYZ(WATARA, SELECT, "back"); \
+XYZ(WATARA, START, "start"); \
+XYZ(WATARA, UP, "dpup"); \
+XYZ(WATARA, DOWN, "dpdown"); \
+XYZ(WATARA, LEFT, "dpleft"); \
+XYZ(WATARA, RIGHT, "dpright"); \
+\
+XYZ(NES, A, "b"); \
+XYZ(NES, B, "a"); \
+XYZ(NES, SELECT, "back"); \
+XYZ(NES, START, "start"); \
+XYZ(NES, UP, "dpup"); \
+XYZ(NES, DOWN, "dpdown"); \
+XYZ(NES, LEFT, "dpleft"); \
+XYZ(NES, RIGHT, "dpright"); \
+\
+XYZ(PCE, BTN_2, "a"); \
+XYZ(PCE, BTN_1, "b"); \
+XYZ(PCE, SELECT, "back"); \
+XYZ(PCE, START, "start"); \
+XYZ(PCE, UP, "dpup"); \
+XYZ(PCE, DOWN, "dpdown"); \
+XYZ(PCE, LEFT, "dpleft"); \
+XYZ(PCE, RIGHT, "dpright"); \
+\
+XYZ(TMS80, UP, "dpup"); \
+XYZ(TMS80, DOWN, "dpdown"); \
+XYZ(TMS80, LEFT, "dpleft"); \
+XYZ(TMS80, RIGHT, "dpright"); \
+XYZ(TMS80, BTN_1, "a"); \
+XYZ(TMS80, BTN_2, "b"); \
+XYZ(TMS80, GG_START, "start");
+
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_KEY_" #button, default, name, 64, INI_FILE); \
     SDL_Scancode scancode = SDL_SCANCODE_UNKNOWN; \
-    if(strcmp(name, "none")) { \
+    if(strcasecmp(name, "none")) { \
         scancode = SDL_GetScancodeFromName(name); \
         if(scancode == SDL_SCANCODE_UNKNOWN) { \
             printf("Unknown scancode for %s: %s\n", #console "_" #button, name); \
@@ -37,11 +253,16 @@ static SDL_Gamepad* gamepad = NULL;
     control_scancode_maps[CONTROL_ ## console ## _ ## button] = scancode;\
 }
 
+#define SAVE_SCANCODE(console, button, default) { \
+    const char* name = SDL_GetScancodeName(control_scancode_maps[CONTROL_ ## console ## _ ## button]); \
+    ini_puts(#console, "INPUT_KEY_" #button, name &&name[0] ? name : "none", INI_FILE); \
+}
+
 #define LOAD_GAMEPAD(console, button, default) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_GAMEPAD_" #button, default, name, 64, INI_FILE); \
     SDL_GamepadButton pad_btn = SDL_GAMEPAD_BUTTON_INVALID; \
-    if(strcmp(name, "none")) { \
+    if(strcasecmp(name, "none")) { \
         pad_btn = SDL_GetGamepadButtonFromString(name); \
         if(pad_btn == SDL_GAMEPAD_BUTTON_INVALID) { \
             printf("Unknown gamepad button for %s: %s\n", #console "_" #button, name); \
@@ -50,213 +271,19 @@ static SDL_Gamepad* gamepad = NULL;
     control_gamepad_maps[CONTROL_ ## console ## _ ## button] = pad_btn;\
 }
 
-static void controls_load_scancode_maps(){
-    
-    LOAD_SCANCODE(HOTKEY, PAUSE, "p");
-    LOAD_SCANCODE(HOTKEY, CMD_PAUSE, "left ctrl");
-    LOAD_SCANCODE(HOTKEY, RESET, "r");
-    LOAD_SCANCODE(HOTKEY, CMD_RESET, "left ctrl");
-    LOAD_SCANCODE(HOTKEY, TURBO, "tab");
-    LOAD_SCANCODE(HOTKEY, CMD_TURBO, "none");
-
-    LOAD_SCANCODE(NES, UP, "up");
-    LOAD_SCANCODE(NES, DOWN, "down");
-    LOAD_SCANCODE(NES, LEFT, "left");
-    LOAD_SCANCODE(NES, RIGHT, "right");
-    LOAD_SCANCODE(NES, A, "x");
-    LOAD_SCANCODE(NES, B, "z");
-    LOAD_SCANCODE(NES, SELECT, "right shift");
-    LOAD_SCANCODE(NES, START, "return");
-
-    LOAD_SCANCODE(WATARA, UP, "up");
-    LOAD_SCANCODE(WATARA, DOWN, "down");
-    LOAD_SCANCODE(WATARA, LEFT, "left");
-    LOAD_SCANCODE(WATARA, RIGHT, "right");
-    LOAD_SCANCODE(WATARA, A, "x");
-    LOAD_SCANCODE(WATARA, B, "z");
-    LOAD_SCANCODE(WATARA, SELECT, "right shift");
-    LOAD_SCANCODE(WATARA, START, "return");
-
-    LOAD_SCANCODE(GBC, UP, "up");
-    LOAD_SCANCODE(GBC, DOWN, "down");
-    LOAD_SCANCODE(GBC, LEFT, "left");
-    LOAD_SCANCODE(GBC, RIGHT, "right");
-    LOAD_SCANCODE(GBC, A, "x");
-    LOAD_SCANCODE(GBC, B, "z");
-    LOAD_SCANCODE(GBC, SELECT, "right shift");
-    LOAD_SCANCODE(GBC, START, "return");
-    
-    LOAD_SCANCODE(PV1000, UP, "up");
-    LOAD_SCANCODE(PV1000, DOWN, "down");
-    LOAD_SCANCODE(PV1000, LEFT, "left");
-    LOAD_SCANCODE(PV1000, RIGHT, "right");
-    LOAD_SCANCODE(PV1000, BTN_1, "z");
-    LOAD_SCANCODE(PV1000, BTN_2, "x");
-    LOAD_SCANCODE(PV1000, SELECT, "right shift");
-    LOAD_SCANCODE(PV1000, START, "return");
-    
-    LOAD_SCANCODE(BYTEPUSHER, 1, "1");
-    LOAD_SCANCODE(BYTEPUSHER, 2, "2");
-    LOAD_SCANCODE(BYTEPUSHER, 3, "3");
-    LOAD_SCANCODE(BYTEPUSHER, C, "4");
-    LOAD_SCANCODE(BYTEPUSHER, 4, "q");
-    LOAD_SCANCODE(BYTEPUSHER, 5, "w");
-    LOAD_SCANCODE(BYTEPUSHER, 6, "e");
-    LOAD_SCANCODE(BYTEPUSHER, D, "r");
-    LOAD_SCANCODE(BYTEPUSHER, 7, "a");
-    LOAD_SCANCODE(BYTEPUSHER, 8, "s");
-    LOAD_SCANCODE(BYTEPUSHER, 9, "d");
-    LOAD_SCANCODE(BYTEPUSHER, E, "f");
-    LOAD_SCANCODE(BYTEPUSHER, A, "z");
-    LOAD_SCANCODE(BYTEPUSHER, 0, "x");
-    LOAD_SCANCODE(BYTEPUSHER, B, "c");
-    LOAD_SCANCODE(BYTEPUSHER, F, "v");
-
-    LOAD_SCANCODE(PCE, UP, "up");
-    LOAD_SCANCODE(PCE, DOWN, "down");
-    LOAD_SCANCODE(PCE, LEFT, "left");
-    LOAD_SCANCODE(PCE, RIGHT, "right");
-    LOAD_SCANCODE(PCE, BTN_2, "z");
-    LOAD_SCANCODE(PCE, BTN_1, "x");
-    LOAD_SCANCODE(PCE, SELECT, "right shift");
-    LOAD_SCANCODE(PCE, START, "return");
-
-    LOAD_SCANCODE(TMS80, UP, "up");
-    LOAD_SCANCODE(TMS80, DOWN, "down");
-    LOAD_SCANCODE(TMS80, LEFT, "left");
-    LOAD_SCANCODE(TMS80, RIGHT, "right");
-    LOAD_SCANCODE(TMS80, BTN_1, "z");
-    LOAD_SCANCODE(TMS80, BTN_2, "x");
-    LOAD_SCANCODE(TMS80, PAUSE, "f1");
-    LOAD_SCANCODE(TMS80, GG_START, "return");
-
-    // load tms80 keyboard config
-    LOAD_SCANCODE(TMS80, 1, "1");
-    LOAD_SCANCODE(TMS80, Q, "q");
-    LOAD_SCANCODE(TMS80, A, "a");
-    LOAD_SCANCODE(TMS80, Z, "z");
-    LOAD_SCANCODE(TMS80, ED, "right ctrl");
-    LOAD_SCANCODE(TMS80, COMMA, ",");
-    LOAD_SCANCODE(TMS80, K, "k");
-    LOAD_SCANCODE(TMS80, I, "i");
-    LOAD_SCANCODE(TMS80, 8, "8");
-    LOAD_SCANCODE(TMS80, 2, "2");
-    LOAD_SCANCODE(TMS80, W, "w");
-    LOAD_SCANCODE(TMS80, S, "s");
-    LOAD_SCANCODE(TMS80, X, "x");
-    LOAD_SCANCODE(TMS80, SPC, "space");
-    LOAD_SCANCODE(TMS80, DOT, ".");
-    LOAD_SCANCODE(TMS80, L, "l");
-    LOAD_SCANCODE(TMS80, O, "o");
-    LOAD_SCANCODE(TMS80, 9, "9");
-    LOAD_SCANCODE(TMS80, 3, "3");
-    LOAD_SCANCODE(TMS80, E, "e");
-    LOAD_SCANCODE(TMS80, D, "d");
-    LOAD_SCANCODE(TMS80, C, "c");
-    LOAD_SCANCODE(TMS80, HC, "delete");
-    LOAD_SCANCODE(TMS80, SLASH, "/");
-    LOAD_SCANCODE(TMS80, SEMICOLON, ";");
-    LOAD_SCANCODE(TMS80, P, "p");
-    LOAD_SCANCODE(TMS80, 0, "0");
-    LOAD_SCANCODE(TMS80, 4, "4");
-    LOAD_SCANCODE(TMS80, R, "r");
-    LOAD_SCANCODE(TMS80, F, "f");
-    LOAD_SCANCODE(TMS80, V, "v");
-    LOAD_SCANCODE(TMS80, ID, "backspace");
-    LOAD_SCANCODE(TMS80, PI, "right alt");
-    LOAD_SCANCODE(TMS80, COLON, "\'");
-    LOAD_SCANCODE(TMS80, AT, "\\");
-    LOAD_SCANCODE(TMS80, MINUS, "-");
-    LOAD_SCANCODE(TMS80, 5, "5");
-    LOAD_SCANCODE(TMS80, T, "t");
-    LOAD_SCANCODE(TMS80, G, "g");
-    LOAD_SCANCODE(TMS80, B, "b");
-    LOAD_SCANCODE(TMS80, DA, "down");
-    LOAD_SCANCODE(TMS80, CLOSE_BRACKET, "]");
-    LOAD_SCANCODE(TMS80, OPEN_BRACKET, "[");
-    LOAD_SCANCODE(TMS80, CARET, "=");
-    LOAD_SCANCODE(TMS80, 6, "6");
-    LOAD_SCANCODE(TMS80, Y, "y");
-    LOAD_SCANCODE(TMS80, H, "h");
-    LOAD_SCANCODE(TMS80, N, "n");
-    LOAD_SCANCODE(TMS80, LA, "left");
-    LOAD_SCANCODE(TMS80, CR, "return");
-    LOAD_SCANCODE(TMS80, YEN, "`");
-    LOAD_SCANCODE(TMS80, FNC, "tab");
-    LOAD_SCANCODE(TMS80, 7, "7");
-    LOAD_SCANCODE(TMS80, U, "u");
-    LOAD_SCANCODE(TMS80, J, "j");
-    LOAD_SCANCODE(TMS80, M, "m");
-    LOAD_SCANCODE(TMS80, RA, "right");
-    LOAD_SCANCODE(TMS80, UA, "up");
-    LOAD_SCANCODE(TMS80, BRK, "right shift");
-    LOAD_SCANCODE(TMS80, GRP, "left alt");
-    LOAD_SCANCODE(TMS80, CTL, "left ctrl");
-    LOAD_SCANCODE(TMS80, SHF, "left shift");
-}
-
-static void controls_load_gamepad_maps(){
-    LOAD_GAMEPAD(HOTKEY, PAUSE, "none");
-    LOAD_GAMEPAD(HOTKEY, RESET, "none");
-    LOAD_GAMEPAD(HOTKEY, TURBO, "none");
-
-    LOAD_GAMEPAD(GBC, A, "b");
-    LOAD_GAMEPAD(GBC, B, "a");
-    LOAD_GAMEPAD(GBC, SELECT, "back");
-    LOAD_GAMEPAD(GBC, START, "start");
-    LOAD_GAMEPAD(GBC, UP, "dpup");
-    LOAD_GAMEPAD(GBC, DOWN, "dpdown");
-    LOAD_GAMEPAD(GBC, LEFT, "dpleft");
-    LOAD_GAMEPAD(GBC, RIGHT, "dpright");
-
-    LOAD_GAMEPAD(PV1000, BTN_1, "a");
-    LOAD_GAMEPAD(PV1000, BTN_2, "b");
-    LOAD_GAMEPAD(PV1000, SELECT, "back");
-    LOAD_GAMEPAD(PV1000, START, "start");
-    LOAD_GAMEPAD(PV1000, UP, "dpup");
-    LOAD_GAMEPAD(PV1000, DOWN, "dpdown");
-    LOAD_GAMEPAD(PV1000, LEFT, "dpleft");
-    LOAD_GAMEPAD(PV1000, RIGHT, "dpright");
-
-    LOAD_GAMEPAD(WATARA, A, "b");
-    LOAD_GAMEPAD(WATARA, B, "a");
-    LOAD_GAMEPAD(WATARA, SELECT, "back");
-    LOAD_GAMEPAD(WATARA, START, "start");
-    LOAD_GAMEPAD(WATARA, UP, "dpup");
-    LOAD_GAMEPAD(WATARA, DOWN, "dpdown");
-    LOAD_GAMEPAD(WATARA, LEFT, "dpleft");
-    LOAD_GAMEPAD(WATARA, RIGHT, "dpright");
-
-    LOAD_GAMEPAD(NES, A, "b");
-    LOAD_GAMEPAD(NES, B, "a");
-    LOAD_GAMEPAD(NES, SELECT, "back");
-    LOAD_GAMEPAD(NES, START, "start");
-    LOAD_GAMEPAD(NES, UP, "dpup");
-    LOAD_GAMEPAD(NES, DOWN, "dpdown");
-    LOAD_GAMEPAD(NES, LEFT, "dpleft");
-    LOAD_GAMEPAD(NES, RIGHT, "dpright");
-
-    LOAD_GAMEPAD(PCE, BTN_2, "a");
-    LOAD_GAMEPAD(PCE, BTN_1, "b");
-    LOAD_GAMEPAD(PCE, SELECT, "back");
-    LOAD_GAMEPAD(PCE, START, "start");
-    LOAD_GAMEPAD(PCE, UP, "dpup");
-    LOAD_GAMEPAD(PCE, DOWN, "dpdown");
-    LOAD_GAMEPAD(PCE, LEFT, "dpleft");
-    LOAD_GAMEPAD(PCE, RIGHT, "dpright");
-
-    LOAD_GAMEPAD(TMS80, UP, "dpup");
-    LOAD_GAMEPAD(TMS80, DOWN, "dpdown");
-    LOAD_GAMEPAD(TMS80, LEFT, "dpleft");
-    LOAD_GAMEPAD(TMS80, RIGHT, "dpright");
-    LOAD_GAMEPAD(TMS80, BTN_1, "a");
-    LOAD_GAMEPAD(TMS80, BTN_2, "b");
-    LOAD_GAMEPAD(TMS80, GG_START, "start");
+#define SAVE_GAMEPAD(console, button, default) { \
+    const char* name = SDL_GetGamepadStringForButton(control_gamepad_maps[CONTROL_ ## console ## _ ## button]); \
+    ini_puts(#console, "INPUT_GAMEPAD_" #button, name && name[0] ? name : "none", INI_FILE); \
 }
 
 void controls_load_maps(){
-    controls_load_scancode_maps();
-    controls_load_gamepad_maps();
+    SCANCODES(LOAD_SCANCODE);
+    GAMEPADS(LOAD_GAMEPAD);
+}
+
+void controls_save_maps(){
+    SCANCODES(SAVE_SCANCODE);
+    GAMEPADS(SAVE_GAMEPAD);
 }
 
 void controls_init(control_t begin_, control_t end_) {
@@ -279,9 +306,6 @@ void controls_free(){
 }
 
 void controls_update(){
-    memcpy(prev_pressed, pressed, ACTIVE_BUTTONS * sizeof(bool));
-    memcpy(hotkeys_prev_pressed_arr, hotkeys_pressed_arr, HOTKEYS_COUNT * sizeof(bool));
-
     if(!gamepad){
         int num_gamepads;
         SDL_JoystickID* gamepads = SDL_GetGamepads(&num_gamepads);
@@ -297,9 +321,7 @@ void controls_update(){
 
     const bool* keystate = SDL_GetKeyboardState(NULL);
 
-    for(int i = begin; i <= end; i++){
-        pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
-    }
+    memcpy(hotkeys_prev_pressed_arr, hotkeys_pressed_arr, HOTKEYS_COUNT * sizeof(bool));
 
     for(int i = 0; i < HOTKEYS_COUNT; i++){
         int cmd_idx = CONTROL_HOTKEY_CMD_BEGIN + i;
@@ -309,6 +331,16 @@ void controls_update(){
         bool gamepad_btn = SDL_GetGamepadButton(gamepad, control_gamepad_maps[hotkey_idx]);
         bool hit = (active && key) || gamepad_btn;
         hotkeys_pressed_arr[i] = hit;
+    }
+
+    // game aware controls not initialized
+    if(!pressed || !prev_pressed)
+        return;
+    
+    memcpy(prev_pressed, pressed, ACTIVE_BUTTONS * sizeof(bool));
+
+    for(int i = begin; i <= end; i++){
+        pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
     }
 }
 

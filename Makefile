@@ -5,19 +5,22 @@ DEP := $(OBJ:.o=.d)
 
 
 CC := gcc
-EXE := a.exe
+EXE := obentou.exe
 CFLAGS := -Iinclude -Iext/include -O3 -flto=auto
 DEBUG_FLAGS := -pg -no-pie
-LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
+LIBS := -Llib -lSDL3 -lopengl32 -luxtheme -ldwmapi -lshlwapi -lcomdlg32 -lole32
 
 all: $(EXE)
 
-$(EXE): $(OBJ)
-	$(CC) $(OBJ) $(CFLAGS) $(LIBS) -o $(EXE)
+$(EXE): $(OBJ) app.res
+	$(CC) $(OBJ) app.res $(CFLAGS) $(LIBS) -o $(EXE)
 
 obj/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) -c -MMD -MP $(CFLAGS) $< -o $@
+
+app.res: config.rc logo.ico
+	windres config.rc -O coff -o app.res
 
 nes-mappers:
 	gcc codegen/nes/mappers.c -o nes-mappers.exe

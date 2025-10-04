@@ -12,6 +12,7 @@ void sound_close();
 void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sound_get_sample_ptr func);
 void sound_set_push_rate(float push_rate);
 void sound_queue_samples(const void* samples, size_t size);
+void sound_pause(bool pause);
 void sound_set_push_rate_multiplier(int multiplier);
 bool sound_is_push_rate_set();
 
