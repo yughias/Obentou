@@ -1,5 +1,5 @@
-#ifndef __PERIPHERALS_MENU_H__
-#define __PERIPHERALS_MENU_H__
+#ifndef __UTILS_MENU_H__
+#define __UTILS_MENU_H__
 
 #include "types.h"
 

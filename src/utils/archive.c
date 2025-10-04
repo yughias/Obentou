@@ -1,5 +1,5 @@
-#include "peripherals/archive.h"
-#include "peripherals/vec.h"
+#include "utils/archive.h"
+#include "utils/vec.h"
 
 #include <stdlib.h>
 #include <string.h>

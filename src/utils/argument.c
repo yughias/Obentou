@@ -1,4 +1,4 @@
-#include "peripherals/argument.h"
+#include "utils/argument.h"
 
 #include "SDL_MAINLOOP.h"
 

@@ -1,5 +1,5 @@
 #include "cores/pce/psg.h"
-#include "peripherals/sound.h"
+#include "utils/sound.h"
 
 #include "SDL_MAINLOOP.h"
 

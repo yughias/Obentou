@@ -1,8 +1,8 @@
 #include "core.h"
 
-#include "peripherals/sound.h"
-#include "peripherals/controls.h"
-#include "peripherals/menu.h"
+#include "utils/sound.h"
+#include "utils/controls.h"
+#include "utils/menu.h"
 
 #include "SDL_MAINLOOP.h"
 

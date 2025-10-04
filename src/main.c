@@ -1,9 +1,9 @@
 #include "SDL_MAINLOOP.h"
-#include "peripherals/sound.h"
-#include "peripherals/controls.h"
-#include "peripherals/camera.h"
-#include "peripherals/argument.h"
-#include "peripherals/menu.h"
+#include "utils/sound.h"
+#include "utils/controls.h"
+#include "utils/camera.h"
+#include "utils/argument.h"
+#include "utils/menu.h"
 
 #include "core.h"
 

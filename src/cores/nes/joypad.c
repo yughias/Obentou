@@ -1,5 +1,5 @@
 #include "cores/nes/joypad.h"
-#include "peripherals/controls.h"
+#include "utils/controls.h"
 
 #include "SDL_MAINLOOP.h"
 

@@ -1,5 +1,5 @@
 #include "cores/pv1000/controller.h"
-#include "peripherals/controls.h"
+#include "utils/controls.h"
 
 u8 pv1000_controller_read(controller_t* controller){
     u8 out = 0;

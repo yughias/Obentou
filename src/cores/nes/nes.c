@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-#include "peripherals/archive.h"
+#include "utils/archive.h"
 
 typedef void (*mapper_init_func)(nes_t*);
 

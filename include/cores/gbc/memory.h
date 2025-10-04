@@ -2,7 +2,7 @@
 #define _MEMORY_H_
 
 #include "types.h"
-#include "peripherals/archive.h"
+#include "utils/archive.h"
 
 #define BOOTROM_DISABLE_ADDR 0xFF50
 

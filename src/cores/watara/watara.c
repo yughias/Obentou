@@ -1,6 +1,6 @@
 #include "cores/watara/watara.h"
-#include "peripherals/controls.h"
-#include "peripherals/archive.h"
+#include "utils/controls.h"
+#include "utils/archive.h"
 
 #include "SDL_MAINLOOP.h"
 

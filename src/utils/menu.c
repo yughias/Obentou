@@ -1,5 +1,5 @@
-#include "peripherals/menu.h"
-#include "peripherals/sound.h"
+#include "utils/menu.h"
+#include "utils/sound.h"
 
 #include "core.h"
 

@@ -3,7 +3,7 @@
 #include "cores/gbc/joypad.h"
 #include "cores/gbc/gb.h"
 
-#include "peripherals/controls.h"
+#include "utils/controls.h"
 
 #include <SDL3/SDL.h>
 

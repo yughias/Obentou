@@ -1,5 +1,5 @@
 #include "cores/gbc/apu.h"
-#include "peripherals/sound.h"
+#include "utils/sound.h"
 
 #include <stdio.h>
 #include <SDL3/SDL.h>

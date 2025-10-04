@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "peripherals/archive.h"
+#include "utils/archive.h"
 
 void* PV1000_init(const archive_t* rom_archive, const archive_t* bios_archive){
     pv1000_t* pv1000 = malloc(sizeof(pv1000_t));

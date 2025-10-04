@@ -1,8 +1,8 @@
 #include "cores/tms80/tms80.h"
 #include "cores/tms80/memory.h"
-#include "peripherals/sound.h"
-#include "peripherals/controls.h"
-#include "peripherals/archive.h"
+#include "utils/sound.h"
+#include "utils/controls.h"
+#include "utils/archive.h"
 
 #include "SDL_MAINLOOP.h"
 

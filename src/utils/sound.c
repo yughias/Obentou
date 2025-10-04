@@ -1,4 +1,4 @@
-#include "peripherals/sound.h"
+#include "utils/sound.h"
 
 #include "types.h"
 

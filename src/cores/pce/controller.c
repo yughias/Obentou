@@ -1,5 +1,5 @@
 #include "cores/pce/controller.h"
-#include "peripherals/controls.h"
+#include "utils/controls.h"
 
 static control_t buttons[2][4] = {
     {CONTROL_PCE_UP, CONTROL_PCE_RIGHT, CONTROL_PCE_DOWN, CONTROL_PCE_LEFT},

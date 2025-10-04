@@ -1,5 +1,5 @@
 #include "cores/nes/nes.h"
-#include "peripherals/sound.h"
+#include "utils/sound.h"
 
 static const bool duty_lut[4][8] = {
     {0, 1, 0, 0, 0, 0, 0, 0},

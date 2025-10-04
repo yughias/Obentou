@@ -1,4 +1,4 @@
-#include "peripherals/controls.h"
+#include "utils/controls.h"
 
 #include "SDL3/SDL.h"
 

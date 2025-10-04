@@ -1,4 +1,4 @@
-#include "peripherals/camera.h"
+#include "utils/camera.h"
 
 #include "SDL3/SDL.h"
 

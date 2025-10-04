@@ -3,7 +3,7 @@
 #include "cores/gbc/memory.h"
 #include "cores/gbc/gb.h"
 
-#include "peripherals/camera.h"
+#include "utils/camera.h"
 
 #include <string.h>
 #include <stdlib.h>
