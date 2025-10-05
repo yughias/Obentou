@@ -38,7 +38,7 @@ static void archive_load_zip(archive_t* archive, const char* filename) {
 archive_t* archive_load(const char* filename) {
     archive_t* archive = malloc(sizeof(archive_t));
     files_init(&archive->files);
-    if(!filename){
+    if(!filename || !filename[0]){
         strcpy(archive->path, "");
         return archive;
     }

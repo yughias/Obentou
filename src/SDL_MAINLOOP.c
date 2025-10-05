@@ -22,6 +22,7 @@ button exitButton = SDLK_ESCAPE;
 float aspectRatio = -1.0f;
 
 static SDL_AtomicInt is_grabbed;
+static SDL_RendererLogicalPresentation scaling_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 
 // not accessible variables
 SDL_Window* window;
@@ -47,8 +48,6 @@ char** main_argv;
 SDL_Renderer* renderer = NULL;
 SDL_Texture* drawBuffer = NULL;
 
-ScaleMode scale_mode = NEAREST; 
-
 void renderBufferToWindow();
 bool filterResize(void*, SDL_Event*);
 
@@ -56,6 +55,10 @@ bool filterResize(void*, SDL_Event*);
 #include <windows.h>
 #include <shlwapi.h>
 #include <dwmapi.h>
+
+static bool is_fullscreen;
+static bool menu_rendered;
+static int menu_height;
 
 HWND hwnd = NULL;
 HMENU mainMenu = NULL;
@@ -140,13 +143,12 @@ int main(int argc, char** argv){
     SDL_SetEventFilter(filterResize, NULL);
     #endif
 
-    setup();
-
     #ifdef _WIN32
-    if(mainMenu && !SDL_GetWindowFullscreenMode(window)){
-        SetMenu(hwnd, mainMenu);
-    }
+    menu_height = GetSystemMetrics(SM_CYMENU);
+    printf("menu height %d\n", menu_height);
     #endif
+
+    setup();
 
     SDL_ShowWindow(window);
 
@@ -222,6 +224,20 @@ void mainloop(){
     pmouseY = mouseY;
     float m_x, m_y;
     SDL_GetMouseState(&m_x, &m_y);
+    if(!is_fullscreen){
+        if(!menu_rendered){
+            SetMenu(hwnd, mainMenu);
+            menu_rendered = true;
+        }
+    } else {
+        if(menu_rendered && m_y > 0){
+            SetMenu(hwnd, NULL);
+            menu_rendered = false;
+        } else if(!menu_rendered && m_y <= menu_height){
+            SetMenu(hwnd, mainMenu);
+            menu_rendered = true;
+        }
+    }
     SDL_RenderCoordinatesFromWindow(renderer, m_x, m_y, &m_x, &m_y);
     mouseX = m_x;
     mouseY = m_y;
@@ -286,18 +302,18 @@ void size(int w, int h){
 
         renderer = SDL_CreateRenderer(window, NULL);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+        SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
         SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
 
         pixels = surface->pixels;
     } else {
         SDL_DestroyTexture(drawBuffer);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
-        setScaleMode(scale_mode);
+        SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
         SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
         pixels = surface->pixels;
     }
 
-    setScaleMode(scale_mode);
     setAspectRatio(aspectRatio);
 }
 
@@ -317,17 +333,6 @@ float millis(){
 }
 
 void fullScreen(){
-    static bool is_fullscreen = false;
-
-    #ifdef _WIN32
-    if(hwnd && window && mainMenu){
-        if(is_fullscreen)
-            SetMenu(hwnd, mainMenu);
-        else
-            SetMenu(hwnd, NULL);
-    }
-    #endif
-
     is_fullscreen ^= 1; 
 
     SDL_SetWindowFullscreen(window, is_fullscreen);
@@ -372,22 +377,6 @@ void renderPixels(){
     pixels = surface->pixels;
 }
 
-void setScaleMode(ScaleMode mode){
-    scale_mode = mode;
-    if(!renderer)
-        return;    
-
-    switch(mode){
-        case NEAREST:
-        SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
-        break;
-
-        case LINEAR:
-        SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_LINEAR);
-        break;
-    }
-}
-
 
 void setWindowSize(int w, int h){
     int pos_x, pos_y;
@@ -416,7 +405,16 @@ void setAspectRatio(float ratio){
         }
     }
 
-    SDL_SetRenderLogicalPresentation(renderer, render_width, render_height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, render_width, render_height, scaling_mode);
+}
+
+void setScalingMode(SDL_RendererLogicalPresentation mode){
+    scaling_mode = mode;
+    if(!renderer)
+        return;
+    int w, h;
+    SDL_GetRenderLogicalPresentation(renderer, &w, &h, NULL);
+    SDL_SetRenderLogicalPresentation(renderer, w, h, scaling_mode);
 }
 
 void renderBufferToWindow(){

@@ -7,13 +7,29 @@
 
 static buttonId pause_button;
 static buttonId speed_buttons[4];
+static buttonId fullscreen_button;
 static ctx_set_speed_args_t speed_args[4];
+
+static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
+static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
+static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
 
 typedef struct open_ctx_t {
     core_ctx_t* ctx;
     bool rom;
     bool bios;
 } open_ctx_t;
+
+static void menu_fullscreen(){
+    static bool is_fullscreen = false;
+    is_fullscreen ^= 1;
+    fullScreen();
+    tickButton(fullscreen_button, is_fullscreen);
+}
+
+static void menu_change_scaling_mode(SDL_RendererLogicalPresentation* mode){
+    setScalingMode(*mode);
+}
 
 static void on_file_chosen(void *userdata, const char * const *filelist, int filter){
     open_ctx_t* menu_ctx = (open_ctx_t*)userdata;
@@ -67,7 +83,6 @@ void menu_open_bios(core_ctx_t* ctx){
     SDL_DestroyProperties(ids);
 }
 
-
 void menu_speed_check(int speed_level){
     checkRadioButton(speed_buttons[speed_level]);
 }
@@ -78,19 +93,28 @@ void menu_create(core_ctx_t* ctx){
         speed_args[i].speed = i;
     }
 
-    menuId open_menu = addMenuTo(-1, L"Open", false);
-    addButtonTo(open_menu, L"Rom", (void*)menu_open_rom, ctx);
-    addButtonTo(open_menu, L"Bios", (void*)menu_open_bios, ctx);
+    menuId file_menu = addMenuTo(-1, L"File", false);
+    addButtonTo(file_menu, L"Open Rom", (void*)menu_open_rom, ctx);
+    addButtonTo(file_menu, L"Open Bios", (void*)menu_open_bios, ctx);
 
     menuId emu_menu = addMenuTo(-1, L"Emu", false);
-    menuId speed_emu = addMenuTo(emu_menu, L"Speed", true);
+    menuId speed_menu = addMenuTo(emu_menu, L"Speed", true);
+    menuId video_menu = addMenuTo(-1, L"Video", false);
+
+    fullscreen_button = addButtonTo(video_menu, L"Fullscreen", (void*)menu_fullscreen, NULL);
+    menuId scaling_menu = addMenuTo(video_menu, L"Scaling", true);
+
+    buttonId fit_button = addButtonTo(scaling_menu, L"Fit", (void*)menu_change_scaling_mode, &fit_mode);
+    addButtonTo(scaling_menu, L"Integer", (void*)menu_change_scaling_mode, &integer_mode);
+    addButtonTo(scaling_menu, L"Stretch", (void*)menu_change_scaling_mode, &stretch_mode);
+    checkRadioButton(fit_button);
 
     pause_button = addButtonTo(emu_menu, L"Pause", (void*)core_switch_pause, ctx);
     addButtonTo(emu_menu, L"Restart", (void*)core_restart, ctx);
 
     for(int i = 0; i < 4; i++){
         wchar_t speed_str[3] = {L'0' + (1 << i), L'x', 0};
-        speed_buttons[i] = addButtonTo(speed_emu, speed_str, (void*)core_ctx_set_speed, &speed_args[i]);
+        speed_buttons[i] = addButtonTo(speed_menu, speed_str, (void*)core_ctx_set_speed, &speed_args[i]);
         if(i == 0)    
             checkRadioButton(speed_buttons[i]);
     }

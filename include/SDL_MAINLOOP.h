@@ -48,6 +48,7 @@ int color(int, int, int);
 void getRGB(int, Uint8*, Uint8*, Uint8*);
 void rect(int, int, int, int, int);
 void loadWindowIcon(const char*);
+void setScalingMode(SDL_RendererLogicalPresentation mode);
 
 void renderPixels();
 
@@ -56,8 +57,6 @@ int getArgc();
 char* getArgv(int);
 char** getArgvs();
 
-typedef enum {NEAREST, LINEAR} ScaleMode;
-void setScaleMode(ScaleMode);
 SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags);
 
 typedef size_t menuId;
