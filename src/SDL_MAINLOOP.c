@@ -587,8 +587,8 @@ void setButtonTitle(buttonId button_id, const wchar_t* string){
     ModifyMenuW(
         menus[menu_id].hMenu,
         b->position,
-        MF_BYPOSITION,
-        b->position,
+        MF_BYPOSITION | MF_STRING,
+        button_id,
         string
     );
 }
