@@ -91,11 +91,23 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
     if(!rom_file)
         rom_file = archive_get_file_by_ext(rom_archive, "gg");
 
+    file_t* bios_file = archive_get_file_by_ext(bios_archive, "sms");
+
     if(
-        rom_file &&
         (
-            strstr(rom_file->path, "(Europe)") || strstr(rom_file->path, "(E)") ||
-            strstr(rom_file->path, "(Brazil)") || strstr(rom_file->path, "[E]")
+            bios_file &&
+            (
+                strstr(bios_file->path, "(Europe)") || strstr(bios_file->path, "(E)") ||
+                strstr(bios_file->path, "(Brazil)") || strstr(bios_file->path, "[E]")
+            ) 
+        )
+        ||
+        (
+            rom_file &&
+            (
+                strstr(rom_file->path, "(Europe)") || strstr(rom_file->path, "(E)") ||
+                strstr(rom_file->path, "(Brazil)") || strstr(rom_file->path, "[E]")
+            )
         )
     ){
         tms80_SET_REGION(tms80, PAL);
@@ -117,12 +129,10 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
         memset(tms80->cartridge, 0xFF, 1 << 10);
         tms80->cartridge_size = 1 << 10;
     }
-    
-    file_t* bios = archive_get_file_by_ext(bios_archive, "sms");
 
-    if(bios){
-        tms80->bios = bios->data;
-        tms80->bios_size = bios->size;
+    if(bios_file){
+        tms80->bios = bios_file->data;
+        tms80->bios_size = bios_file->size;
         tms80->type = detect_type(bios_archive);
     } else
         tms80->type = detect_type(rom_archive);
@@ -146,7 +156,7 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
 
         case SMS:
         case GG:
-        if(bios){
+        if(bios_file){
             tms80->z80.readMemory = tms80_sms_bios_readMemory;
             tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
         } else {

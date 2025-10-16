@@ -39,12 +39,20 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
         *rom_path = argv[0];    
 }
 
-void argument_default_bios(char* path, const char* core_name){
+void argument_get_default_bios(char* path, const char* core_name){
     char buf[FILENAME_MAX];
     const char* base_path = SDL_GetBasePath();
     ini_gets(core_name, "BIOS", "", buf, FILENAME_MAX, "config.ini");
     if(!buf[0])
         path[0] = '\0';
-    else
-        snprintf(path, FILENAME_MAX, "%s%s", base_path, buf);
+    else {
+        if(strlen(buf) > 1 && (buf[0] < 'A' || buf[0] > 'Z') && buf[1] != ':')
+            snprintf(path, FILENAME_MAX, "%s%s", base_path, buf);
+        else
+            snprintf(path, FILENAME_MAX, "%s", buf);
+    }
+}
+
+void argument_set_default_bios(const char* path, const char* core_name){
+    ini_puts(core_name, "BIOS", path, "config.ini");
 }

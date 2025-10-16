@@ -33,7 +33,7 @@ void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path,
 
     if(ctx->core && !bios_path){
         char default_bios_path[FILENAME_MAX];
-        argument_default_bios(default_bios_path, ctx->core->name);
+        argument_get_default_bios(default_bios_path, ctx->core->name);
         archive_free(ctx->bios);
         ctx->bios = archive_load(default_bios_path);
     }
@@ -93,6 +93,9 @@ void core_ctx_close(core_ctx_t* ctx){
 
 void core_restart(core_ctx_t* ctx){
     const core_t* core = ctx->core;
+
+    menu_create(ctx);
+
     if(!core){
         ctx->emu = NULL;
         size(1, 1);

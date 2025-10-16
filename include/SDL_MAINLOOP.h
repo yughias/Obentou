@@ -64,12 +64,16 @@ typedef size_t buttonId;
 #ifdef _WIN32
 menuId addMenuTo(menuId, const wchar_t*, bool);
 buttonId addButtonTo(menuId, const wchar_t*, void (*callback)(void*), void*);
+void setButtonTitle(buttonId, const wchar_t*);
+void destroyAllMenus();
 void checkRadioButton(buttonId); 
 void tickButton(buttonId, bool);
 
 #else
 #define addMenuTo(a, b, c) 0
 #define addButtonTo(a, b, c, d) 0 
+#define setButtonTitle(a, b)
+#define destroyAllMenus()
 #define checkRadioButton(a); 
 #define tickButton(a, b); 
 #endif

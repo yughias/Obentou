@@ -26,17 +26,12 @@ void setup(){
     const char* bios_path;
     const char* force_core;
     argument_get(&rom_path, &bios_path, &force_core);
-    
-    printf("ROM: %s\n", rom_path);
-    printf("BIOS: %s\n", bios_path);
 
     core_ctx_init(&emu_ctx, rom_path, bios_path, force_core);
 
     core_restart(&emu_ctx);
 
     setWindowSize(512, 512);
-
-    menu_create(&emu_ctx);
 }
 
 void loop(){

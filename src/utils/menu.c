@@ -1,13 +1,17 @@
 #include "utils/menu.h"
 #include "utils/sound.h"
+#include "utils/argument.h"
 
 #include "core.h"
 
 #include "SDL_MAINLOOP.h"
 
+#define MAX_SHOW_PATH_LENGTH 48
+
 static buttonId pause_button;
 static buttonId speed_buttons[4];
 static buttonId fullscreen_button;
+static buttonId default_bios_button;
 static ctx_set_speed_args_t speed_args[4];
 
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
@@ -19,6 +23,42 @@ typedef struct open_ctx_t {
     bool rom;
     bool bios;
 } open_ctx_t;
+
+static void get_bios_path_button_text(wchar_t* out, const char* core_name){
+    char default_bios_path_tmp[FILENAME_MAX];
+    char default_bios_path[FILENAME_MAX];
+    argument_get_default_bios(default_bios_path_tmp, core_name);
+    
+    int len = strlen(default_bios_path_tmp);
+
+    if(len < MAX_SHOW_PATH_LENGTH)
+        snprintf(default_bios_path, FILENAME_MAX, "Bios Path: %s", default_bios_path_tmp[0] ? default_bios_path_tmp : "None");
+    else
+        snprintf(default_bios_path, FILENAME_MAX, "Bios Path: ...%s", default_bios_path_tmp + len - MAX_SHOW_PATH_LENGTH);
+    
+    int i;
+    for(i = 0; i < FILENAME_MAX - 1 && default_bios_path[i]; i++)
+        out[i] = default_bios_path[i];
+    out[i] = 0;
+}
+
+static void on_default_bios_chosen(void *userdata, const char * const *filelist, int filter){
+    core_ctx_t* ctx = (core_ctx_t*)userdata;
+    char* core_name = (char*)ctx->core->name;
+    
+    if(filelist == NULL)
+        goto end;
+
+    argument_set_default_bios(filelist[0], core_name);
+
+    wchar_t new_path[FILENAME_MAX];
+    get_bios_path_button_text(new_path, core_name);
+    setButtonTitle(default_bios_button, new_path);
+    
+end:
+    sound_pause(ctx->pause);
+    SDL_SetAtomicInt(&ctx->must_wait, 0);
+}
 
 static void menu_fullscreen(){
     static bool is_fullscreen = false;
@@ -83,11 +123,24 @@ void menu_open_bios(core_ctx_t* ctx){
     SDL_DestroyProperties(ids);
 }
 
+void menu_select_default_bios(core_ctx_t* ctx){
+    SDL_SetAtomicInt(&ctx->must_wait, 1);
+    sound_pause(true);
+
+    SDL_PropertiesID ids = SDL_CreateProperties();
+    SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());
+    SDL_SetStringProperty(ids, SDL_PROP_FILE_DIALOG_TITLE_STRING, "Select Default Bios");
+    SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFILE, on_default_bios_chosen, ctx, ids);
+    SDL_DestroyProperties(ids);
+}
+
 void menu_speed_check(int speed_level){
     checkRadioButton(speed_buttons[speed_level]);
 }
 
 void menu_create(core_ctx_t* ctx){
+    destroyAllMenus();
+
     for(int i = 0; i < 4; i++){
         speed_args[i].ctx = ctx;
         speed_args[i].speed = i;
@@ -95,7 +148,15 @@ void menu_create(core_ctx_t* ctx){
 
     menuId file_menu = addMenuTo(-1, L"File", false);
     addButtonTo(file_menu, L"Open Rom", (void*)menu_open_rom, ctx);
-    addButtonTo(file_menu, L"Open Bios", (void*)menu_open_bios, ctx);
+    if(!ctx->core){
+        addButtonTo(file_menu, L"Open Bios", (void*)menu_open_bios, ctx);
+    } else {
+        menuId bios_menu = addMenuTo(file_menu, L"Bios", false);
+        addButtonTo(bios_menu, L"Open", (void*)menu_open_bios, ctx);
+        wchar_t default_bios_path[FILENAME_MAX];
+        get_bios_path_button_text(default_bios_path, ctx->core->name);
+        default_bios_button = addButtonTo(bios_menu, default_bios_path, (void*)menu_select_default_bios, ctx);
+    }
 
     menuId emu_menu = addMenuTo(-1, L"Emu", false);
     menuId speed_menu = addMenuTo(emu_menu, L"Speed", true);

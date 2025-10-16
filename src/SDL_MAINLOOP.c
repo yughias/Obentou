@@ -224,6 +224,7 @@ void mainloop(){
     pmouseY = mouseY;
     float m_x, m_y;
     SDL_GetMouseState(&m_x, &m_y);
+    #if _WIN32
     if(!is_fullscreen){
         if(!menu_rendered){
             SetMenu(hwnd, mainMenu);
@@ -238,6 +239,7 @@ void mainloop(){
             menu_rendered = true;
         }
     }
+    #endif
     SDL_RenderCoordinatesFromWindow(renderer, m_x, m_y, &m_x, &m_y);
     mouseX = m_x;
     mouseY = m_y;
@@ -455,10 +457,7 @@ void createMainMenu(){
 }
 
 void updateButtonVect(void (*callback)(), void* arg, menuId parentMenu){
-    if(!buttons)
-        buttons = (button_t*)malloc(sizeof(button_t));
-    else
-        buttons = (button_t*)realloc(buttons, (n_button+1)*sizeof(button_t));
+    buttons = (button_t*)realloc(buttons, (n_button+1)*sizeof(button_t));
 
     buttons[n_button].callback = callback;
     buttons[n_button].arg = arg;
@@ -475,10 +474,7 @@ void updateButtonVect(void (*callback)(), void* arg, menuId parentMenu){
 }
 
 void updateMenuVect(HMENU new_menu, bool isRadio){
-    if(!menus)
-        menus = (menu_t*)malloc(sizeof(menu_t));
-    else
-        menus = (menu_t*)realloc(menus, (n_menu+1)*sizeof(menu_t));
+    menus = (menu_t*)realloc(menus, (n_menu+1)*sizeof(menu_t));
     menus[n_menu].hMenu = new_menu;
     menus[n_menu].n_button = 0;
     menus[n_menu].is_radio = isRadio;
@@ -486,6 +482,7 @@ void updateMenuVect(HMENU new_menu, bool isRadio){
 }
 
 menuId addMenuTo(menuId parentId, const wchar_t* string, bool isRadio){
+    menu_rendered = false;
     HMENU parent = NULL;
     if(parentId < n_menu)
         parent = menus[parentId].hMenu;
@@ -501,6 +498,7 @@ menuId addMenuTo(menuId parentId, const wchar_t* string, bool isRadio){
 }
 
 buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(), void* arg){
+    menu_rendered = false;
     HMENU parent = NULL;
 
     if(parentId < n_menu){
@@ -516,6 +514,20 @@ buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(),
     updateButtonVect(callback, arg, parentId);
 
     return n_button-1;
+}
+
+void destroyAllMenus(){
+    if(!mainMenu)
+        return;
+    menu_rendered = false;
+    DestroyMenu(mainMenu);
+    free(buttons);
+    free(menus);
+    mainMenu = NULL;
+    buttons = NULL;
+    menus = NULL;
+    n_button = 0;
+    n_menu = 0;
 }
 
 void checkRadioButton(buttonId button_id){
@@ -546,6 +558,38 @@ void tickButton(buttonId button_id, bool state){
         menus[menu_id].hMenu,
         b->position,
         MF_BYPOSITION | (state ? MF_CHECKED : MF_UNCHECKED)
+    );
+}
+
+void enableButton(buttonId button_id, bool state){
+    if(button_id >= n_button) return;
+
+    button_t* b = &buttons[button_id];
+    menuId menu_id = b->parent_menu;
+
+    if(menu_id >= n_menu) return;
+
+    EnableMenuItem(
+        menus[menu_id].hMenu,
+        b->position,
+        MF_BYPOSITION | (state ? MF_ENABLED : MF_DISABLED)
+    );
+}
+
+void setButtonTitle(buttonId button_id, const wchar_t* string){
+    if(button_id >= n_button) return;
+
+    button_t* b = &buttons[button_id];
+    menuId menu_id = b->parent_menu;
+
+    if(menu_id >= n_menu) return;
+
+    ModifyMenuW(
+        menus[menu_id].hMenu,
+        b->position,
+        MF_BYPOSITION,
+        b->position,
+        string
     );
 }
 #endif
