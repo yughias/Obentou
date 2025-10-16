@@ -1,4 +1,5 @@
 #include "utils/controls.h"
+#include "utils/argument.h"
 
 #include "SDL3/SDL.h"
 
@@ -10,7 +11,6 @@
 #define strcasecmp _stricmp
 #endif
 
-#define INI_FILE "config.ini"
 #define ACTIVE_BUTTONS (end - begin + 1)
 #define HOTKEYS_COUNT (CONTROL_HOTKEY_END - CONTROL_HOTKEY_BEGIN + 1)
 
@@ -241,7 +241,7 @@ XYZ(TMS80, GG_START, "start");
 
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \
-    ini_gets(#console, "INPUT_KEY_" #button, default, name, 64, INI_FILE); \
+    ini_gets(#console, "INPUT_KEY_" #button, default, name, 64, argument_get_ini_path()); \
     SDL_Scancode scancode = SDL_SCANCODE_UNKNOWN; \
     if(strcasecmp(name, "none")) { \
         scancode = SDL_GetScancodeFromName(name); \
@@ -255,12 +255,12 @@ XYZ(TMS80, GG_START, "start");
 
 #define SAVE_SCANCODE(console, button, default) { \
     const char* name = SDL_GetScancodeName(control_scancode_maps[CONTROL_ ## console ## _ ## button]); \
-    ini_puts(#console, "INPUT_KEY_" #button, name &&name[0] ? name : "none", INI_FILE); \
+    ini_puts(#console, "INPUT_KEY_" #button, name &&name[0] ? name : "none", argument_get_ini_path()); \
 }
 
 #define LOAD_GAMEPAD(console, button, default) { \
     char name[64] = ""; \
-    ini_gets(#console, "INPUT_GAMEPAD_" #button, default, name, 64, INI_FILE); \
+    ini_gets(#console, "INPUT_GAMEPAD_" #button, default, name, 64, argument_get_ini_path()); \
     SDL_GamepadButton pad_btn = SDL_GAMEPAD_BUTTON_INVALID; \
     if(strcasecmp(name, "none")) { \
         pad_btn = SDL_GetGamepadButtonFromString(name); \
@@ -273,7 +273,7 @@ XYZ(TMS80, GG_START, "start");
 
 #define SAVE_GAMEPAD(console, button, default) { \
     const char* name = SDL_GetGamepadStringForButton(control_gamepad_maps[CONTROL_ ## console ## _ ## button]); \
-    ini_puts(#console, "INPUT_GAMEPAD_" #button, name && name[0] ? name : "none", INI_FILE); \
+    ini_puts(#console, "INPUT_GAMEPAD_" #button, name && name[0] ? name : "none", argument_get_ini_path()); \
 }
 
 void controls_load_maps(){
