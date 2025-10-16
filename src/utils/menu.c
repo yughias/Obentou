@@ -31,7 +31,7 @@ static void get_bios_path_button_text(wchar_t* out, const char* core_name){
     
     int len = strlen(default_bios_path_tmp);
 
-    if(len < MAX_SHOW_PATH_LENGTH)
+    if(len <= MAX_SHOW_PATH_LENGTH)
         snprintf(default_bios_path, FILENAME_MAX, "Bios Path: %s", default_bios_path_tmp[0] ? default_bios_path_tmp : "None");
     else
         snprintf(default_bios_path, FILENAME_MAX, "Bios Path: ...%s", default_bios_path_tmp + len - MAX_SHOW_PATH_LENGTH);
