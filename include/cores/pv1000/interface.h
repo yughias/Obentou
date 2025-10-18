@@ -13,6 +13,7 @@ void PV1000_sound_callback(void *userdata, SDL_AudioStream *stream, int addition
 #define PV1000_HEIGHT 192
 #define PV1000_FPS 59.9227434033
 #define PV1000_SOUND_PUSH_RATE -1
+#define PV1000_has_bios false
 
 #define PV1000_AUDIO_SPEC \
 { \

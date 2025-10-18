@@ -13,6 +13,7 @@ void* WATARA_init(const archive_t* rom_archive, const archive_t* bios_archive);
 #define WATARA_FPS 61.04
 #define WATARA_SOUND_PUSH_RATE (4e6/44100.0f)
 #define WATARA_sound_callback NULL
+#define WATARA_has_bios false
 
 #define WATARA_AUDIO_SPEC \
 { \

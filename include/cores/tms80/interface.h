@@ -13,6 +13,7 @@ void TMS80_close(void* ctx, const char* sav_path);
 #define TMS80_FPS 59.9227434033
 #define TMS80_SOUND_PUSH_RATE (3579545.0f/44100.0f)
 #define TMS80_sound_callback NULL
+#define TMS80_has_bios true
 
 #define TMS80_AUDIO_SPEC \
 { \

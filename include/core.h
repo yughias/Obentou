@@ -34,6 +34,7 @@ typedef struct core_t {
     SDL_AudioStreamCallback sound_callback;
     control_t control_begin;
     control_t control_end;
+    bool has_bios;
 } core_t;
 
 #define LOAD_CORE(core) \
@@ -50,7 +51,8 @@ typedef struct core_t {
     .sound_push_rate = core##_SOUND_PUSH_RATE, \
     .sound_callback = core##_sound_callback, \
     .control_begin = CONTROL_##core##_BEGIN, \
-    .control_end = CONTROL_##core##_END \
+    .control_end = CONTROL_##core##_END, \
+    .has_bios = core##_has_bios \
 }
 
 static const core_t cores[] = {

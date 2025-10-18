@@ -13,6 +13,7 @@ bool PCE_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 #define PCE_FPS 59.8337024193
 #define PCE_SOUND_PUSH_RATE (7.16e6/44100.0f)
 #define PCE_sound_callback NULL
+#define PCE_has_bios false
 
 #define PCE_AUDIO_SPEC \
 { \

@@ -13,6 +13,7 @@ void NES_close(void* ctx, const char* sav_path);
 #define NES_FPS 60.0988
 #define NES_SOUND_PUSH_RATE (1.789773e6/2.0/44100.0f)
 #define NES_sound_callback NULL
+#define NES_has_bios false
 
 #define NES_AUDIO_SPEC \
 { \

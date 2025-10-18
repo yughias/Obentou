@@ -11,6 +11,7 @@ bool BYTEPUSHER_detect(const archive_t* rom_archive, const archive_t* bios_archi
 #define BYTEPUSHER_FPS 60
 #define BYTEPUSHER_SOUND_PUSH_RATE -1
 #define BYTEPUSHER_sound_callback NULL
+#define BYTEPUSHER_has_bios false
 
 #define BYTEPUSHER_AUDIO_SPEC \
 { \

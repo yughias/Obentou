@@ -151,11 +151,17 @@ void menu_create(core_ctx_t* ctx){
     if(!ctx->core){
         addButtonTo(file_menu, L"Open Bios", (void*)menu_open_bios, ctx);
     } else {
-        menuId bios_menu = addMenuTo(file_menu, L"Bios", false);
-        addButtonTo(bios_menu, L"Open", (void*)menu_open_bios, ctx);
-        wchar_t default_bios_path[FILENAME_MAX];
-        get_bios_path_button_text(default_bios_path, ctx->core->name);
-        default_bios_button = addButtonTo(bios_menu, default_bios_path, (void*)menu_select_default_bios, ctx);
+        bool has_bios = ctx->core->has_bios;
+        menuId bios_menu = file_menu;
+        if(has_bios){
+            bios_menu = addMenuTo(file_menu, L"Bios", false);
+        }
+        addButtonTo(bios_menu, has_bios ? L"Open" : L"Open Bios", (void*)menu_open_bios, ctx);
+        if(has_bios){
+            wchar_t default_bios_path[FILENAME_MAX];
+            get_bios_path_button_text(default_bios_path, ctx->core->name);
+            default_bios_button = addButtonTo(bios_menu, default_bios_path, (void*)menu_select_default_bios, ctx);
+        }
     }
 
     menuId emu_menu = addMenuTo(-1, L"Emu", false);
