@@ -145,7 +145,6 @@ int main(int argc, char** argv){
 
     #ifdef _WIN32
     menu_height = GetSystemMetrics(SM_CYMENU);
-    printf("menu height %d\n", menu_height);
     #endif
 
     setup();

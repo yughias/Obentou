@@ -78,15 +78,15 @@ typedef struct core_ctx_t {
     void* emu;
 } core_ctx_t;
 
-typedef struct ctx_set_speed_args_t {
+typedef struct ctx_args_t {
     core_ctx_t* ctx;
-    int speed;
-} ctx_set_speed_args_t;
+    int value;
+} ctx_args_t;
 
 const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core);
 void core_restart(core_ctx_t* ctx);
 void core_switch_pause(core_ctx_t* ctx);
-void core_ctx_set_speed(ctx_set_speed_args_t* ctx);
+void core_ctx_set_speed(ctx_args_t* ctx);
 void core_ctx_close(core_ctx_t* ctx);
 void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path, const char* force_core);
 void core_ctx_run_frame(core_ctx_t* ctx);

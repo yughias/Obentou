@@ -35,7 +35,7 @@ emcc:
 	-o website/emulator.js
 
 clean:
-	rm -rf obj $(EXE)
+	rm -rf obj $(EXE) app.res
 
 loc:
 	find src -name \*.c | xargs wc -l

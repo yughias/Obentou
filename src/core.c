@@ -31,19 +31,22 @@ void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path,
     ctx->bios = archive_load(bios_path);
     ctx->core = core_detect(ctx->rom, ctx->bios, force_core);
 
-    if(ctx->core && !bios_path){
-        char default_bios_path[FILENAME_MAX];
-        argument_get_default_bios(default_bios_path, ctx->core->name);
-        archive_free(ctx->bios);
-        ctx->bios = archive_load(default_bios_path);
+    if(ctx->core){
+        if(!bios_path){
+            char default_bios_path[FILENAME_MAX];
+            argument_get_default_bios(default_bios_path, ctx->core->name);
+            archive_free(ctx->bios);
+            ctx->bios = archive_load(default_bios_path);
+        }
+        argument_update_recents(archive_get_path(ctx->rom), archive_get_path(ctx->bios));
     }
 
     sound_close();
 }
 
-void core_ctx_set_speed(ctx_set_speed_args_t* args){
-    args->ctx->speed_level = args->speed;
-    menu_speed_check(args->speed);
+void core_ctx_set_speed(ctx_args_t* args){
+    args->ctx->speed_level = args->value;
+    menu_speed_check(args->value);
 }
 
 void core_ctx_run_frame(core_ctx_t* ctx){
@@ -112,6 +115,7 @@ void core_restart(core_ctx_t* ctx){
             save_sav(ctx);
         free(ctx->emu);
     }
+
     ctx->emu = core->init(ctx->rom, ctx->bios);
 
     sound_open(&audio_spec, core->sound_callback, ctx->emu);

@@ -45,12 +45,12 @@ void loop(){
         menu_open_bios(&emu_ctx);
 
     if(hotkeys_released(CONTROL_HOTKEY_SPEEDUP) && emu_ctx.speed_level < 3){
-        ctx_set_speed_args_t speed_args = {.ctx = &emu_ctx, .speed = emu_ctx.speed_level + 1};
+        ctx_args_t speed_args = {.ctx = &emu_ctx, .value = emu_ctx.speed_level + 1};
         core_ctx_set_speed(&speed_args);
     }
 
     if(hotkeys_released(CONTROL_HOTKEY_SLOWDOWN) && emu_ctx.speed_level != 0){
-        ctx_set_speed_args_t speed_args = {.ctx = &emu_ctx, .speed = emu_ctx.speed_level - 1};
+        ctx_args_t speed_args = {.ctx = &emu_ctx, .value = emu_ctx.speed_level - 1};
         core_ctx_set_speed(&speed_args);
     }
 

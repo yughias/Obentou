@@ -237,6 +237,7 @@ XYZ(TMS80, LEFT, "dpleft"); \
 XYZ(TMS80, RIGHT, "dpright"); \
 XYZ(TMS80, BTN_1, "a"); \
 XYZ(TMS80, BTN_2, "b"); \
+XYZ(TMS80, PAUSE, "none"); \
 XYZ(TMS80, GG_START, "start");
 
 #define LOAD_SCANCODE(console, button, default) { \

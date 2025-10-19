@@ -66,3 +66,65 @@ const char* argument_get_ini_path(){
     snprintf(ini_path, FILENAME_MAX, "%sconfig.ini", base_path);
     return ini_path;
 }
+
+void argument_update_recents(const char* rom_path, const char* bios_path) {
+    char rom_key[16];
+    char bios_key[16];
+    char rom_value[512];
+    char bios_value[512];
+    char existing_rom[512];
+    char existing_bios[512];
+    int existing_index = -1;
+
+    const char* ini_path = argument_get_ini_path();
+
+    // find existing rom and bios pair
+    for (int i = 0; i < 10; i++) {
+        snprintf(rom_key, sizeof(rom_key), "ROM%d", i);
+        snprintf(bios_key, sizeof(bios_key), "BIOS%d", i);
+
+        ini_gets("RECENTS", rom_key, "", existing_rom, sizeof(existing_rom), ini_path);
+        ini_gets("RECENTS", bios_key, "", existing_bios, sizeof(existing_bios), ini_path);
+
+        if (!strcmp(existing_rom, rom_path) && !strcmp(existing_bios, bios_path)) {
+            existing_index = i;
+            break;
+        }
+    }
+
+    // trim spaces
+    for(int i = existing_index; existing_index != -1 && i < 9; i++){
+        snprintf(rom_key, sizeof(rom_key), "ROM%d", i + 1);
+        snprintf(bios_key, sizeof(bios_key), "BIOS%d", i + 1);
+
+        ini_gets("RECENTS", rom_key, "", rom_value, sizeof(rom_value), ini_path);
+        ini_gets("RECENTS", bios_key, "", bios_value, sizeof(bios_value), ini_path);
+        ini_puts("RECENTS", rom_key, "", ini_path);
+        ini_puts("RECENTS", bios_key, "", ini_path);
+
+        snprintf(rom_key, sizeof(rom_key), "ROM%d", i);
+        snprintf(bios_key, sizeof(bios_key), "BIOS%d", i);
+
+        ini_puts("RECENTS", rom_key, rom_value, ini_path);
+        ini_puts("RECENTS", bios_key, bios_value, ini_path);
+    }
+
+    // downshift
+    for(int i = 9; i > 0; i--){
+        snprintf(rom_key, sizeof(rom_key), "ROM%d", i - 1);
+        snprintf(bios_key, sizeof(bios_key), "BIOS%d", i - 1);
+
+        ini_gets("RECENTS", rom_key, "", rom_value, sizeof(rom_value), ini_path);
+        ini_gets("RECENTS", bios_key, "", bios_value, sizeof(bios_value), ini_path);
+        
+        snprintf(rom_key, sizeof(rom_key), "ROM%d", i);
+        snprintf(bios_key, sizeof(bios_key), "BIOS%d", i);
+
+        ini_puts("RECENTS", rom_key, rom_value, ini_path);
+        ini_puts("RECENTS", bios_key, bios_value, ini_path);
+    }
+
+    // insert new rom + bios
+    ini_puts("RECENTS", "ROM0", rom_path, ini_path);
+    ini_puts("RECENTS", "BIOS0", bios_path, ini_path);
+}
