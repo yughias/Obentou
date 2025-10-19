@@ -1,7 +1,7 @@
 #include "utils/controls.h"
 #include "utils/argument.h"
 
-#include "SDL3/SDL.h"
+#include "SDL_MAINLOOP.h"
 
 #include "minIni.h"
 
@@ -380,4 +380,28 @@ void controls_get_gamepad_accelerometer(float* sensors){
     sensors[1] = 0.0f;
     sensors[2] = 0.0f;
     SDL_GetGamepadSensorData(gamepad, SDL_SENSOR_ACCEL, sensors, 3);
+}
+
+bool controls_double_click(){
+    static unsigned int last_pressed = -1;
+    static unsigned int last_released = -1;
+
+    const unsigned int detect_value = 15;
+
+    SDL_MouseButtonFlags state = SDL_GetMouseState(NULL, NULL);
+    bool pressed = state & SDL_BUTTON_LMASK;
+    bool released = !pressed && (last_pressed == frameCount - 1); 
+
+    bool out = false;
+
+    if(pressed){
+        last_pressed = frameCount;
+    }
+
+    if(released){
+        out = (frameCount - last_released) <= detect_value;
+        last_released = frameCount;
+    }
+
+    return out;
 }

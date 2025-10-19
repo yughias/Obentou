@@ -38,6 +38,10 @@ void loop(){
     controls_update();
     camera_update();
 
+    if(controls_double_click()){
+        menu_fullscreen();
+    }
+
     if(hotkeys_released(CONTROL_HOTKEY_OPEN))
         menu_open_rom(&emu_ctx);
 

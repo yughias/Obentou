@@ -99,7 +99,7 @@ end:
     SDL_SetAtomicInt(&ctx->must_wait, 0);
 }
 
-static void menu_fullscreen(){
+void menu_fullscreen(){
     static bool is_fullscreen = false;
     is_fullscreen ^= 1;
     fullScreen();
