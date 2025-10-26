@@ -1,6 +1,9 @@
 #ifndef __VEC_H__
 #define __VEC_H__
 
+#include <stdlib.h>
+#include <string.h>
+
 #define REALLOC_VEC(type) \
 while (vec->size > vec->allocated) \
 { \

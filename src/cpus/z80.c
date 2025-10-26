@@ -1,4 +1,7 @@
 #include "cpus/z80.h"
+#include "utils/vec.h"
+
+DEFINE_VEC(byte_vec, u8);
 
 #include <stdio.h>
 #include <string.h>
@@ -169,6 +172,69 @@ void z80_init(z80_t* z80){
     z80->INTERRUPT_DELAY = false;
     z80->INTERRUPT_VECT = 0x0000;
     z80->cycles = 0;
+}
+
+void serialize_z80_t(z80_t* z80, byte_vec_t* vec){
+    byte_vec_push(vec, z80->HALTED);
+    byte_vec_push(vec, z80->IFF1);
+    byte_vec_push(vec, z80->IFF2);
+    byte_vec_push(vec, z80->INTERRUPT_DELAY);
+    byte_vec_push(vec, z80->INTERRUPT_PENDING);
+    byte_vec_push(vec, z80->INTERRUPT_MODE);
+    byte_vec_push(vec, z80->INTERRUPT_VECT);
+
+    byte_vec_push_array(vec, (u8*)&z80->AF, sizeof(z80->AF));
+    byte_vec_push_array(vec, (u8*)&z80->BC, sizeof(z80->BC));
+    byte_vec_push_array(vec, (u8*)&z80->DE, sizeof(z80->DE));
+    byte_vec_push_array(vec, (u8*)&z80->HL, sizeof(z80->HL));
+    byte_vec_push_array(vec, (u8*)&z80->IX, sizeof(z80->IX));
+    byte_vec_push_array(vec, (u8*)&z80->IY, sizeof(z80->IY));
+    byte_vec_push_array(vec, (u8*)&z80->WZ, sizeof(z80->WZ));
+    byte_vec_push_array(vec, (u8*)&z80->AF_, sizeof(z80->AF_));
+    byte_vec_push_array(vec, (u8*)&z80->BC_, sizeof(z80->BC_));
+    byte_vec_push_array(vec, (u8*)&z80->DE_, sizeof(z80->DE_));
+    byte_vec_push_array(vec, (u8*)&z80->HL_, sizeof(z80->HL_));
+
+    byte_vec_push_array(vec, (u8*)&z80->SP, sizeof(z80->SP));
+    byte_vec_push_array(vec, (u8*)&z80->PC, sizeof(z80->PC));
+
+    byte_vec_push(vec, z80->I);
+    byte_vec_push(vec, z80->R);
+    byte_vec_push(vec, z80->Q);
+
+    byte_vec_push_array(vec, (u8*)&z80->cycles, sizeof(z80->cycles));
+}
+
+u8* deserialize_z80_t(z80_t* z80, u8* data){
+    z80->HALTED = *(data++);
+    z80->IFF1 = *(data++);
+    z80->IFF2 = *(data++);
+    z80->INTERRUPT_DELAY = *(data++);
+    z80->INTERRUPT_PENDING = *(data++);
+    z80->INTERRUPT_MODE = *(data++);
+    z80->INTERRUPT_VECT = *(data++);
+
+    memcpy(&z80->AF, data, sizeof(z80->AF)); data += sizeof(z80->AF);
+    memcpy(&z80->BC, data, sizeof(z80->BC)); data += sizeof(z80->BC);
+    memcpy(&z80->DE, data, sizeof(z80->DE)); data += sizeof(z80->DE);
+    memcpy(&z80->HL, data, sizeof(z80->HL)); data += sizeof(z80->HL);
+    memcpy(&z80->IX, data, sizeof(z80->IX)); data += sizeof(z80->IX);
+    memcpy(&z80->IY, data, sizeof(z80->IY)); data += sizeof(z80->IY);
+    memcpy(&z80->WZ, data, sizeof(z80->WZ)); data += sizeof(z80->WZ);
+    memcpy(&z80->AF_, data, sizeof(z80->AF_)); data += sizeof(z80->AF_);
+    memcpy(&z80->BC_, data, sizeof(z80->BC_)); data += sizeof(z80->BC_);
+    memcpy(&z80->DE_, data, sizeof(z80->DE_)); data += sizeof(z80->DE_);
+    memcpy(&z80->HL_, data, sizeof(z80->HL_)); data += sizeof(z80->HL_);
+
+    memcpy(&z80->SP, data, sizeof(z80->SP)); data += sizeof(z80->SP);
+    memcpy(&z80->PC, data, sizeof(z80->PC)); data += sizeof(z80->PC);
+
+    z80->I = *(data++);
+    z80->R = *(data++);
+    z80->Q = *(data++);
+
+    memcpy(&z80->cycles, data, sizeof(z80->cycles)); data += sizeof(z80->cycles);
+    return data;
 }
 
 static void restoreRegisterTable(z80_t* z80, u8** r, u16** rp, u16** rp2){

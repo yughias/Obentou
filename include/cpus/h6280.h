@@ -3,39 +3,36 @@
 
 #include "types.h"
 
+#include "utils/serializer.h"
+
 typedef struct h6280_t h6280_t;
 typedef u8 (*h6280_read_func)(void*, u32);
 typedef void (*h6280_write_func)(void*, u32, u8);
 typedef void (*h6280_io_func)(void*, u16, u8);
 
-typedef struct h6280_t {
-    u16 pc;
-    u8 s;
-    u8 p;
-    u8 a;
-    u8 x;
-    u8 y;
+#define H6280_STRUCT(X) \
+    X(u16, pc, 1, 0) \
+    X(u8, s, 1, 0) \
+    X(u8, p, 1, 0) \
+    X(u8, a, 1, 0) \
+    X(u8, x, 1, 0) \
+    X(u8, y, 1, 0) \
+    X(u8, mpr, 8, 1, 0) \
+    X(bool, wait, 1, 0) \
+    X(bool, stop, 1, 0) \
+    X(bool, hi_speed, 1, 0) \
+    X(bool, irq_delay, 1, 0) \
+    X(h6280_read_func, read, 0, 0) \
+    X(h6280_write_func, write, 0, 0) \
+    X(h6280_io_func, io_write, 0, 0) \
+    X(u32, cycles, 1, 0) \
+    X(u16, mem_addr, 1, 0) \
+    X(u8, op_arg, 1, 0) \
+    X(bool, in_mem, 1, 0) \
+    X(bool, slow_op, 1, 0) \
+    X(void*, ctx, 0, 0)
 
-    u8 mpr[8];
-
-    bool wait;
-    bool stop;
-    bool hi_speed;
-    bool irq_delay;
-
-    h6280_read_func read;
-    h6280_write_func write;
-    h6280_io_func io_write;
-
-    u32 cycles;
-
-    u16 mem_addr;
-    u8 op_arg;
-    bool in_mem;
-    bool slow_op;
-
-    void* ctx;
-} h6280_t;
+DECLARE_SERIALIZABLE_STRUCT(h6280, H6280_STRUCT)
 
 void h6280_init(h6280_t* cpu);
 void h6280_reset(h6280_t* cpu);

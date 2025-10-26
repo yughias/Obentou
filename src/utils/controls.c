@@ -334,7 +334,7 @@ void controls_update(){
         hotkeys_pressed_arr[i] = hit;
     }
 
-    // game aware controls not initialized
+    // return if controls are not initialized
     if(!pressed || !prev_pressed)
         return;
     

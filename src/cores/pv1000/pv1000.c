@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "utils/archive.h"
+#include "utils/vec.h"
 
 void* PV1000_init(const archive_t* rom_archive, const archive_t* bios_archive){
     pv1000_t* pv1000 = malloc(sizeof(pv1000_t));
@@ -71,4 +72,16 @@ bool PV1000_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     }
     
     return false;
+}
+
+byte_vec_t PV1000_savestate(pv1000_t* pv1000){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_pv1000_t(pv1000, &state);
+    byte_vec_shrink(&state);
+    return state;
+}
+
+void PV1000_loadstate(pv1000_t* pv1000, byte_vec_t* state){
+    deserialize_pv1000_t(pv1000, state->data);
 }

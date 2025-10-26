@@ -296,3 +296,15 @@ static u8 watara_get_controller(){
 bool WATARA_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "watara") || archive_get_file_by_ext(rom_archive, "sv");
 }
+
+byte_vec_t WATARA_savestate(watara_t* w){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_watara_t(w, &state);
+    byte_vec_shrink(&state);
+    return state;
+}
+
+void WATARA_loadstate(watara_t* w, byte_vec_t* state){
+    deserialize_watara_t(w, state->data);
+}

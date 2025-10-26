@@ -8,6 +8,8 @@
 
 #include "types.h"
 
+#include "utils/serializer.h"
+
 #define REFRESH_RATE 59.9227434033
 #define CLOCK_RATE 3579545
 #define CYCLES_PER_FRAME 59736
@@ -17,15 +19,14 @@
 #define SCREEN_WIDTH 224
 #define SCREEN_HEIGHT 192
 
-typedef struct pv1000_t
-{
-    z80_t z80;
-    vdp_t vdp;
-    psg_t psg;
-    controller_t controller;
-    u8 memory[0x10000];
+#define PV1000_STRUCT(X) \
+    X(z80_t, z80, 1, 1) \
+    X(vdp_t, vdp, 1, 0) \
+    X(psg_t, psg, 1, 0) \
+    X(controller_t, controller, 1, 0) \
+    X(u8, memory, 0x10000, 1, 0) \
+    X(u8, status, 1, 0) \
 
-    u8 status;
-} pv1000_t;
+DECLARE_SERIALIZABLE_STRUCT(pv1000, PV1000_STRUCT)
 
 #endif

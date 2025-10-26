@@ -1,8 +1,6 @@
 #ifndef __GBC_INTERFACE_H__
 #define __GBC_INTERFACE_H__
 
-#include "interface.h"
-
 void GBC_run_frame(void* ctx);
 void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive);
@@ -14,6 +12,8 @@ void GBC_close(void* ctx, const char* sav_path);
 #define GBC_SOUND_PUSH_RATE (4194304.0f/44100.0f)
 #define GBC_sound_callback NULL
 #define GBC_has_bios true
+#define GBC_savestate NULL
+#define GBC_loadstate NULL
 
 #define GBC_AUDIO_SPEC \
 { \

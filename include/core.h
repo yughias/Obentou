@@ -7,6 +7,8 @@
 
 #include "utils/controls.h"
 #include "utils/archive.h"
+#include "utils/vec.h"
+#include "utils/serializer.h"
 
 #include "cores/watara/interface.h"
 #include "cores/pv1000/interface.h"
@@ -20,6 +22,8 @@ typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_ar
 typedef void (*run_frame_ptr)(void* ctx);
 typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*close_ptr)(void* ctx, const char* sav_path);
+typedef byte_vec_t (*savestate_ptr)(void* ctx);
+typedef void (*loadstate_ptr)(void* ctx, byte_vec_t* state);
 
 typedef struct core_t {
     const char name[32];
@@ -34,6 +38,8 @@ typedef struct core_t {
     SDL_AudioStreamCallback sound_callback;
     control_t control_begin;
     control_t control_end;
+    savestate_ptr savestate;
+    loadstate_ptr loadstate;
     bool has_bios;
 } core_t;
 
@@ -52,6 +58,8 @@ typedef struct core_t {
     .sound_callback = core##_sound_callback, \
     .control_begin = CONTROL_##core##_BEGIN, \
     .control_end = CONTROL_##core##_END, \
+    .savestate = core##_savestate, \
+    .loadstate = core##_loadstate, \
     .has_bios = core##_has_bios \
 }
 
