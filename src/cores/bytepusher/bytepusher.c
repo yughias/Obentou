@@ -8,6 +8,8 @@
 void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archive){
     bytepusher_t* bp = malloc(sizeof(bytepusher_t));
     file_t* rom = archive_get_file_by_ext(rom_archive, "bytepusher");
+    if(!rom)
+        rom = archive_get_file_by_ext(rom_archive, "bp");
     memcpy(bp->memory, rom->data, rom->size);
     
     return bp;
@@ -61,5 +63,20 @@ void BYTEPUSHER_run_frame(bytepusher_t* bp){
 }
 
 bool BYTEPUSHER_detect(const archive_t* rom_archive, const archive_t* bios_archive){
-    return archive_get_file_by_ext(rom_archive, "bytepusher") != NULL;
+    bool out = false;
+    out |= archive_get_file_by_ext(rom_archive, "bytepusher") != NULL;
+    out |= archive_get_file_by_ext(rom_archive, "bp") != NULL;
+    return out;
+}
+
+byte_vec_t BYTEPUSHER_savestate(void* ctx){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_bytepusher_t(ctx, &state);
+    byte_vec_shrink(&state);
+    return state;
+}
+
+void BYTEPUSHER_loadstate(void* ctx, byte_vec_t* state){
+    deserialize_bytepusher_t(ctx, state->data);
 }
