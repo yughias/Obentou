@@ -21,16 +21,7 @@ static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTE
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
 
-
-static void chars_to_wchars(wchar_t* out, const char* in){
-    int i;
-    for(i = 0; i < strlen(in); i++){
-        out[i] = in[i];
-    }
-    out[i] = 0;
-}
-
-static bool compose_recent_text(wchar_t* out, int idx){
+static bool compose_recent_text(wchar_t* out, size_t len, int idx){
     char path[FILENAME_MAX];
     char arg[16];
 
@@ -43,18 +34,18 @@ static bool compose_recent_text(wchar_t* out, int idx){
     ini_gets("RECENTS", arg, "", path, FILENAME_MAX, argument_get_ini_path());
     is_rom = path[0];
     if(is_rom){
-        chars_to_wchars(out + wcslen(out), "Rom: ");
-        chars_to_wchars(out + wcslen(out), path);
+        mbstowcs(out + wcslen(out), "Rom: ", len - wcslen(out));
+        mbstowcs(out + wcslen(out), path, len - wcslen(out));
     }
 
     snprintf(arg, sizeof(arg), "BIOS%d", idx);
     ini_gets("RECENTS", arg, "", path, FILENAME_MAX, argument_get_ini_path());
     is_bios = path[0];
     if(is_rom && is_bios)
-        chars_to_wchars(out + wcslen(out), " | ");
+        mbstowcs(out + wcslen(out), " | ", len - wcslen(out));
     if(is_bios){
-        chars_to_wchars(out + wcslen(out), "Bios: ");
-        chars_to_wchars(out + wcslen(out), path);
+        mbstowcs(out + wcslen(out), "Bios: ", len - wcslen(out));
+        mbstowcs(out + wcslen(out), path, len - wcslen(out));
     }
 
     return is_rom || is_bios;
@@ -66,18 +57,18 @@ typedef struct open_ctx_t {
     bool bios;
 } open_ctx_t;
 
-static void get_bios_path_button_text(wchar_t* out, const char* core_name){
+static void get_bios_path_button_text(wchar_t* out, size_t len, const char* core_name){
     char default_bios_path[FILENAME_MAX];
     argument_get_default_bios(default_bios_path, core_name);
     
-    int len = strlen(default_bios_path);
+    int bios_length = strlen(default_bios_path);
 
-    if(len <= MAX_SHOW_PATH_LENGTH){
-        chars_to_wchars(out, "Bios Path: ");
-        chars_to_wchars(out + wcslen(out), default_bios_path[0] ? default_bios_path : "None");
+    if(bios_length <= MAX_SHOW_PATH_LENGTH){
+        mbstowcs(out, "Bios Path: ", len);
+        mbstowcs(out + wcslen(out), default_bios_path[0] ? default_bios_path : "None", len - wcslen(out));
     } else {
-        chars_to_wchars(out, "Bios Path: ...");
-        chars_to_wchars(out + wcslen(out), default_bios_path + len - MAX_SHOW_PATH_LENGTH);
+        mbstowcs(out, "Bios Path: ...", len - wcslen(out));
+        mbstowcs(out + wcslen(out), default_bios_path + len - MAX_SHOW_PATH_LENGTH, len - wcslen(out));
     }
 }
 
@@ -91,7 +82,7 @@ static void on_default_bios_chosen(void *userdata, const char * const *filelist,
     argument_set_default_bios(filelist[0], core_name);
 
     wchar_t new_path[FILENAME_MAX];
-    get_bios_path_button_text(new_path, core_name);
+    get_bios_path_button_text(new_path, FILENAME_MAX, core_name);
     setButtonTitle(default_bios_button, new_path);
     
 end:
@@ -220,7 +211,7 @@ void menu_create(core_ctx_t* ctx){
         }
         addButtonTo(bios_menu, has_bios ? L"Open" : L"Open Bios", (void*)menu_open_bios, ctx);
         if(has_bios){
-            get_bios_path_button_text(label, ctx->core->name);
+            get_bios_path_button_text(label, sizeof(wchar_t) * 1024, ctx->core->name);
             default_bios_button = addButtonTo(bios_menu, label, (void*)menu_select_default_bios, ctx);
         }
     }
@@ -250,7 +241,7 @@ void menu_create(core_ctx_t* ctx){
     for(int i = 0; i < 10; i++){
         load_recent_args[i].ctx = ctx;
         load_recent_args[i].value = i;
-        if(!compose_recent_text(label, i))
+        if(!compose_recent_text(label, sizeof(wchar_t) * 1024, i))
             break;
         addButtonTo(recent_menu, label, (void*)menu_load_recent, &load_recent_args[i]);
     }
