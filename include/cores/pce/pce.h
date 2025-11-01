@@ -9,24 +9,26 @@
 #include "cores/pce/psg.h"
 #include "cores/pce/controller.h"
 
+#include "utils/serializer.h"
+
 #include <SDL3/SDL.h>
 
-typedef struct pce_t {
-    h6280_t cpu;
-    vce_t vce;
-    vdc_t vdc;
-    tmr_t timer;
-    psg_t psg;
-    controller_t controller;
-    u8* rom;
-    u32 rom_size;
-    u16 sf2;
-    u8 ram[0x2000];
-    u8 cart_ram[0x2000];
-    u8 irq_disable;
+#define PCE_STRUCT(X) \
+    X(h6280_t, cpu, 1, 1) \
+    X(vce_t, vce, 1, 0) \
+    X(vdc_t, vdc, 1, 1) \
+    X(tmr_t, timer, 1, 0) \
+    X(psg_t, psg, 1, 0) \
+    X(controller_t, controller, 1, 0) \
+    X(u8*, rom, 0, 0) \
+    X(u32, rom_size, 0, 0) \
+    X(u16, sf2, 1, 0) \
+    X(u8, ram, 0x2000, 1, 0) \
+    X(u8, cart_ram, 0x2000, 1, 0) \
+    X(u8, irq_disable, 1, 0) \
+    X(int, event_viewer, CYCLES_PER_SCANLINE*TOTAL_SCANLINES, 0, 0)
 
-    int event_viewer[CYCLES_PER_SCANLINE*TOTAL_SCANLINES];
-} pce_t;
+DECLARE_SERIALIZABLE_STRUCT(pce, PCE_STRUCT);
 
 u8 pce_read(void* p, u32 addr);
 void pce_write(void* p, u32 addr, u8 value);

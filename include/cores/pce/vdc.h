@@ -6,6 +6,8 @@
 
 #include "cores/pce/vce.h"
 
+#include "utils/serializer.h"
+
 #define VRAM_SIZE (1 << 16)
 
 #define SCREEN_WIDTH 256
@@ -47,30 +49,26 @@ typedef enum VDC_EVENT {
     END_LINE
 } VDC_EVENT;
 
-typedef struct vdc_t {
-    u8 vram[VRAM_SIZE];
-    u16 satb[256];
-    u8 selector;
-    u16 status;
-    u16 regs[0x20];
-    u16 read_buffer;
-    vce_t* vce;
-    u16 yscroll;
-    bool irq;
+#define VDC_STRUCT(X) \
+    X(u8, vram, VRAM_SIZE, 1, 0) \
+    X(u16, satb, 256, 1, 0) \
+    X(u8, selector, 1, 0) \
+    X(u16, status, 1, 0) \
+    X(u16, regs, 0x20, 1, 0) \
+    X(u16, read_buffer, 1, 0) \
+    X(vce_t*, vce, 0, 0) \
+    X(u16, yscroll, 1, 0) \
+    X(bool, irq, 1, 0) \
+    X(bool, satb_dma, 1, 0) \
+    X(int, next_event_cycles, 1, 0) \
+    X(VDC_EVENT, next_event, 1, 0) \
+    X(int, display_counter, 1, 0) \
+    X(int, frame_counter, 1, 0) \
+    X(u8, bg_buffer, 512, 0, 0) \
+    X(bool, sprite_buffer, 512, 0, 0) \
+    X(void*, ctx, 0, 0)
 
-    bool satb_dma;
-
-    int next_event_cycles;
-    VDC_EVENT next_event;
-
-    int display_counter;
-    int frame_counter;
-
-    u8 bg_buffer[512];
-    bool sprite_buffer[512];
-
-    void* ctx;
-} vdc_t;
+DECLARE_SERIALIZABLE_STRUCT(vdc, VDC_STRUCT);
 
 void pce_vdc_write_reg(vdc_t* v, u8 idx, u8 value, bool hi);
 u8 pce_vdc_read_reg(vdc_t* v, u8 idx, bool hi);

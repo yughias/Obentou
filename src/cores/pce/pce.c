@@ -371,3 +371,15 @@ void pce_notify_line(pce_t* p, int frame_line, int* line, int w){
 bool PCE_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "pce");
 }
+
+byte_vec_t PCE_savestate(pce_t* p){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_pce_t(p, &state);
+    byte_vec_shrink(&state);
+    return state;
+}
+
+void PCE_loadstate(pce_t* p, byte_vec_t* state){
+    deserialize_pce_t(p, state->data);
+}
