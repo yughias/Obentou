@@ -127,3 +127,29 @@ void NES_close(nes_t* nes, const char* sav_path){
     free(nes->cart.prg_ram);
     free(nes->ppu.vram);
 }
+
+byte_vec_t NES_savestate(nes_t* nes){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_nes_t(nes, &state);
+    byte_vec_push_array(&state, nes->ppu.vram, nes->ppu.vram_size);
+    if(nes->cart.is_chr_ram)
+        byte_vec_push_array(&state, nes->cart.chr, nes->cart.chr_size);
+    byte_vec_push_array(&state, nes->cart.prg_ram, nes->cart.prg_ram_size);
+    byte_vec_push_array(&state, nes->mapper, nes->mapper_size);
+    byte_vec_shrink(&state);
+    return state;
+}
+
+void NES_loadstate(nes_t* nes, byte_vec_t* state){
+    u8* ptr = deserialize_nes_t(nes, state->data);
+    memcpy(nes->ppu.vram, ptr, nes->ppu.vram_size);
+    ptr += nes->ppu.vram_size;
+    if(nes->cart.is_chr_ram){
+        memcpy(nes->cart.chr, ptr, nes->cart.chr_size);
+        ptr += nes->cart.chr_size;
+    }
+    memcpy(nes->cart.prg_ram, ptr, nes->cart.prg_ram_size);
+    ptr += nes->cart.prg_ram_size;
+    memcpy(nes->mapper, ptr, nes->mapper_size);
+}

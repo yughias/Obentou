@@ -21,7 +21,7 @@ static void fc001_check_a13(fc001_t* fc, u16 addr){
 }
 
 MAPPER_INIT(163, 
-    n->mapper = malloc(sizeof(fc001_t));
+    MAPPER_ALLOC(n, fc001_t);
     memset(n->mapper, 0, sizeof(fc001_t));
 )
 

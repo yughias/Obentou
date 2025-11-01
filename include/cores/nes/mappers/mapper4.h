@@ -51,7 +51,7 @@ static void mmc3_check_irq(nes_t* n, bool a12){
 }
 
 MAPPER_INIT(4, 
-    n->mapper = malloc(sizeof(mmc3_t));
+    MAPPER_ALLOC(n, mmc3_t);
     memset(n->mapper, 0x00, sizeof(mmc3_t));
     n->cart.vram_align = VRAM_H;
     mmc3_t* mmc3 = (mmc3_t*)n->mapper;

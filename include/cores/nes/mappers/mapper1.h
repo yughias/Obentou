@@ -25,7 +25,7 @@ typedef struct mmc1_t {
 } mmc1_t;
 
 MAPPER_INIT(1, 
-    n->mapper = malloc(sizeof(mmc1_t));
+    MAPPER_ALLOC(n, mmc1_t);
     mmc1_t* mmc1 = (mmc1_t*)n->mapper;
     mmc1->ctrl = 0x0C;
     mmc1->chr[0] = 0;

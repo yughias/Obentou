@@ -6,6 +6,8 @@
 #include "cpus/m6502.h"
 #include "SDL_MAINLOOP.h"
 
+#include "utils/serializer.h"
+
 #define BASIC_VRAM_SIZE (1 << 11)
 #define EXTENDED_VRAM_SIZE (1 << 12)
 #define PALETTE_RAM_SIZE 0x20
@@ -24,46 +26,40 @@ typedef struct sprite_t {
     u8 shifter_p1;
 } sprite_t;
 
-typedef struct ppu_t {
-    u8* vram;
-    u16 vram_size;
-    u8 palette_ram[PALETTE_RAM_SIZE];
-    u8 oam[OAM_SIZE];
-    u8 oam_addr;
-    u8 mask;
-    u8 ctrl;
-    u8 status;
-    u8 data;
+#define PPU_STRUCT(X) \
+    X(u8*, vram, 0, 0) \
+    X(u16, vram_size, 0, 0) \
+    X(u8, palette_ram, PALETTE_RAM_SIZE, 1, 0) \
+    X(u8, oam, OAM_SIZE, 1, 0) \
+    X(u8, oam_addr, 1, 0) \
+    X(u8, mask, 1, 0) \
+    X(u8, ctrl, 1, 0) \
+    X(u8, status, 1, 0) \
+    X(u8, data, 1, 0) \
+    X(u8, x, 1, 0) \
+    X(u16, v, 1, 0) \
+    X(u16, t, 1, 0) \
+    X(bool, w, 1, 0) \
+    X(u8, nt, 1, 0) \
+    X(u8, at, 1, 0) \
+    X(u8, bg_lsb, 1, 0) \
+    X(u8, bg_msb, 1, 0) \
+    X(u16, shifter_p0, 1, 0) \
+    X(u16, shifter_p1, 1, 0) \
+    X(u16, shifter_attr0, 1, 0) \
+    X(u16, shifter_attr1, 1, 0) \
+    X(u8, sprite_count, 1, 0) \
+    X(sprite_t, sprites, 8, 1, 0) \
+    X(bool, can_hit_0, 1, 0) \
+    X(bool, hit_0_triggered, 1, 0) \
+    X(bool, nmi_pin, 1, 0) \
+    X(bool, end_of_frame, 1, 0) \
+    X(u32, cycles, 1, 0) \
+    X(ppu_read_func, read, 0, 0) \
+    X(ppu_write_func, write, 0, 0) \
+    X(void*, ctx, 0, 0)
 
-    u8 x;
-    u16 v;
-    u16 t;
-    bool w;
-    
-    u8 nt;
-    u8 at;
-    u8 bg_lsb;
-    u8 bg_msb;
-
-    u16 shifter_p0;
-    u16 shifter_p1;
-    u16 shifter_attr0;
-    u16 shifter_attr1;
-
-    u8 sprite_count;
-    sprite_t sprites[8];
-    bool can_hit_0;
-    bool hit_0_triggered;
-    bool nmi_pin;
-    bool end_of_frame;
-
-    void* ctx;
-
-    u32 cycles;
-
-    ppu_read_func read;
-    ppu_write_func write;
-} ppu_t;
+DECLARE_SERIALIZABLE_STRUCT(ppu, PPU_STRUCT)
 
 void nes_ppu_inc_addr(ppu_t* ppu);
 u16 nes_ppu_get_vram_addr(VRAM_ALIGN align, u16 addr, u16 vram_size);

@@ -8,7 +8,7 @@ typedef struct mmc2_t {
 } mmc2_t;
 
 MAPPER_INIT(9,
-    n->mapper = malloc(sizeof(mmc2_t));
+    MAPPER_ALLOC(n, mmc2_t);
     mmc2_t* mmc2 = (mmc2_t*)n->mapper;
     mmc2->latch[0] = 0xFE;
     mmc2->latch[1] = 0xFE;

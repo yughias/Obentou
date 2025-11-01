@@ -6,7 +6,7 @@ typedef struct m226_t {
 } m226_t;
 
 MAPPER_INIT(226, 
-    n->mapper = malloc(sizeof(m226_t));
+    MAPPER_ALLOC(n, m226_t);
     memset(n->mapper, 0, sizeof(m226_t));
 )
 

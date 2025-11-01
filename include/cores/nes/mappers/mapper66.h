@@ -1,7 +1,7 @@
 #include "cores/nes/memory.h"
 
 MAPPER_INIT(66, 
-    n->mapper = malloc(sizeof(u8));
+    MAPPER_ALLOC(n, u8);
 )
 
 MAPPER_CPU_READ(66, 

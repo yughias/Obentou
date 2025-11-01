@@ -10,6 +10,8 @@
 #include "cores/nes/dma.h"
 #include "cores/nes/apu.h"
 
+#include "utils/serializer.h"
+
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
 #define REFRESH_RATE 60.0988
@@ -19,18 +21,19 @@
 #define PPU_CYCLES_PER_SCANLINE 341
 #define PPU_CYCLES_PER_FRAME (SCANLINES*PPU_CYCLES_PER_SCANLINE)
 
-typedef struct nes_t {
-    m6502_t cpu;
-    ppu_t ppu;
-    apu_t apu;
-    ines_t cart;
-    joypad_t joypad;
-    dma_t dma;
-    u8 ram[RAM_SIZE];
-    bool cart_irq;
-    void* mapper;
-    size_t mapper_size;
-} nes_t;
+#define NES_STRUCT(X) \
+    X(m6502_t, cpu, 1, 1) \
+    X(ppu_t, ppu, 1, 1) \
+    X(apu_t, apu, 1, 1) \
+    X(ines_t, cart, 1, 1) \
+    X(joypad_t, joypad, 1, 0) \
+    X(dma_t, dma, 1, 0) \
+    X(u8, ram, RAM_SIZE, 1, 0) \
+    X(bool, cart_irq, 1, 0) \
+    X(void*, mapper, 0, 0) \
+    X(size_t, mapper_size, 1, 0)
+
+DECLARE_SERIALIZABLE_STRUCT(nes, NES_STRUCT);
 
 void nes_reset(nes_t* nes);
 void nes_sync(nes_t* nes);

@@ -5,7 +5,8 @@
 
 #include "types.h"
 
-#define APU_CYCLES_PER_SECOND (1.789773e6 / 2)
+#include "utils/serializer.h"
+
 #define DISPLAY_BUFFER_SIZE 1024
 
 typedef struct envelope_t {
@@ -76,24 +77,21 @@ typedef struct dmc_t {
     bool silence_flag;
 } dmc_t;
 
-typedef struct apu_t {
-    pulse_t pulses[2];
-    triangle_t triangle;
-    noise_t noise;
-    dmc_t dmc;
+#define APU_STRUCT(X) \
+    X(pulse_t, pulses, 2, 1, 0) \
+    X(triangle_t, triangle, 1, 0) \
+    X(noise_t, noise, 1, 0) \
+    X(dmc_t, dmc, 1, 0) \
+    X(u32, frame_counter, 1, 0) \
+    X(u8, sequencer_mode, 1, 0) \
+    X(int, display_idx, 0, 0) \
+    X(bool, inhibit_irq, 1, 0) \
+    X(bool, frame_irq, 1, 0) \
+    X(bool, mute[5], 0, 0) \
+    X(u8, display_buffers[5][DISPLAY_BUFFER_SIZE], 0, 0) \
+    X(void*, ctx, 0, 0)
 
-    u32 frame_counter;
-    u8 sequencer_mode;
-
-    bool mute[5];
-    u8 display_buffers[5][DISPLAY_BUFFER_SIZE];
-    int display_idx;
-
-    bool inhibit_irq;
-    bool frame_irq;
-
-    void* ctx;
-} apu_t;
+DECLARE_SERIALIZABLE_STRUCT(apu, APU_STRUCT)
 
 void nes_apu_sync(apu_t* apu);
 void nes_apu_push_sample(apu_t* apu);

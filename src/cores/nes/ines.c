@@ -45,6 +45,7 @@ static void ines1_load(ines_t* ines, u8 header[16]){
     printf("using iNes1.0\n");
 
     ines->mapper = (header[6] >> 4) | (header[7] & 0xF0);
+    printf("mapper %d\n", ines->mapper);
     ines->prg_size = header[4] * (1 << 14);
     ines->chr_size = header[5] * (1 << 13);
     ines->vram_align = header[6] & 1 ? VRAM_H : VRAM_V;
@@ -63,6 +64,7 @@ static void ines2_load(ines_t* ines, u8 header[16]){
     printf("using iNes2.0\n");
 
     ines->mapper = (header[6] >> 4) | (header[7] & 0xF0);
+    printf("mapper %d\n", ines->mapper);
     printf("submapper %d\n", header[8] >> 4);
     ines->vram_align = header[6] & 1 ? VRAM_H : VRAM_V;
     if(header[6] & (1 << 3))

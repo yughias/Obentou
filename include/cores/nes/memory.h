@@ -209,5 +209,6 @@ ines_t* cart = &n->cart \
 #define MAPPER_PPU_READ(X, func) static u8 mapper ## X ## _ppu_read(ppu_t* ppu, u16 addr) { PPU_COMMON_PTR; func }
 #define MAPPER_PPU_WRITE(X, func) static void mapper ## X ## _ppu_write(ppu_t* ppu, u16 addr, u8 byte) { PPU_COMMON_PTR; func }
 
+#define MAPPER_ALLOC(n, type) n->mapper = malloc(sizeof(type)); n->mapper_size = sizeof(type)
 
 #endif
