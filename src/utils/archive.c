@@ -12,7 +12,7 @@
 
 DEFINE_VEC(files, file_t)
 
-typedef struct archive {
+typedef struct archive_t {
     char path[FILENAME_MAX];
     files_t files;
 } archive_t;

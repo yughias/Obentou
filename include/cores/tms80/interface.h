@@ -4,6 +4,8 @@
 void TMS80_run_frame(void* ctx);
 void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool TMS80_detect(const archive_t* rom_archive, const archive_t* bios_archive);
+byte_vec_t TMS80_savestate(void* ctx);
+void TMS80_loadstate(void* ctx, byte_vec_t* state);
 void TMS80_close(void* ctx, const char* sav_path);
 
 #define TMS80_WIDTH 256
@@ -12,8 +14,6 @@ void TMS80_close(void* ctx, const char* sav_path);
 #define TMS80_SOUND_PUSH_RATE (3579545.0f/44100.0f)
 #define TMS80_sound_callback NULL
 #define TMS80_has_bios true
-#define TMS80_savestate NULL
-#define TMS80_loadstate NULL
 
 #define TMS80_AUDIO_SPEC \
 { \

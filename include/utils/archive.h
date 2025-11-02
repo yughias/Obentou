@@ -3,7 +3,7 @@
 
 #include "utils/file.h"
 
-typedef struct archive archive_t;
+typedef struct archive_t archive_t;
 
 archive_t* archive_load(const char* filename);
 void archive_free(archive_t* archive);

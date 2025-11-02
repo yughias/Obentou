@@ -146,6 +146,8 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
         exit(EXIT_FAILURE);
     }
 
+    tms80->bios_masked = true;
+
     switch(tms80->type){
         case SG1000:
         case SC3000:
@@ -157,6 +159,7 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
         case SMS:
         case GG:
         if(bios_file){
+            tms80->bios_masked = false;
             tms80->z80.readMemory = tms80_sms_bios_readMemory;
             tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
         } else {
@@ -308,4 +311,23 @@ bool TMS80_detect(const archive_t* rom_archive, const archive_t* bios_archive){
 void TMS80_close(tms80_t* tms80, const char* sav_path){
     if(tms80->no_cartridge)
         free(tms80->cartridge);
+}
+
+byte_vec_t TMS80_savestate(tms80_t* tms80){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_tms80_t(tms80, &state);
+    byte_vec_shrink(&state);
+    return state;
+}
+
+void TMS80_loadstate(tms80_t* tms80, byte_vec_t* state){
+    deserialize_tms80_t(tms80, state->data);
+    if(tms80->bios_masked){
+        tms80->z80.readMemory = tms80_sms_readMemory;
+        tms80->z80.writeMemory = tms80_sms_writeMemory;
+    } else {
+        tms80->z80.readMemory = tms80_sms_bios_readMemory;
+        tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
+    }
 }

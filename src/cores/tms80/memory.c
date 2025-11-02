@@ -140,7 +140,8 @@ void tms80_writeIO(void* ctx, u16 addr, u8 byte){
     addr &= 0xFF;
 
     if((tms80->type == SMS || tms80->type == GG) && addr == 0x3E){
-        if((byte & (1 << 3))){
+        tms80->bios_masked = byte & (1 << 3);
+        if(tms80->bios_masked){
             tms80->z80.readMemory = tms80_sms_readMemory;
             tms80->z80.writeMemory = tms80_sms_writeMemory;
         } else if(tms80->bios) {

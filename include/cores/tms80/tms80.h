@@ -7,6 +7,8 @@
 
 #include "types.h"
 
+#include "utils/serializer.h"
+
 #define CYCLES_PER_LINE 228
 
 #define NTSC_REFRESH_RATE 59.9227434033
@@ -21,34 +23,28 @@
 
 typedef enum TMS80_TYPE {TMS80_UNKNOWN, SG1000, SC3000, SMS, GG} TMS80_TYPE;
 
-typedef struct tms80_t
-{
-    TMS80_TYPE type;
+#define TMS80_STRUCT(X) \
+    X(TMS80_TYPE, type, 0, 0) \
+    X(double, refresh_rate, 0, 0) \
+    X(size_t, cycles_per_frame, 0, 0) \
+    X(z80_t, z80, 1, 1) \
+    X(vdp_t, vdp, 1, 0) \
+    X(sn76489_t, apu, 1, 0) \
+    X(bool, no_cartridge, 0, 0) \
+    X(u8*, cartridge, 0, 0) \
+    X(size_t, cartridge_size, 0, 0) \
+    X(u8*, bios, 0, 0) \
+    X(size_t, bios_size, 0, 0) \
+    X(bool, bios_masked, 1, 0) \
+    X(bool, has_keyboard, 0, 0) \
+    X(bool, force_paddle_controller, 0, 0) \
+    X(bool, paddle_status, 0, 0) \
+    X(u8, keypad_reg, 1, 0) \
+    X(u8, ram_bank, 1, 0) \
+    X(u8, banks, 3, 1, 0) \
+    X(u8, RAM, RAM_SIZE, 1, 0)
 
-    double refresh_rate;
-    size_t cycles_per_frame;
-    
-    z80_t z80;
-    vdp_t vdp;
-    sn76489_t apu;
-
-    bool no_cartridge;
-    u8* cartridge;
-    size_t cartridge_size;
-
-    u8* bios;
-    size_t bios_size;
-
-    bool has_keyboard;
-    bool force_paddle_controller;
-    bool paddle_status;
-    u8 keypad_reg;
-
-    u8 ram_bank;
-    u8 banks[3];
-
-    u8 RAM[RAM_SIZE];
-} tms80_t;
+DECLARE_SERIALIZABLE_STRUCT(tms80, TMS80_STRUCT);
 
 bool tms80_detect_ram_adapter(u8* cartridge, size_t cartridge_size);
 
