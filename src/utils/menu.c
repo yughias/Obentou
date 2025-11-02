@@ -60,15 +60,15 @@ typedef struct open_ctx_t {
 static void get_bios_path_button_text(wchar_t* out, size_t len, const char* core_name){
     char default_bios_path[FILENAME_MAX];
     argument_get_default_bios(default_bios_path, core_name);
-    
+
     int bios_length = strlen(default_bios_path);
 
     if(bios_length <= MAX_SHOW_PATH_LENGTH){
         mbstowcs(out, "Bios Path: ", len);
         mbstowcs(out + wcslen(out), default_bios_path[0] ? default_bios_path : "None", len - wcslen(out));
     } else {
-        mbstowcs(out, "Bios Path: ...", len - wcslen(out));
-        mbstowcs(out + wcslen(out), default_bios_path + len - MAX_SHOW_PATH_LENGTH, len - wcslen(out));
+        mbstowcs(out, "Bios Path: ...", len);
+        mbstowcs(out + wcslen(out), default_bios_path + bios_length - MAX_SHOW_PATH_LENGTH, len - wcslen(out));
     }
 }
 
