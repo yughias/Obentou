@@ -14,7 +14,7 @@ static u8 audio_buffer[AUDIO_BUFFER_SIZE];
 static size_t audio_buffer_idx;
 static float push_rate_counter;
 static float push_rate_reload = -1;
-static int push_rate_scaled;
+static float push_rate_scaled;
 
 void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     if(isGrabbed())
@@ -67,11 +67,7 @@ void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sou
         func(ctx, sample);
         memcpy(audio_buffer + audio_buffer_idx, sample, sample_size);
         audio_buffer_idx += sample_size;
-        if(audio_buffer_idx) {
-            if(audio_buffer_idx > AUDIO_BUFFER_SIZE){
-                printf("sound_push_sample: audio buffer overflow\n");
-                audio_buffer_idx = AUDIO_BUFFER_SIZE;
-            }
+        if(audio_buffer_idx >= AUDIO_BUFFER_SIZE) {
             SDL_PutAudioStreamData(audio_stream, audio_buffer, audio_buffer_idx);
             audio_buffer_idx = 0;
         }

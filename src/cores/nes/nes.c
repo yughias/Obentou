@@ -94,7 +94,7 @@ void NES_run_frame(nes_t* nes){
                 cpu->write(cpu, 0x2004, dma->data);
                 cpu->cycles += 1;
                 dma->read_cycle = true;
-                dma->enabled =dma->addr_lo;
+                dma->enabled = dma->addr_lo;
             }
         } else {
             if(ppu->nmi_pin){
