@@ -32,7 +32,7 @@ void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path,
     ctx->core = core_detect(ctx->rom, ctx->bios, force_core);
 
     if(ctx->core){
-        if(!bios_path){
+        if(!bios_path || !bios_path[0]){
             char default_bios_path[FILENAME_MAX];
             argument_get_default_bios(default_bios_path, ctx->core->name);
             archive_free(ctx->bios);

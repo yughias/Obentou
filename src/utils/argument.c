@@ -40,21 +40,11 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
 }
 
 void argument_get_default_bios(char* path, const char* core_name){
-    char buf[FILENAME_MAX];
-    const char* base_path = SDL_GetBasePath();
-    ini_gets(core_name, "BIOS", "", buf, FILENAME_MAX, argument_get_ini_path());
-    if(!buf[0])
-        path[0] = '\0';
-    else {
-        if(strlen(buf) > 1 && (buf[0] < 'A' || buf[0] > 'Z') && buf[1] != ':')
-            snprintf(path, FILENAME_MAX, "%s%s", base_path, buf);
-        else
-            snprintf(path, FILENAME_MAX, "%s", buf);
-    }
+    argument_get_path(path, core_name, "BIOS");
 }
 
 void argument_set_default_bios(const char* path, const char* core_name){
-    ini_puts(core_name, "BIOS", path, argument_get_ini_path());
+    argument_set_path(path, core_name, "BIOS");
 }
 
 const char* argument_get_ini_path(){
@@ -83,8 +73,8 @@ void argument_update_recents(const char* rom_path, const char* bios_path) {
         snprintf(rom_key, sizeof(rom_key), "ROM%d", i);
         snprintf(bios_key, sizeof(bios_key), "BIOS%d", i);
 
-        ini_gets("RECENTS", rom_key, "", existing_rom, sizeof(existing_rom), ini_path);
-        ini_gets("RECENTS", bios_key, "", existing_bios, sizeof(existing_bios), ini_path);
+        argument_get_path(existing_rom, "RECENTS", rom_key);
+        argument_get_path(existing_bios, "RECENTS", bios_key);
 
         if (!strcmp(existing_rom, rom_path) && !strcmp(existing_bios, bios_path)) {
             existing_index = i;
@@ -97,16 +87,14 @@ void argument_update_recents(const char* rom_path, const char* bios_path) {
         snprintf(rom_key, sizeof(rom_key), "ROM%d", i + 1);
         snprintf(bios_key, sizeof(bios_key), "BIOS%d", i + 1);
 
-        ini_gets("RECENTS", rom_key, "", rom_value, sizeof(rom_value), ini_path);
-        ini_gets("RECENTS", bios_key, "", bios_value, sizeof(bios_value), ini_path);
-        ini_puts("RECENTS", rom_key, "", ini_path);
-        ini_puts("RECENTS", bios_key, "", ini_path);
+        argument_get_path(rom_value, "RECENTS", rom_key);
+        argument_get_path(bios_value, "RECENTS", bios_key);
 
         snprintf(rom_key, sizeof(rom_key), "ROM%d", i);
         snprintf(bios_key, sizeof(bios_key), "BIOS%d", i);
 
-        ini_puts("RECENTS", rom_key, rom_value, ini_path);
-        ini_puts("RECENTS", bios_key, bios_value, ini_path);
+        argument_set_path(rom_value, "RECENTS", rom_key);
+        argument_set_path(bios_value, "RECENTS", bios_key);
     }
 
     // downshift
@@ -114,17 +102,36 @@ void argument_update_recents(const char* rom_path, const char* bios_path) {
         snprintf(rom_key, sizeof(rom_key), "ROM%d", i - 1);
         snprintf(bios_key, sizeof(bios_key), "BIOS%d", i - 1);
 
-        ini_gets("RECENTS", rom_key, "", rom_value, sizeof(rom_value), ini_path);
-        ini_gets("RECENTS", bios_key, "", bios_value, sizeof(bios_value), ini_path);
+        argument_get_path(rom_value, "RECENTS", rom_key);
+        argument_get_path(bios_value, "RECENTS", bios_key);
         
         snprintf(rom_key, sizeof(rom_key), "ROM%d", i);
         snprintf(bios_key, sizeof(bios_key), "BIOS%d", i);
 
-        ini_puts("RECENTS", rom_key, rom_value, ini_path);
-        ini_puts("RECENTS", bios_key, bios_value, ini_path);
+        argument_set_path(rom_value, "RECENTS", rom_key);
+        argument_set_path(bios_value, "RECENTS", bios_key);
     }
 
     // insert new rom + bios
-    ini_puts("RECENTS", "ROM0", rom_path, ini_path);
-    ini_puts("RECENTS", "BIOS0", bios_path, ini_path);
+    argument_set_path(rom_path, "RECENTS", "ROM0");
+    argument_set_path(bios_path, "RECENTS", "BIOS0");
+}
+
+
+void argument_get_path(char* path, const char* section, const char* key){
+    char buf[FILENAME_MAX];
+    ini_gets(section, key, "", buf, FILENAME_MAX, argument_get_ini_path());
+    if(buf[0])
+        _fullpath(path, buf, FILENAME_MAX);
+    else
+        path[0] = 0;
+}
+
+void argument_set_path(const char* path, const char* section, const char* key){
+    char buf[FILENAME_MAX];
+    if(path && path[0])
+        _fullpath(buf, path, FILENAME_MAX);
+    else
+        buf[0] = 0;
+    ini_puts(section, key, buf, argument_get_ini_path());
 }

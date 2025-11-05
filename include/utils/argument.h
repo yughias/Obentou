@@ -7,4 +7,7 @@ void argument_set_default_bios(const char* path, const char* core_name);
 const char* argument_get_ini_path();
 void argument_update_recents(const char* rom_path, const char* bios_path);
 
+void argument_get_path(char* path, const char* section, const char* key);
+void argument_set_path(const char* path, const char* section, const char* key);
+
 #endif

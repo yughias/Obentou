@@ -31,7 +31,7 @@ static bool compose_recent_text(wchar_t* out, size_t len, int idx){
     out[0] = 0;
 
     snprintf(arg, sizeof(arg), "ROM%d", idx);
-    ini_gets("RECENTS", arg, "", path, FILENAME_MAX, argument_get_ini_path());
+    argument_get_path(path, "RECENTS", arg);
     is_rom = path[0];
     if(is_rom){
         mbstowcs(out + wcslen(out), "Rom: ", len - wcslen(out));
@@ -39,7 +39,7 @@ static bool compose_recent_text(wchar_t* out, size_t len, int idx){
     }
 
     snprintf(arg, sizeof(arg), "BIOS%d", idx);
-    ini_gets("RECENTS", arg, "", path, FILENAME_MAX, argument_get_ini_path());
+    argument_get_path(path, "RECENTS", arg);
     is_bios = path[0];
     if(is_rom && is_bios)
         mbstowcs(out + wcslen(out), " | ", len - wcslen(out));
@@ -110,8 +110,8 @@ static void menu_load_recent(ctx_args_t* args){
     snprintf(rom_arg, sizeof(rom_arg), "ROM%d", args->value);
     snprintf(bios_arg, sizeof(bios_arg), "BIOS%d", args->value);
 
-    ini_gets("RECENTS", rom_arg, "", rom_path, FILENAME_MAX, argument_get_ini_path());
-    ini_gets("RECENTS", bios_arg, "", bios_path, FILENAME_MAX, argument_get_ini_path());
+    argument_get_path(rom_path, "RECENTS", rom_arg);
+    argument_get_path(bios_path, "RECENTS", bios_arg);
 
     core_ctx_t* ctx = args->ctx;
     int idx = args->value;
