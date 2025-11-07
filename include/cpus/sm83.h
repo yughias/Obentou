@@ -86,4 +86,8 @@ void initCPU(sm83_t*);
 void infoCPU(sm83_t*);
 void stepCPU(sm83_t*);
 
+typedef struct byte_vec_t byte_vec_t;
+void serialize_sm83_t(sm83_t* sm, byte_vec_t* vec);
+u8* deserialize_sm83_t(sm83_t* sm, u8* data);
+
 #endif

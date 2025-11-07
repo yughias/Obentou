@@ -1,4 +1,7 @@
 #include "cpus/sm83.h"
+
+#include "utils/serializer.h"
+
 #include <stdio.h>
 
 //cpu NEW INSTRUCTION
@@ -1308,4 +1311,41 @@ static inline void writeByteAndTick(sm83_t* cpu, u16 addr, u8 byte){
 static inline void writeShortAndTick(sm83_t* cpu, u16 addr, u16 val){
     writeByteAndTick(cpu, addr, val & 0xFF);
     writeByteAndTick(cpu, addr+1, val >> 8);
+}
+
+void serialize_sm83_t(sm83_t* cpu, byte_vec_t* state) {
+    byte_vec_push(state, cpu->HALTED);
+    byte_vec_push(state, cpu->IME);
+    byte_vec_push(state, cpu->EI_DELAY);
+    byte_vec_push(state, cpu->HALT_BUG);
+    byte_vec_push(state, cpu->IE);
+    byte_vec_push(state, cpu->IF);
+
+    byte_vec_push_array(state, (u8*)&cpu->AF, sizeof(cpu->AF));
+    byte_vec_push_array(state, (u8*)&cpu->BC, sizeof(cpu->BC));
+    byte_vec_push_array(state, (u8*)&cpu->DE, sizeof(cpu->DE));
+    byte_vec_push_array(state, (u8*)&cpu->HL, sizeof(cpu->HL));
+    byte_vec_push_array(state, (u8*)&cpu->SP, sizeof(cpu->SP));
+    byte_vec_push_array(state, (u8*)&cpu->PC, sizeof(cpu->PC));
+    
+    byte_vec_push_array(state, (u8*)&cpu->cycles, sizeof(cpu->cycles));
+}
+
+u8* deserialize_sm83_t(sm83_t* cpu, u8* data) {
+    cpu->HALTED = *(data++);
+    cpu->IME = *(data++);
+    cpu->EI_DELAY = *(data++);
+    cpu->HALT_BUG = *(data++);
+    cpu->IE = *(data++);
+    cpu->IF = *(data++);
+
+    memcpy(&cpu->AF, data, sizeof(cpu->AF)); data += sizeof(cpu->AF);
+    memcpy(&cpu->BC, data, sizeof(cpu->BC)); data += sizeof(cpu->BC);
+    memcpy(&cpu->DE, data, sizeof(cpu->DE)); data += sizeof(cpu->DE);
+    memcpy(&cpu->HL, data, sizeof(cpu->HL)); data += sizeof(cpu->HL);
+    memcpy(&cpu->SP, data, sizeof(cpu->SP)); data += sizeof(cpu->SP);
+    memcpy(&cpu->PC, data, sizeof(cpu->PC)); data += sizeof(cpu->PC);
+
+    memcpy(&cpu->cycles, data, sizeof(cpu->cycles)); data += sizeof(cpu->cycles);
+    return data;
 }
