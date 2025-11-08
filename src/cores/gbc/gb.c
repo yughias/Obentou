@@ -13,12 +13,9 @@ void GBC_run_frame(gb_t* gb){
         #endif
         stepCPU(cpu);
     }
+
     gb->startFrame_clock += cpu->cycles;
     cpu->cycles -= CYCLES_PER_FRAME;
-
-    // copy framebuffer to pixels
-    memcpy(pixels, gb->ppu.renderBufferPtr, sizeof(int)*LCD_WIDTH*LCD_HEIGHT);
-    renderPixels();
 }
 
 static void tickHardware(void* ctx, int ticks){
@@ -62,8 +59,6 @@ void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive){
     gb_initSerial();
     gb_initLcdcMasks(gb);
     gb_initColorPalette(gb);
-    gb->ppu.workingBufferPtr = gb->ppu.workingBuffer;
-    gb->ppu.renderBufferPtr = gb->ppu.renderBuffer;
     gb_renderLcdOff(&gb->ppu);
 
     return gb;

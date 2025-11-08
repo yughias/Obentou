@@ -264,7 +264,7 @@ static void renderLine(gb_t* gb, u8 y){
         else
             col = getTileMapPixelRGB(gb, bgTileMap, (ppu->SCX_REG + x) % 256, (ppu->SCY_REG + y) % 256, &dmgPrio[x], &cgbPrio[x]);
         
-        ppu->workingBufferPtr[x + y * LCD_WIDTH] = col;
+        pixels[x + y * LCD_WIDTH] = col;
     }
 
     if(gb->console_type == MEGADUCK_TYPE)
@@ -277,7 +277,7 @@ static void renderLine(gb_t* gb, u8 y){
             if(winX < LCD_WIDTH){
                 for(int offX = 0; winX < LCD_WIDTH; offX = (offX + 1) % 256){
                     if(winX >= 0)
-                        ppu->workingBufferPtr[winX + y * LCD_WIDTH] = getTileMapPixelRGB(gb, winTileMap, offX % 256, ppu->windowY_counter % 256, &dmgPrio[winX], &cgbPrio[winX]);
+                        pixels[winX + y * LCD_WIDTH] = getTileMapPixelRGB(gb, winTileMap, offX % 256, ppu->windowY_counter % 256, &dmgPrio[winX], &cgbPrio[winX]);
                     winX++;
                 }
                 ppu->windowY_counter++;
@@ -348,7 +348,7 @@ static void renderLine(gb_t* gb, u8 y){
                         // cgb priority condition
                         (gb->console_type != CGB_TYPE || !cgbPrio[screenX] || !bg_win_enabled)
                     )
-                        ppu->workingBufferPtr[screenX + y * LCD_WIDTH] = col;
+                        pixels[screenX + y * LCD_WIDTH] = col;
 
                 screenX++;
                 spriteX++;
@@ -474,10 +474,11 @@ void gb_updatePPU(gb_t* gb){
         if(ppu->STAT_REG & (1 << 5))
             ppu->stat_irq = true;
 
+        if(!ppu->frameSkip)
+            renderPixels();
+
         ppu->windowY_counter = 0;
         ppu->frameSkip = false;
-
-        gb_swapBuffers(ppu);
 
         // TODO
         //emulateGameShark(gb);
@@ -523,17 +524,8 @@ void gb_updatePPU(gb_t* gb){
         ppu->counter++;
 }
 
-void gb_swapBuffers(ppu_t* ppu){
-    int* tmp = ppu->renderBufferPtr;
-    ppu->renderBufferPtr = ppu->workingBufferPtr;
-    ppu->workingBufferPtr = tmp;
-}
-
 void gb_renderLcdOff(ppu_t* ppu){
-    for(int i = 0; i < LCD_WIDTH*LCD_HEIGHT; i++){
-        ppu->workingBufferPtr[i] = ppu->backgroundColor;
-        ppu->renderBufferPtr[i] = ppu->backgroundColor;
-    }
-    gb_swapBuffers(ppu);
-    ppu->lastFrameOn = true;
+    for(int i = 0; i < width*height; i++)
+        pixels[i] = ppu->backgroundColor;
+    renderPixels();
 }

@@ -79,11 +79,6 @@ typedef struct ppu_t {
     bool stat_irq;
     u8 internal_ly;
 
-    int workingBuffer[LCD_WIDTH*LCD_HEIGHT];
-    int renderBuffer[LCD_WIDTH*LCD_HEIGHT];
-    int* workingBufferPtr;
-    int* renderBufferPtr;
-
     int dmgColors[4];
     int backgroundColor;
     u8 windowY_counter;
@@ -103,8 +98,5 @@ void gb_initLcdcMasks(gb_t*);
 void gb_updatePPU(gb_t*);
 u8 gb_getStatRegister(ppu_t*);
 void gb_writeColorToCRAM(u8, u8, u8, u8*, u8);
-
-
-void gb_swapBuffers(ppu_t*);
 
 #endif
