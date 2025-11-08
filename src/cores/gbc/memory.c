@@ -126,6 +126,7 @@ void gb_loadRom(gb_t* gb, const archive_t* rom_archive){
 void gb_loadBootRom(gb_t* gb, file_t* file){
     gb->BOOTROM_SIZE = file->size;
     gb->BOOTROM = file->data;
+    gb->BOOTROM_ENABLED = true;
 
     readGbFunc* readTable = gb->readTable;
     gb_fillReadTable(readTable, 0x00, 0x00, gb_readBootrom);

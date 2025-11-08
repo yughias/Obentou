@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "cores/gbc/memory_table.h"
+
 void GBC_run_frame(gb_t* gb){
     sm83_t* cpu = &gb->cpu;
     while(cpu->cycles < CYCLES_PER_FRAME){
@@ -93,4 +95,28 @@ void GBC_close(gb_t* gb, const char* sav_path){
     free(gb->mbc.data);
     if(gb->noCart)
         free(gb->ROM);
+}
+
+byte_vec_t GBC_savestate(gb_t* gb){
+    byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_gb_t(gb, &state);
+    byte_vec_shrink(&state);
+    if(gb->mbc.dataSize)
+        byte_vec_push_array(&state, (u8*)gb->mbc.data, gb->mbc.dataSize);
+    return state;
+}
+
+void GBC_loadstate(gb_t* gb, byte_vec_t* state){
+    u8* data = deserialize_gb_t(gb, state->data);
+    if(gb->mbc.dataSize)
+        memcpy(gb->mbc.data, data, gb->mbc.dataSize);
+    if(gb->BOOTROM_ENABLED){
+        gb_fillReadTable(gb->readTable, 0x00, 0x00, gb_readBootrom);
+        gb_fillReadTable(gb->readTable, 0x02, 0x09, gb_readBootrom);
+    } else {
+        gb_fillReadTable(gb->readTable, 0x00, 0x09, gb->mbc.mapper_0000_3FFF);
+    }
+    gb->ppu.frameSkip = true;
+    gb->ppu.lastFrameOn = false;
 }

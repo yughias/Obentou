@@ -11,6 +11,8 @@
 #include "cores/gbc/gb_timer.h"
 #include "cores/gbc/serial.h"
 
+#include "utils/serializer.h"
+
 #include "types.h"
 
 #define CYCLES_PER_FRAME 70224
@@ -19,45 +21,38 @@
 
 typedef enum {DMG_TYPE, CGB_TYPE, MEGADUCK_TYPE, DMG_ON_CGB_TYPE} CONSOLE_TYPE;
 
-typedef struct gb_t {
-    CONSOLE_TYPE console_type;
-    sm83_t cpu;
-    uint64_t startFrame_clock;
-    gb_timer_t timer;   
-    dma_t dma;
-    joypad_t joypad;
-    serial_t serial;
-    ppu_t ppu;
-    apu_t apu;
-    mbc_t mbc;
+#define GB_STRUCT(X) \
+    X(CONSOLE_TYPE, console_type, 1, 0) \
+    X(sm83_t, cpu, 1, 1) \
+    X(uint64_t, startFrame_clock, 1, 0) \
+    X(gb_timer_t, timer, 1, 0) \
+    X(dma_t, dma, 1, 0) \
+    X(joypad_t, joypad, 1, 0) \
+    X(serial_t, serial, 1, 0) \
+    X(ppu_t, ppu, 1, 0) \
+    X(apu_t, apu, 1, 0) \
+    X(mbc_t, mbc, 1, 1) \
+    X(readGbFunc, readTable[0x100], 0, 0) \
+    X(writeGbFunc, writeTable[0x100], 0, 0) \
+    X(u8*, BOOTROM, 0, 0) \
+    X(size_t, BOOTROM_SIZE, 0, 0) \
+    X(bool, BOOTROM_ENABLED, 1, 0) \
+    X(u8*, ROM, 0, 0) \
+    X(size_t, ROM_SIZE, 0, 0) \
+    X(bool, noCart, 0, 0) \
+    X(size_t, ERAM_SIZE, 0, 0) \
+    X(u8, ERAM, MAX_ERAM_SIZE, 1, 0) \
+    X(u8, VRAM, VRAM_SIZE, 1, 0) \
+    X(u8, WRAM, WRAM_SIZE, 1, 0) \
+    X(u8, OAM, OAM_SIZE, 1, 0) \
+    X(u8, HRAM, HRAM_SIZE, 1, 0) \
+    X(u8, BGP_CRAM, CRAM_SIZE, 1, 0) \
+    X(u8, OBP_CRAM, CRAM_SIZE, 1, 0) \
+    X(u8, SVBK_REG, 1, 0) \
+    X(u8, VBK_REG, 1, 0) \
+    X(u8, KEY0_REG, 1, 0) \
+    X(u8, KEY1_REG, 1, 0)
 
-    readGbFunc readTable[0x100];
-    writeGbFunc writeTable[0x100];
-
-    u8 BOOTROM_DISABLE_REG;
-
-    u8* BOOTROM;
-    size_t BOOTROM_SIZE;
-    
-    u8* ROM;
-    size_t ROM_SIZE;
-    bool noCart;
-    
-    size_t ERAM_SIZE;
-    u8 ERAM[MAX_ERAM_SIZE];
-    
-    u8 VRAM[VRAM_SIZE];
-    u8 WRAM[WRAM_SIZE];
-    u8 OAM[OAM_SIZE];
-    u8 HRAM[HRAM_SIZE];
-    
-    u8 BGP_CRAM[CRAM_SIZE];
-    u8 OBP_CRAM[CRAM_SIZE];
-    
-    u8 SVBK_REG;
-    u8 VBK_REG;
-    u8 KEY0_REG;
-    u8 KEY1_REG;
-} gb_t;
+DECLARE_SERIALIZABLE_STRUCT(gb, GB_STRUCT)
 
 #endif

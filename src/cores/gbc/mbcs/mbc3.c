@@ -23,7 +23,7 @@ typedef struct rtc_t {
 static void emulateRtc(rtc_t* rtc);
 static void stepRtc(rtc_t* rtc, uint64_t secs);
 
-rtc_t* gb_allocRtc(){ void* out = malloc(sizeof(rtc_t)); memset(out, 0, sizeof(rtc_t)); return out; }
+rtc_t* gb_allocRtc(size_t* size){ void* out = malloc(sizeof(rtc_t)); memset(out, 0, sizeof(rtc_t)); *size = sizeof(rtc_t); return out; }
 
 #define READ_RTC(addr) case 0x ## addr: return rtc->REG_ ## addr ## _LATCHED
 #define WRITE_RTC(addr) case 0x ## addr: rtc->REG_ ## addr = byte; return

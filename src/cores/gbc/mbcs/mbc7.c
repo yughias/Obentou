@@ -25,9 +25,10 @@ typedef struct mbc7_t {
     u16 accelerometer_y; 
 } mbc7_t;
 
-void* gb_mbc7_alloc(){
+void* gb_mbc7_alloc(size_t* size){
     void* out = malloc(sizeof(mbc7_t));
     memset(out, 0, sizeof(mbc7_t));
+    *size = sizeof(mbc7_t);
     return out; 
 }
 

@@ -309,6 +309,7 @@ void gb_writeIO(gb_t* gb, u16 address, u8 byte){
                 gb_fillReadTable(gb->readTable, 0x00, 0x09, gb->mbc.mapper_0000_3FFF);
                 if((gb->KEY0_REG >> 2) == 0b01)
                     gb->console_type = DMG_ON_CGB_TYPE;
+                gb->BOOTROM_ENABLED = false;
                 return;
         w_51: CGB_MODE_WRITE( dma->HDMA_REGS[0] = byte; return; );
         w_52: CGB_MODE_WRITE( dma->HDMA_REGS[1] = byte; return; );

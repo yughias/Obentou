@@ -142,7 +142,7 @@ void gb_detectConsoleAndMbc(gb_t* gb){
         case 0x0F:
         case 0x10:
         mbc->hasRtc = true;
-        mbc->data = gb_allocRtc();
+        mbc->data = gb_allocRtc(&mbc->dataSize);
         case 0x11:
         case 0x12:
         case 0x13:
@@ -185,7 +185,7 @@ void gb_detectConsoleAndMbc(gb_t* gb){
         mbc->mapper_0000_3FFF = gb_no_mbc_address;
         mbc->mapper_4000_7FFF = gb_mbc5_4000_7FFF;
         RAM_MAPPER(mbc7_ram);
-        mbc->data = gb_mbc7_alloc();
+        mbc->data = gb_mbc7_alloc(&mbc->dataSize);
         printf("MBC7 ON!\n");
         break;
 
