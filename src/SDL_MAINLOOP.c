@@ -51,12 +51,13 @@ SDL_Texture* drawBuffer = NULL;
 void renderBufferToWindow();
 bool filterResize(void*, SDL_Event*);
 
+static bool is_fullscreen;
+
 #ifdef _WIN32
 #include <windows.h>
 #include <shlwapi.h>
 #include <dwmapi.h>
 
-static bool is_fullscreen;
 static bool menu_rendered;
 static int menu_height;
 

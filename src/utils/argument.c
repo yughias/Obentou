@@ -57,14 +57,19 @@ const char* argument_get_ini_path(){
     return ini_path;
 }
 
-void argument_update_recents(const char* rom_path, const char* bios_path) {
+void argument_update_recents(const char* rom_path_, const char* bios_path_) {
     char rom_key[16];
     char bios_key[16];
-    char rom_value[512];
-    char bios_value[512];
-    char existing_rom[512];
-    char existing_bios[512];
+    char rom_value[FILENAME_MAX];
+    char bios_value[FILENAME_MAX];
+    char existing_rom[FILENAME_MAX];
+    char existing_bios[FILENAME_MAX];
+    char rom_path[FILENAME_MAX];
+    char bios_path[FILENAME_MAX];
     int existing_index = -1;
+
+    _fullpath(rom_path, rom_path_, FILENAME_MAX);
+    _fullpath(bios_path, bios_path_, FILENAME_MAX);
 
     const char* ini_path = argument_get_ini_path();
 
