@@ -9,7 +9,7 @@ typedef struct file_t {
     size_t size;
 } file_t;
 
-bool file_load(file_t* file, const char* filename);
+bool file_load(file_t* file, const char* filename, bool show_msg);
 void file_delete(file_t* file);
 void file_save(const char* filename, u8* data, size_t size);
 void file_append(const char* filename, u8* data, size_t size);

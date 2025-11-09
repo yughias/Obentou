@@ -49,7 +49,7 @@ archive_t* archive_load(const char* filename) {
     } else {
         files_push_empty(&archive->files);
         file_t* file = &archive->files.data[0];
-        if(!file_load(file, filename)){
+        if(!file_load(file, filename, true)){
             files_pop(&archive->files);
             printf("Failed to load %s\n", filename);
         }

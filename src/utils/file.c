@@ -4,11 +4,11 @@
 
 #include <stdlib.h>
 
-bool file_load(file_t* file, const char* filename){
+bool file_load(file_t* file, const char* filename, bool show_msg){
     memset(file, 0, sizeof(file_t));
     strcpy(file->path, filename);
     file->data = SDL_LoadFile(filename, &file->size);
-    if(!file->data){
+    if(!file->data && show_msg){
         char* buf = (char*)malloc(1024);
         snprintf(buf, 1024, "Failed to load %s", filename);
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Load File Error", buf, NULL);

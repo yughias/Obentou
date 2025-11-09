@@ -46,7 +46,7 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     char sav_path[FILENAME_MAX];
     path_set_ext(archive_get_path(rom_archive), sav_path, "sav");
 
-    if(file_load(sav_file, sav_path)){
+    if(file_load(sav_file, sav_path, false)){
         if(mbc->hasBattery)
             memcpy(gb->ERAM, sav_file->data, gb->ERAM_SIZE);
         if(mbc->hasRtc)

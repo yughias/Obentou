@@ -57,6 +57,14 @@ const char* argument_get_ini_path(){
     return ini_path;
 }
 
+static void get_fullpath(char* out_path, const char* in_path){
+    if(!in_path || !in_path[0]){
+        out_path[0] = 0;
+    } else {
+        _fullpath(out_path, in_path, FILENAME_MAX);
+    }
+}
+
 void argument_update_recents(const char* rom_path_, const char* bios_path_) {
     char rom_key[16];
     char bios_key[16];
@@ -68,8 +76,8 @@ void argument_update_recents(const char* rom_path_, const char* bios_path_) {
     char bios_path[FILENAME_MAX];
     int existing_index = -1;
 
-    _fullpath(rom_path, rom_path_, FILENAME_MAX);
-    _fullpath(bios_path, bios_path_, FILENAME_MAX);
+    get_fullpath(rom_path, rom_path_);
+    get_fullpath(bios_path, bios_path_);
 
     const char* ini_path = argument_get_ini_path();
 
@@ -126,10 +134,7 @@ void argument_update_recents(const char* rom_path_, const char* bios_path_) {
 void argument_get_path(char* path, const char* section, const char* key){
     char buf[FILENAME_MAX];
     ini_gets(section, key, "", buf, FILENAME_MAX, argument_get_ini_path());
-    if(buf[0])
-        _fullpath(path, buf, FILENAME_MAX);
-    else
-        path[0] = 0;
+    get_fullpath(path, buf);
 }
 
 void argument_set_path(const char* path, const char* section, const char* key){
