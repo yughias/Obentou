@@ -86,7 +86,6 @@ static void on_default_bios_chosen(void *userdata, const char * const *filelist,
     setButtonTitle(default_bios_button, new_path);
     
 end:
-    sound_pause(ctx->pause);
     SDL_SetAtomicInt(&ctx->must_wait, 0);
 }
 
@@ -133,10 +132,9 @@ static void on_file_chosen(void *userdata, const char * const *filelist, int fil
 
     core_ctx_close(ctx);
     core_ctx_init(ctx, rom_path, bios_path, NULL);
-    core_restart(ctx);
+    SDL_SetAtomicInt(&ctx->must_restart, 1);
 
 end:
-    sound_pause(ctx->pause);
     free(menu_ctx);
     SDL_SetAtomicInt(&ctx->must_wait, 0);
 }
@@ -147,8 +145,8 @@ void menu_open_rom(core_ctx_t* ctx){
     open_ctx->rom = true;
     open_ctx->bios = false;
 
-    SDL_SetAtomicInt(&ctx->must_wait, 1);
     sound_pause(true);
+    SDL_SetAtomicInt(&ctx->must_wait, 1);
 
     SDL_PropertiesID ids = SDL_CreateProperties();
     SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());
@@ -163,8 +161,8 @@ void menu_open_bios(core_ctx_t* ctx){
     open_ctx->rom = false;
     open_ctx->bios = true;
 
-    SDL_SetAtomicInt(&ctx->must_wait, 1);
     sound_pause(true);
+    SDL_SetAtomicInt(&ctx->must_wait, 1);
 
     SDL_PropertiesID ids = SDL_CreateProperties();
     SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());
@@ -174,8 +172,8 @@ void menu_open_bios(core_ctx_t* ctx){
 }
 
 void menu_select_default_bios(core_ctx_t* ctx){
-    SDL_SetAtomicInt(&ctx->must_wait, 1);
     sound_pause(true);
+    SDL_SetAtomicInt(&ctx->must_wait, 1);
 
     SDL_PropertiesID ids = SDL_CreateProperties();
     SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());

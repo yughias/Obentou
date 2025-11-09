@@ -77,6 +77,7 @@ static const core_t cores[] = {
 
 typedef struct core_ctx_t {
     SDL_AtomicInt must_wait;
+    SDL_AtomicInt must_restart;
 
     int speed_level;
     bool pause;

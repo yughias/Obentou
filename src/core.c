@@ -40,8 +40,6 @@ void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path,
         }
         argument_update_recents(archive_get_path(ctx->rom), archive_get_path(ctx->bios));
     }
-
-    sound_close();
 }
 
 void core_ctx_set_speed(ctx_args_t* args){
@@ -53,6 +51,11 @@ void core_ctx_run_frame(core_ctx_t* ctx){
     if(SDL_GetAtomicInt(&ctx->must_wait))
         return;
 
+    if(SDL_GetAtomicInt(&ctx->must_restart)){
+        core_restart(ctx);
+        SDL_SetAtomicInt(&ctx->must_restart, 0);
+    }
+
     const core_t* core = ctx->core;
 
     if(!core){
@@ -61,11 +64,10 @@ void core_ctx_run_frame(core_ctx_t* ctx){
         return;
     }
 
-    int speed = 1 << (hotkeys_pressed(CONTROL_HOTKEY_TURBO) ? 3 : ctx->speed_level);
-
-    sound_set_push_rate_multiplier(speed);
-
     if(!ctx->pause){
+        int speed = 1 << (hotkeys_pressed(CONTROL_HOTKEY_TURBO) ? 3 : ctx->speed_level);
+        sound_set_push_rate_multiplier(speed);
+        sound_pause(false);
         for(int i = 0; i < speed; i++){
             core->run_frame(ctx->emu);
         }
@@ -74,6 +76,7 @@ void core_ctx_run_frame(core_ctx_t* ctx){
 
 void core_switch_pause(core_ctx_t* ctx){
     ctx->pause ^= 1;
+    sound_pause(ctx->pause);
     menu_tick_pause(ctx->pause);
 }
 
@@ -92,6 +95,8 @@ void core_ctx_close(core_ctx_t* ctx){
 
     archive_free(ctx->rom);
     archive_free(ctx->bios);
+
+    sound_close();
 }
 
 void core_restart(core_ctx_t* ctx){

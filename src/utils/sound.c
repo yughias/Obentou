@@ -6,12 +6,8 @@
 
 #include <stdio.h>
 
-#define AUDIO_BUFFER_SIZE 4096
-
 static SDL_AudioStream* audio_stream;
 static SDL_AudioStreamCallback audio_callback;
-static u8 audio_buffer[AUDIO_BUFFER_SIZE];
-static size_t audio_buffer_idx;
 static float push_rate_counter;
 static float push_rate_reload = -1;
 static float push_rate_scaled;
@@ -27,7 +23,6 @@ void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, voi
         sound_close();
     audio_callback = callback;
     audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, audio_spec, callback ? sound_callback : NULL, userdata);
-    SDL_ResumeAudioStreamDevice(audio_stream);
 }
 
 void sound_pause(bool pause) {
@@ -42,11 +37,9 @@ void sound_close() {
     sound_set_push_rate(-1);
     audio_callback = NULL;
     audio_stream = NULL;
-    audio_buffer_idx = 0;
 }
 
 void sound_set_push_rate(float push_rate) {
-    audio_buffer_idx = 0;
     push_rate_counter = 0;
     push_rate_reload = push_rate;
     push_rate_scaled = push_rate_reload;
@@ -65,12 +58,7 @@ void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sou
     if(push_rate_counter <= 0) {
         push_rate_counter += push_rate_scaled;
         func(ctx, sample);
-        memcpy(audio_buffer + audio_buffer_idx, sample, sample_size);
-        audio_buffer_idx += sample_size;
-        if(audio_buffer_idx >= AUDIO_BUFFER_SIZE) {
-            SDL_PutAudioStreamData(audio_stream, audio_buffer, audio_buffer_idx);
-            audio_buffer_idx = 0;
-        }
+        SDL_PutAudioStreamData(audio_stream, sample, sample_size);
     }
 }
 
