@@ -23,15 +23,17 @@ static inline bool parity(int val) {
 
 static void sn76489_get_sample(void* ctx, void* data){
     sn76489_t* sn = (sn76489_t*)ctx;
-    sample_t* sample = (sample_t*)data;
 
+    sample_t sample = 0;
     for(int i = 0; i < 4; i++){
         u16 ch_sample = sn->sample[i]*sn->attenuation[i];
-        *sample += ch_sample;
+        sample += ch_sample;
         if(sn->display_idx[i] != DISPLAY_BUFFER_SIZE){
             sn->display_buffers[i][sn->display_idx[i]++] = ch_sample;
         }
     }
+
+    *(sample_t*)data = sample;
 }
 
 void tms80_sn76489_push_sample(sn76489_t* sn, int cycles){
