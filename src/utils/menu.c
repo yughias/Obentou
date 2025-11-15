@@ -1,6 +1,7 @@
 #include "utils/menu.h"
 #include "utils/sound.h"
 #include "utils/argument.h"
+#include "utils/state.h"
 
 #include "core.h"
 
@@ -16,6 +17,7 @@ static buttonId fullscreen_button;
 static buttonId default_bios_button;
 static ctx_args_t speed_args[4];
 static ctx_args_t load_recent_args[10];
+static ctx_args_t slot_args[5];
 
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
@@ -196,6 +198,11 @@ void menu_create(core_ctx_t* ctx){
         speed_args[i].value = i;
     }
 
+    for(int i = 0; i < 5; i++){
+        slot_args[i].ctx = ctx;
+        slot_args[i].value = i;
+    }
+
     menuId file_menu = addMenuTo(-1, L"File", false);
     menuId recent_menu = addMenuTo(file_menu, L"Recent", false);
     addButtonTo(file_menu, L"Open Rom", (void*)menu_open_rom, ctx);
@@ -211,6 +218,25 @@ void menu_create(core_ctx_t* ctx){
         if(has_bios){
             get_bios_path_button_text(label, sizeof(wchar_t) * 1024, ctx->core->name);
             default_bios_button = addButtonTo(bios_menu, label, (void*)menu_select_default_bios, ctx);
+        }
+
+        if(ctx->core->savestate && ctx->core->loadstate){
+            menuId state_menu = addMenuTo(-1, L"State", false);
+            menuId slot_menu = addMenuTo(state_menu, L"Select Slot", true);
+            menuId auto_savestate = addButtonTo(state_menu, L"Auto Load on Open", (void*)state_switch_autosave, NULL);
+            buttonId slot_btns[5];
+            tickButton(auto_savestate, state_get_autosave());
+            addButtonTo(state_menu, L"Save State", (void*)state_save_slot, ctx);
+            addButtonTo(state_menu, L"Load State", (void*)state_load_slot, ctx);
+            for(int i = 0; i < sizeof(slot_btns) / sizeof(slot_btns[0]); i++){
+                if(!i){
+                    slot_btns[i] = addButtonTo(slot_menu, L"0 (autosave)", (void*)state_set_active_slot, &slot_args[i].value);
+                } else {
+                    wchar_t name[2] = {L'0' + i, 0};
+                    slot_btns[i] = addButtonTo(slot_menu, name, (void*)state_set_active_slot, &slot_args[i].value);
+                }        
+            }
+            checkRadioButton(slot_btns[state_get_active_slot()]);
         }
     }
 

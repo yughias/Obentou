@@ -6,7 +6,7 @@ DEP := $(OBJ:.o=.d)
 
 CC := gcc
 EXE := obentou.exe
-CFLAGS := -Iinclude -Iext/include -O3 -flto
+CFLAGS := -Iinclude -Iext/include -O3 -flto=8
 DEBUG_FLAGS := -pg -no-pie
 LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
 

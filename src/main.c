@@ -4,6 +4,7 @@
 #include "utils/camera.h"
 #include "utils/argument.h"
 #include "utils/menu.h"
+#include "utils/state.h"
 
 #include "core.h"
 
@@ -34,32 +35,16 @@ void setup(){
     setWindowSize(512, 512);
 }
 
-byte_vec_t state;
-
 void loop(){
     controls_update();
     camera_update();
 
-    // testing savestates
-    if(emu_ctx.core){
-        const bool* ks = SDL_GetKeyboardState(NULL);
-        if(ks[SDL_SCANCODE_0]){
-            if(emu_ctx.core->savestate){
-                printf("saved\n");
-                state = emu_ctx.core->savestate(emu_ctx.emu);
-            } else {
-                printf("no savestate for %s\n", emu_ctx.core->name);
-            }
-        }
+    if(hotkeys_released(CONTROL_HOTKEY_SAVESTATE)){
+        state_save_slot(&emu_ctx);
+    }
 
-        if(ks[SDL_SCANCODE_9]){
-            if(emu_ctx.core->loadstate && state.data){
-                printf("loaded\n");
-                emu_ctx.core->loadstate(emu_ctx.emu, &state);
-            } else {
-                printf("no savestate for %s\n", emu_ctx.core->name);
-            }
-        }
+    if(hotkeys_released(CONTROL_HOTKEY_LOADSTATE)){
+        state_load_slot(&emu_ctx);
     }
 
     if(controls_double_click()){

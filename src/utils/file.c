@@ -7,7 +7,15 @@
 bool file_load(file_t* file, const char* filename, bool show_msg){
     memset(file, 0, sizeof(file_t));
     strcpy(file->path, filename);
-    file->data = SDL_LoadFile(filename, &file->size);
+    FILE* fptr = fopen(filename, "rb");
+    if(!fptr)
+        return false;
+    fseek(fptr, 0, SEEK_END);
+    file->size = ftell(fptr);
+    rewind(fptr);
+    file->data = malloc(file->size);
+    fread(file->data, 1, file->size, fptr);
+    fclose(fptr);
     if(!file->data && show_msg){
         char* buf = (char*)malloc(1024);
         snprintf(buf, 1024, "Failed to load %s", filename);
@@ -29,7 +37,7 @@ void file_append(const char* filename, u8* data, size_t size){
 }
 
 void file_delete(file_t* file){
-    SDL_free(file->data);
+    free(file->data);
 }
 
 const char* path_get_ext(const char* path){

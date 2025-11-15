@@ -25,11 +25,12 @@ static SDL_AtomicInt is_grabbed;
 static SDL_RendererLogicalPresentation scaling_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 
 // not accessible variables
-SDL_Window* window;
-SDL_Surface* surface;
-SDL_Surface* windowIcon;
+static SDL_Window* window;
+static SDL_Surface* back_surface;
+static SDL_Surface* front_surface;
+static SDL_Surface* windowIcon;
 
-bool running;
+static bool running;
 
 void (*onExit)();
 
@@ -183,6 +184,8 @@ int main(int argc, char** argv){
 
     SDL_DestroyTexture(drawBuffer);
 	SDL_DestroyRenderer(renderer);
+    SDL_DestroySurface(back_surface);
+    SDL_DestroySurface(front_surface);
 
     #ifdef _WIN32
     free(buttons);
@@ -277,6 +280,7 @@ void mainloop(){
     }
 
     loop();
+    renderBufferToWindow();
 }
 
 SDL_Window* getMainWindow(){
@@ -304,17 +308,18 @@ void size(int w, int h){
 
         renderer = SDL_CreateRenderer(window, NULL);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+        back_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
+        front_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
         SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
-        SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
-
-        pixels = surface->pixels;
     } else {
         SDL_DestroyTexture(drawBuffer);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+        back_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
+        front_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
         SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
-        SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
-        pixels = surface->pixels;
     }
+
+    pixels = back_surface->pixels;
 
     setAspectRatio(aspectRatio);
 }
@@ -341,20 +346,21 @@ void fullScreen(){
 }
 
 void background(int col){
-    SDL_FillSurfaceRect(surface, NULL, col);
+    SDL_FillSurfaceRect(front_surface, NULL, col);
+    renderPixels();
 }
 
 int color(int red, int green, int blue){
-    return SDL_MapSurfaceRGB(surface, red, green, blue);
+    return SDL_MapSurfaceRGB(front_surface, red, green, blue);
 }
 
 void getRGB(int pixel, Uint8* r, Uint8* g, Uint8* b){
-        SDL_GetRGBA(pixel, SDL_GetPixelFormatDetails(surface->format), SDL_GetSurfacePalette(surface), r, g, b, NULL);
+        SDL_GetRGBA(pixel, SDL_GetPixelFormatDetails(front_surface->format), SDL_GetSurfacePalette(front_surface), r, g, b, NULL);
 }
 
 void rect(int x, int y, int w, int h, int col){
     SDL_Rect rect = {x, y, w, h};
-    SDL_FillSurfaceRect(surface, &rect, col);
+    SDL_FillSurfaceRect(front_surface, &rect, col);
 }
 
 int getArgc(){
@@ -373,12 +379,11 @@ char** getArgvs(){
 }
 
 void renderPixels(){
-    SDL_UnlockTexture(drawBuffer);
-    renderBufferToWindow();
-    SDL_LockTextureToSurface(drawBuffer, NULL, &surface);
-    pixels = surface->pixels;
+    SDL_Surface* tmp = back_surface;
+    back_surface = front_surface;
+    front_surface = tmp;
+    pixels = back_surface->pixels;
 }
-
 
 void setWindowSize(int w, int h){
     int pos_x, pos_y;
@@ -420,6 +425,11 @@ void setScalingMode(SDL_RendererLogicalPresentation mode){
 }
 
 void renderBufferToWindow(){
+    SDL_Surface* locked_surface;
+    SDL_LockTextureToSurface(drawBuffer, NULL, &locked_surface);
+    SDL_BlitSurface(front_surface, NULL, locked_surface, NULL);
+    SDL_UnlockTexture(drawBuffer);
+
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, drawBuffer, NULL, NULL);
     SDL_RenderPresent(renderer);
@@ -497,7 +507,7 @@ menuId addMenuTo(menuId parentId, const wchar_t* string, bool isRadio){
     return n_menu-1;
 }
 
-buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(), void* arg){
+buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(void*), void* arg){
     menu_rendered = false;
     HMENU parent = NULL;
 

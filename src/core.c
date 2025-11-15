@@ -4,11 +4,28 @@
 #include "utils/controls.h"
 #include "utils/menu.h"
 #include "utils/argument.h"
+#include "utils/state.h"
 
 #include "SDL_MAINLOOP.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
+static void save_sav(core_ctx_t* ctx){
+    char sav_path[FILENAME_MAX];
+    path_set_ext(archive_get_path(ctx->rom), sav_path, "sav");
+    ctx->core->close(ctx->emu, sav_path);
+}
+
+static void core_close_emu(core_ctx_t* ctx){
+    if(ctx->emu){
+        if(ctx->core->savestate && state_get_autosave())
+            state_save_autosave(ctx);
+        if(ctx->core->close)
+            save_sav(ctx);
+        free(ctx->emu);
+    }
+}
 
 const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core){
     for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
@@ -80,18 +97,8 @@ void core_switch_pause(core_ctx_t* ctx){
     menu_tick_pause(ctx->pause);
 }
 
-static void save_sav(core_ctx_t* ctx){
-    char sav_path[FILENAME_MAX];
-    path_set_ext(archive_get_path(ctx->rom), sav_path, "sav");
-    ctx->core->close(ctx->emu, sav_path);
-}
-
 void core_ctx_close(core_ctx_t* ctx){
-    if(ctx->emu){
-        if(ctx->core->close)
-            save_sav(ctx);
-        free(ctx->emu);
-    }
+    core_close_emu(ctx);
 
     archive_free(ctx->rom);
     archive_free(ctx->bios);
@@ -115,11 +122,9 @@ void core_restart(core_ctx_t* ctx){
 
     SDL_AudioSpec audio_spec = core->audio_spec;
 
-    if (ctx->emu){
-        if(core->close)
-            save_sav(ctx);
-        free(ctx->emu);
-    }
+    bool first_loading = !ctx->emu;
+
+    core_close_emu(ctx);
 
     ctx->emu = core->init(ctx->rom, ctx->bios);
 
@@ -128,4 +133,8 @@ void core_restart(core_ctx_t* ctx){
         sound_set_push_rate(core->sound_push_rate);
 
     controls_init(core->control_begin, core->control_end);
+
+    if(first_loading && core->loadstate && state_get_autosave()){
+        state_load_autosave(ctx);
+    }
 }
