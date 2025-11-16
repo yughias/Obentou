@@ -40,6 +40,7 @@ void setTitle(const char*);
 void setWindowSize(int, int);
 void setAspectRatio(float);
 SDL_Window* getMainWindow();
+SDL_Surface* getMainWindowSurface();
 float millis();
 void fullScreen();
 void background(int);

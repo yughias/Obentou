@@ -5,6 +5,8 @@
 #include "minIni.h"
 #include "core.h"
 
+#include "SDL_MAINLOOP.h"
+
 static byte_vec_t state_save(core_ctx_t* ctx) {
     if(!ctx->core)
         return (byte_vec_t){.data = NULL, .size = 0};
@@ -45,7 +47,7 @@ int state_get_active_slot() {
 
 static void state_get_slot_path(char* slot_path, const char* rom_path, int slot) {
     char buf[16];
-    snprintf(buf, sizeof(buf), "%01d.sav", slot);
+    snprintf(buf, sizeof(buf), "%01d.state.bmp", slot);
     path_set_ext(rom_path, slot_path, buf);
 }
 
@@ -59,7 +61,8 @@ void state_save_slot(core_ctx_t* ctx) {
     state_get_slot_path(path, archive_get_path(ctx->rom), state_get_active_slot());
     byte_vec_t state = state_save(ctx);
     int slot = state_get_active_slot();
-    file_save(path, state.data, state.size);
+    SDL_SaveBMP(getMainWindowSurface(), path);
+    file_append(path, state.data, state.size);
     byte_vec_free(&state);
 }
 
@@ -71,7 +74,8 @@ void state_load_slot(core_ctx_t* ctx) {
     file_load(&file, path, false);
     if(!file.data)
         return;
-    state_load(ctx, &(byte_vec_t){.data = file.data, .size = file.size});
+    size_t bmp_size = *(uint32_t*)(&file.data[2]);
+    state_load(ctx, &(byte_vec_t){.data = file.data + bmp_size, .size = file.size - bmp_size});
     file_delete(&file);
 }
 

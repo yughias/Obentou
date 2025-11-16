@@ -182,6 +182,9 @@ int main(int argc, char** argv){
     }
     #endif
 
+    if(onExit)
+        (*onExit)();
+
     SDL_DestroyTexture(drawBuffer);
 	SDL_DestroyRenderer(renderer);
     SDL_DestroySurface(back_surface);
@@ -193,9 +196,6 @@ int main(int argc, char** argv){
     #endif
 
     SDL_DestroyWindow(window);
-
-    if(onExit)
-        (*onExit)();
 
     SDL_Quit();
 
@@ -453,6 +453,10 @@ bool filterResize(void* userdata, SDL_Event* event){
 
 bool isGrabbed(){
     return SDL_GetAtomicInt(&is_grabbed);
+}
+
+SDL_Surface* getMainWindowSurface(){
+    return front_surface;
 }
 
 #ifdef _WIN32
