@@ -326,7 +326,7 @@ void TMS80_loadstate(tms80_t* tms80, byte_vec_t* state){
     if(tms80->bios_masked){
         tms80->z80.readMemory = tms80_sms_readMemory;
         tms80->z80.writeMemory = tms80_sms_writeMemory;
-    } else {
+    } else if(tms80->bios) {
         tms80->z80.readMemory = tms80_sms_bios_readMemory;
         tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
     }

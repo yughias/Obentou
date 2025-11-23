@@ -101,9 +101,9 @@ byte_vec_t GBC_savestate(gb_t* gb){
     byte_vec_t state;
     byte_vec_init(&state);
     serialize_gb_t(gb, &state);
-    byte_vec_shrink(&state);
     if(gb->mbc.dataSize)
         byte_vec_push_array(&state, (u8*)gb->mbc.data, gb->mbc.dataSize);
+    byte_vec_shrink(&state);
     return state;
 }
 
