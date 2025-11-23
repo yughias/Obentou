@@ -57,8 +57,11 @@ void state_set_active_slot(int* slot) {
 }
 
 void state_save_slot(core_ctx_t* ctx) {
+    const char* rom_path = archive_get_path(ctx->rom);
+    if(!rom_path || !rom_path[0])
+        return;
     char path[FILENAME_MAX];
-    state_get_slot_path(path, archive_get_path(ctx->rom), state_get_active_slot());
+    state_get_slot_path(path, rom_path, state_get_active_slot());
     byte_vec_t state = state_save(ctx);
     int slot = state_get_active_slot();
     SDL_SaveBMP(getMainWindowSurface(), path);

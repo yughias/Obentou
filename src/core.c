@@ -65,14 +65,6 @@ void core_ctx_set_speed(ctx_args_t* args){
 }
 
 void core_ctx_run_frame(core_ctx_t* ctx){
-    if(SDL_GetAtomicInt(&ctx->must_wait))
-        return;
-
-    if(SDL_GetAtomicInt(&ctx->must_restart)){
-        core_restart(ctx);
-        SDL_SetAtomicInt(&ctx->must_restart, 0);
-    }
-
     const core_t* core = ctx->core;
 
     if(!core){

@@ -5,6 +5,7 @@
 
 #include "core.h"
 
+#include "tinyfiledialogs.h"
 #include "minIni.h"
 
 #include "SDL_MAINLOOP.h"
@@ -53,12 +54,6 @@ static bool compose_recent_text(wchar_t* out, size_t len, int idx){
     return is_rom || is_bios;
 }
 
-typedef struct open_ctx_t {
-    core_ctx_t* ctx;
-    bool rom;
-    bool bios;
-} open_ctx_t;
-
 static void get_bios_path_button_text(wchar_t* out, size_t len, const char* core_name){
     char default_bios_path[FILENAME_MAX];
     argument_get_default_bios(default_bios_path, core_name);
@@ -74,23 +69,6 @@ static void get_bios_path_button_text(wchar_t* out, size_t len, const char* core
     }
 }
 
-static void on_default_bios_chosen(void *userdata, const char * const *filelist, int filter){
-    core_ctx_t* ctx = (core_ctx_t*)userdata;
-    char* core_name = (char*)ctx->core->name;
-    
-    if(filelist == NULL)
-        goto end;
-
-    argument_set_default_bios(filelist[0], core_name);
-
-    wchar_t new_path[FILENAME_MAX];
-    get_bios_path_button_text(new_path, FILENAME_MAX, core_name);
-    setButtonTitle(default_bios_button, new_path);
-    
-end:
-    SDL_SetAtomicInt(&ctx->must_wait, 0);
-}
-
 void menu_fullscreen(){
     static bool is_fullscreen = false;
     is_fullscreen ^= 1;
@@ -100,6 +78,21 @@ void menu_fullscreen(){
 
 static void menu_change_scaling_mode(SDL_RendererLogicalPresentation* mode){
     setScalingMode(*mode);
+}
+
+static void menu_clear_recent(core_ctx_t* ctx){
+    char rom_arg[16];
+    char bios_arg[16];
+
+    for(int i = 0; i < 10; i++){
+        snprintf(rom_arg, sizeof(rom_arg), "ROM%d", i);
+        snprintf(bios_arg, sizeof(bios_arg), "BIOS%d", i);
+
+        argument_set_path("", "RECENTS", rom_arg);
+        argument_set_path("", "RECENTS", bios_arg);
+    }
+
+    menu_create(ctx);
 }
 
 static void menu_load_recent(ctx_args_t* args){
@@ -122,66 +115,56 @@ static void menu_load_recent(ctx_args_t* args){
     core_restart(ctx);
 }
 
-static void on_file_chosen(void *userdata, const char * const *filelist, int filter){
-    open_ctx_t* menu_ctx = (open_ctx_t*)userdata;
-    core_ctx_t* ctx = menu_ctx->ctx;
+static void menu_open(core_ctx_t* ctx, bool is_rom){
+    sound_pause(true);
 
-    if(filelist == NULL || filelist[0] == NULL)
-        goto end;
+    char* filelist = tinyfd_openFileDialog(
+        is_rom ? "Select ROM" : "Select Bios",
+        NULL,
+        0,
+        NULL,
+        NULL,
+        0
+    );
 
-    const char* rom_path = menu_ctx->rom ? filelist[0] : NULL;
-    const char* bios_path = menu_ctx->bios ? filelist[0] : NULL;
+    if(filelist == NULL)
+        return;
+
+    const char* rom_path = is_rom ? filelist : NULL;
+    const char* bios_path = !is_rom ? filelist : NULL;
 
     core_ctx_close(ctx);
     core_ctx_init(ctx, rom_path, bios_path, NULL);
-    SDL_SetAtomicInt(&ctx->must_restart, 1);
-
-end:
-    free(menu_ctx);
-    SDL_SetAtomicInt(&ctx->must_wait, 0);
+    core_restart(ctx);
 }
 
 void menu_open_rom(core_ctx_t* ctx){
-    open_ctx_t* open_ctx = malloc(sizeof(open_ctx_t));
-    open_ctx->ctx = ctx;
-    open_ctx->rom = true;
-    open_ctx->bios = false;
-
-    sound_pause(true);
-    SDL_SetAtomicInt(&ctx->must_wait, 1);
-
-    SDL_PropertiesID ids = SDL_CreateProperties();
-    SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());
-    SDL_SetStringProperty(ids, SDL_PROP_FILE_DIALOG_TITLE_STRING, "Select ROM");
-    SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFILE, on_file_chosen, open_ctx, ids);
-    SDL_DestroyProperties(ids);
+    menu_open(ctx, true);
 }
 
 void menu_open_bios(core_ctx_t* ctx){
-    open_ctx_t* open_ctx = malloc(sizeof(open_ctx_t));
-    open_ctx->ctx = ctx;
-    open_ctx->rom = false;
-    open_ctx->bios = true;
-
-    sound_pause(true);
-    SDL_SetAtomicInt(&ctx->must_wait, 1);
-
-    SDL_PropertiesID ids = SDL_CreateProperties();
-    SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());
-    SDL_SetStringProperty(ids, SDL_PROP_FILE_DIALOG_TITLE_STRING, "Select Bios");
-    SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFILE, on_file_chosen, open_ctx, ids);
-    SDL_DestroyProperties(ids);
+    menu_open(ctx, false);
 }
 
 void menu_select_default_bios(core_ctx_t* ctx){
     sound_pause(true);
-    SDL_SetAtomicInt(&ctx->must_wait, 1);
 
-    SDL_PropertiesID ids = SDL_CreateProperties();
-    SDL_SetPointerProperty(ids, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, getMainWindow());
-    SDL_SetStringProperty(ids, SDL_PROP_FILE_DIALOG_TITLE_STRING, "Select Default Bios");
-    SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFILE, on_default_bios_chosen, ctx, ids);
-    SDL_DestroyProperties(ids);
+    char* selected_default_bios = tinyfd_openFileDialog(
+        "Select Default Bios",
+        NULL,
+        0,
+        NULL,
+        NULL,
+        0
+    );
+
+    const char* core_name = ctx->core->name;
+
+    argument_set_default_bios(selected_default_bios, core_name);
+
+    wchar_t new_path[FILENAME_MAX];
+    get_bios_path_button_text(new_path, FILENAME_MAX, core_name);
+    setButtonTitle(default_bios_button, new_path);
 }
 
 void menu_speed_check(int speed_level){
@@ -269,6 +252,8 @@ void menu_create(core_ctx_t* ctx){
             break;
         addButtonTo(recent_menu, label, (void*)menu_load_recent, &load_recent_args[i]);
     }
+
+    addButtonTo(recent_menu, L"Clear History", (void*)menu_clear_recent, ctx);
 
     free(label);
 }
