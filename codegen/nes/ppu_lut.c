@@ -34,12 +34,11 @@ void ppu_generate_task(int i){
     
     if(cycles == 1+PPU_CYCLES_PER_SCANLINE*261){
         strcat(buffer, "_VBLANK_END");
-        return;
     }
 
     if(!intra_scan_cycles){
         strcat(buffer, "_IDLE");
-        return; 
+        return;
     }
 
     if(cycles == PPU_CYCLES_PER_FRAME - 1){
@@ -47,18 +46,16 @@ void ppu_generate_task(int i){
     }
 
     if(scanline < 240 || scanline == 261){
-        if(scanline < 240){
-            if(intra_scan_cycles >= 2 && intra_scan_cycles < 258)
-                strcat(buffer, "_PUT_PIX_SHIFT");
-            if(intra_scan_cycles == 257)
-                strcat(buffer, "_LOAD_OAM");
-            if(intra_scan_cycles >= 261 && intra_scan_cycles < 320){
-                if((intra_scan_cycles - 261) % 8 == 0){
-                    strcat(buffer, "_FETCH_SPRITE_LO");
-                }
-                if((intra_scan_cycles - 263) % 8 == 0){
-                    strcat(buffer, "_FETCH_SPRITE_HI");
-                }
+        if(scanline < 240 && intra_scan_cycles >= 2 && intra_scan_cycles < 258)
+            strcat(buffer, "_PUT_PIX_SHIFT");
+        if(scanline < 240 && intra_scan_cycles == 257)
+            strcat(buffer, "_LOAD_OAM");
+        if(intra_scan_cycles >= 261 && intra_scan_cycles < 320){
+            if((intra_scan_cycles - 261) % 8 == 0){
+                strcat(buffer, "_FETCH_SPRITE_LO");
+            }
+            if((intra_scan_cycles - 263) % 8 == 0){
+                strcat(buffer, "_FETCH_SPRITE_HI");
             }
         }
 

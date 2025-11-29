@@ -499,7 +499,15 @@ void nes_ppu_load_oam(ppu_t* ppu){
     ppu->sprite_count = 0;
     ppu->can_hit_0 = false;
     u8 sprite_size = ppu->ctrl & (1 << 5) ? 16 : 8;
-    memset(ppu->sprites, 0xFF, sizeof(ppu->sprites));
+
+    for(int i = 0; i < 8; i++){
+        ppu->sprites[i].x = 0xFF;
+        ppu->sprites[i].y = 0xFF;
+        ppu->sprites[i].idx = 0xFF;
+        ppu->sprites[i].attr = 0xFF;
+        ppu->sprites[i].shifter_p0 = 0;
+        ppu->sprites[i].shifter_p1 = 0;
+    }
 
     for(int i = 0; i < 64; i++){
         u8 oam_y = ppu->oam[i*4];
