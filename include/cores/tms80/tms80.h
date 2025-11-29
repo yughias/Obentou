@@ -28,7 +28,7 @@ typedef enum TMS80_TYPE {TMS80_UNKNOWN, SG1000, SC3000, SMS, GG} TMS80_TYPE;
     X(double, refresh_rate, 0, 0) \
     X(size_t, cycles_per_frame, 0, 0) \
     X(z80_t, z80, 1, 1) \
-    X(vdp_t, vdp, 1, 0) \
+    X(vdp_t, vdp, 1, 1) \
     X(sn76489_t, apu, 1, 0) \
     X(bool, no_cartridge, 0, 0) \
     X(u8*, cartridge, 0, 0) \

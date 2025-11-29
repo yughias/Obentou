@@ -4,6 +4,7 @@
 #include "cpus/z80.h"
 
 #include "types.h"
+#include "utils/serializer.h"
 
 #define SCREEN_WIDTH_SMS 256
 #define SCREEN_HEIGHT_SMS 192
@@ -23,24 +24,25 @@
 
 typedef enum VDP_REGION {REGION_NTSC, REGION_PAL} VDP_REGION;
 
-typedef struct vdp_t {
-    VDP_REGION region;
-    u8 VRAM[VRAM_SIZE];
-    u8 CRAM[CRAM_SIZE_GG];
-    u8 cram_latch;
-    u8 cram_size;
-    u8 buffer;
-    u16 control_port;
-    u16 vram_address;
-    bool control_port_flag;
-    bool cram_dst;
-    int v_counter;
-    u8 scroll_y;
-    u8 status_reg;
-    u8 line_reg;
-    u8 regs[16];
-    int framebuffer[SCREEN_WIDTH_SMS*SCREEN_HEIGHT_SMS];
-} vdp_t;
+#define VDP_STRUCT(X) \
+X(VDP_REGION, region, 1, 0) \
+X(u8, VRAM, VRAM_SIZE, 1, 0) \
+X(u8, CRAM, CRAM_SIZE_GG, 1, 0) \
+X(u8, cram_latch, 1, 0) \
+X(u8, cram_size, 1, 0) \
+X(u8, buffer, 1, 0) \
+X(u16, control_port, 1, 0) \
+X(u16, vram_address, 1, 0) \
+X(bool, control_port_flag, 1, 0) \
+X(bool, cram_dst, 1, 0) \
+X(int, v_counter, 1, 0) \
+X(u8, scroll_y, 1, 0) \
+X(u8, status_reg, 1, 0) \
+X(u8, line_reg, 1, 0) \
+X(u8, regs, 16, 1, 0) \
+X(int, framebuffer[SCREEN_WIDTH_SMS*SCREEN_HEIGHT_SMS], 0, 0)
+
+DECLARE_SERIALIZABLE_STRUCT(vdp, VDP_STRUCT);
 
 void tms80_vdp_write_to_control_port(vdp_t* vdp, u8 byte);
 u8 tms80_vdp_read_from_data_port(vdp_t* vdp);
