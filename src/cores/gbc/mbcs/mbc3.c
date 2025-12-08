@@ -122,7 +122,7 @@ static void emulateRtc(rtc_t* rtc){
 
 static void stepRtc(rtc_t* rtc, uint64_t secs){
     uint64_t day_counter = rtc->REG_0B + ((rtc->REG_0C & 1) << 8);
-    uint64_t rtc_time;
+    uint64_t rtc_time = 0;
     rtc_time += (rtc->REG_08 % 60);
     rtc_time += ((rtc->REG_09 % 60) * 60);
     rtc_time += ((rtc->REG_0A % 24) * 60 * 60);
