@@ -161,8 +161,6 @@ void nes_ppu_draw_chr(ppu_t* ppu, SDL_Window** win){
     }
     SDL_Surface* s = SDL_GetWindowSurface(*win);
     int* pixels = (int*)s->pixels;
-    int w = s->w;
-    int h = s->h;
 
     for(int y = 0; y < 16; y++){
         for(int x = 0; x < 32; x++){

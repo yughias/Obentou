@@ -71,7 +71,6 @@ void pce_vce_draw_palette(SDL_Window** win, vce_t* vce){
         return;
     }
     SDL_Surface* s = SDL_GetWindowSurface(*win);
-    int* pixels = (int*)s->pixels;
     for(int y = 0; y < 16; y++){
         for(int x = 0; x < 32; x++){
             int pal_idx = y * 32 + x;

@@ -73,16 +73,16 @@ bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     out |= archive_get_file_by_ext(rom_archive, "megaduck") != NULL;
 
     file_t* f;
-    if(f = archive_get_file_by_ext(rom_archive, "bin")){
+    if((f = archive_get_file_by_ext(rom_archive, "bin"))){
         size_t size = f->size;
         out |= size == (1 << 15);
         out |= size == (1 << 16);
         out |= size == (1 << 17);
     }
 
-    if(f = archive_get_file_by_ext(bios_archive, "bin")){
+    if((f = archive_get_file_by_ext(bios_archive, "bin"))){
         if(f->size >= 0x100){
-            // set stack
+            // set stack opcode
             out |= (f->data[0] == 0x31) && (f->data[1] = 0xFE) && (f->data[2] == 0xFF);
         }
     }

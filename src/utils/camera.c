@@ -36,7 +36,7 @@ void camera_update(){
         return;
     SDL_Surface* s;
     // retrieve all frames
-    while(s = SDL_AcquireCameraFrame(camera, NULL)){
+    while((s = SDL_AcquireCameraFrame(camera, NULL))){
         memcpy(camera_frame, s->pixels, sizeof(int)*camera_w*camera_h);
         SDL_ReleaseCameraFrame(camera, s);
     }

@@ -298,7 +298,7 @@ void z80_print(z80_t* z80){
     fprintf(stderr, "IFF1 %d IFF2: %d\n", z80->IFF1, z80->IFF2);
     fprintf(stderr, "INTERRUPT DELAY: %d\n", z80->INTERRUPT_DELAY);
     fprintf(stderr, "OPCODE: 0x%02X %02X %02X\n", z80->readMemory(z80->ctx, z80->PC), z80->readMemory(z80->ctx, z80->PC+1), z80->readMemory(z80->ctx, z80->PC+2));
-    fprintf(stderr, "cycles: %u\n\n", z80->cycles);
+    fprintf(stderr, "cycles: %llu\n\n", z80->cycles);
 }
 
 static void processInterrupt(z80_t* z80){

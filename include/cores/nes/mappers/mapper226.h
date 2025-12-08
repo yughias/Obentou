@@ -21,6 +21,8 @@ MAPPER_CPU_READ(226,
         addr = mode ? addr & 0x3FFF : addr & 0x7FFF;
         return cart->prg[(addr | bank) % cart->prg_size];  
     }
+
+    return 0;
 )
 
 MAPPER_CPU_WRITE(226, 
@@ -48,6 +50,8 @@ MAPPER_PPU_READ(226,
 
     if(addr >= 0x3F00)
         return ppu->palette_ram[addr % PALETTE_RAM_SIZE];
+
+    return 0;
 )
 
 MAPPER_PPU_WRITE(226,

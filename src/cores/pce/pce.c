@@ -263,7 +263,6 @@ static u8 pce_read_regs(void* ctx, u16 offset){
 void PCE_run_frame(pce_t* p) {
     h6280_t* h = &p->cpu;
     vdc_t* vdc = &p->vdc;
-    vce_t* vce = &p->vce;
     tmr_t* tmr = &p->timer;
     psg_t* psg = &p->psg;
 

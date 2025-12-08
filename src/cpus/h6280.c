@@ -238,7 +238,7 @@ static void BIT(h6280_t* h) {
 }
 
 static void PLP(h6280_t* h) {
-    h->p = pop(h);
+    h->p = pop;
     h->p &= CLEAR_B;
     h->irq_delay = true;
 }
@@ -313,8 +313,8 @@ static void CLI(h6280_t* h) {
 }
 
 static void RTS(h6280_t* h) { 
-    u8 pcl = pop(h);
-    u8 pch = pop(h);
+    u8 pcl = pop;
+    u8 pch = pop;
     h->pc = pcl | (pch << 8); 
     h->pc += 1;
 }
@@ -331,7 +331,6 @@ static void ADC(h6280_t* h) {
     bool carry = h->p & SET_C;
     bool new_c;
     bool new_v;
-    bool dec_mode = h->p & SET_D;
     if(h->p & SET_D){
         u8 a0 = acc & 0xF;
         u8 a1 = acc >> 4;
@@ -373,19 +372,19 @@ static void ADC(h6280_t* h) {
 }
 
 static void PLA(h6280_t* h) { 
-    h->a = pop(h);
+    h->a = pop;
     calculate_n(h->a);
     calculate_z(h->a);
 }
 
 static void PLX(h6280_t* h) { 
-    h->x = pop(h);
+    h->x = pop;
     calculate_n(h->x);
     calculate_z(h->x);
 }
 
 static void PLY(h6280_t* h) { 
-    h->y = pop(h);
+    h->y = pop;
     calculate_n(h->y);
     calculate_z(h->y);
 }
@@ -520,7 +519,6 @@ static void SBC(h6280_t* h) {
     bool carry = h->p & SET_C;
     bool new_c;
     bool new_v;
-    bool dec_mode = h->p & SET_D;
     if(h->p & SET_D){
         u8 a0 = h->a & 0xF;
         u8 b0 = h->op_arg & 0xF;
@@ -1013,9 +1011,7 @@ void h6280_step(h6280_t* h){
             u8 addr_hi = fetch;
             h->mem_addr = addr_lo | (addr_hi << 8);
             addr_lo = read_byte(h->mem_addr);
-            u8 tmp_hi = h->mem_addr >> 8;
             h->mem_addr += 1;
-            u8 tmp_lo = h->mem_addr;
             addr_hi = read_byte(h->mem_addr);
             h->mem_addr = addr_lo | (addr_hi << 8);
         }

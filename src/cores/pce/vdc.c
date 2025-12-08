@@ -48,7 +48,7 @@ static int get_start_render_line(const vdc_t* vdc){
 
 static int get_end_render_line(const vdc_t* vdc){
     int vsw_vds = get_start_render_line(vdc);
-    int vcr = vdc->regs[VCR] & 0xFF;
+    // int vcr = vdc->regs[VCR] & 0xFF; not used?
     int vdw = vdc->regs[VDW] & 0x1FF;
 
     return vsw_vds + vdw;
@@ -438,7 +438,6 @@ void pce_vdc_draw_tilemap(SDL_Window** win, vdc_t* v){
 }
 
 void pce_vdc_get_sprite_rgb(vdc_t* v, u16 addr, u8 xs, u8 ys, bool xf, bool yf, u8 pal, int* sprite_rgb){
-    u16* data = (u16*)(&v->vram[addr]);
     for(int y = 0; y < ys; y++){
         for(int x = 0; x < xs; x++){
             u8 col_idx = vdc_get_sprite_col_idx(v, addr, xs, ys, xf, yf, x, y);   

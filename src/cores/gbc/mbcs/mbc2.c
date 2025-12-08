@@ -17,7 +17,7 @@ u8 gb_mbc2_ram_read(gb_t* gb, u16 addr){
     if((mbc->REG_0000_1FFF & 0x0F) != 0x0A)
         return 0xFF;
 
-    u16 ram_addr = addr & (1 << 9) - 1;
+    u16 ram_addr = addr & ((1 << 9) - 1);
     return gb->ERAM[ram_addr] | 0xF0;
 }
 
@@ -26,7 +26,7 @@ void gb_mbc2_ram_write(gb_t* gb, u16 addr, u8 byte){
     if((mbc->REG_0000_1FFF & 0x0F) != 0x0A)
         return;
 
-    u16 ram_addr = addr & (1 << 9) - 1;
+    u16 ram_addr = addr & ((1 << 9) - 1);
     gb->ERAM[ram_addr] = byte;
 }
 

@@ -27,6 +27,15 @@ static bool hotkeys_prev_pressed_arr[HOTKEYS_COUNT];
 
 static SDL_Gamepad* gamepad = NULL;
 
+#define DECLARE_CONTROL_NAME2(system, name) [ CONTROL_ ## system ## _ ## name ] = #name,
+#define DECLARE_CONTROL_NAME3(system, name, val) [ CONTROL_ ## system ## _ ## name ] = #val,
+#define DECLARE_CONTROL_NAME(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_NAME3, DECLARE_CONTROL_NAME2)(__VA_ARGS__)
+
+const char controls_names[CONTROL_COUNT][32] = {
+    [CONTROL_NONE] = "None",
+    CONTROLS_ENUM(DECLARE_CONTROL_NAME)
+};
+
 #define SCANCODES(XYZ) \
 XYZ(HOTKEY, PAUSE, "p"); \
 XYZ(HOTKEY, CMD_PAUSE, "left ctrl"); \
@@ -189,6 +198,8 @@ XYZ(HOTKEY, OPEN,  "none"); \
 XYZ(HOTKEY, SPEEDUP, "none"); \
 XYZ(HOTKEY, SLOWDOWN, "none"); \
 XYZ(HOTKEY, OPEN_BIOS, "none"); \
+XYZ(HOTKEY, LOADSTATE, "none"); \
+XYZ(HOTKEY, SAVESTATE, "none"); \
 \
 XYZ(GBC, A, "b"); \
 XYZ(GBC, B, "a"); \
@@ -279,6 +290,16 @@ XYZ(TMS80, GG_START, "start");
 #define SAVE_GAMEPAD(console, button, default) { \
     const char* name = SDL_GetGamepadStringForButton(control_gamepad_maps[CONTROL_ ## console ## _ ## button]); \
     ini_puts(#console, "INPUT_GAMEPAD_" #button, name && name[0] ? name : "none", argument_get_ini_path()); \
+}
+
+const char* controls_get_scancode_name(control_t input){
+    const char* name = SDL_GetScancodeName(control_scancode_maps[input]);
+    return name && name[0] ? name : "None";
+}
+
+const char* controls_get_gamepad_name(control_t input){
+    const char* name = SDL_GetGamepadStringForButton(control_gamepad_maps[input]);
+    return name && name[0] ? name : "None";
 }
 
 void controls_load_maps(){

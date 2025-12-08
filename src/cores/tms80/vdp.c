@@ -105,6 +105,7 @@ static u8 rgb_colors_sms[64][3] = {
 
 u8 tms80_vdp_get_v_counter(vdp_t* vdp){
     switch(vdp->region){
+        default:
         case REGION_NTSC:
         return vdp->v_counter > 0xDA ? vdp->v_counter - 0x06 : vdp->v_counter;
 

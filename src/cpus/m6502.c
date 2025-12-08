@@ -188,7 +188,7 @@ static void BIT(m6502_t* m) {
 static void PLP(m6502_t* m) {
     dummy_read(m->pc);
     dummy_read(m->s | 0x100);
-    m->p = pop(m);
+    m->p = pop;
     m->p |= SET_U;
     m->p &= CLEAR_B;
 }
@@ -265,8 +265,8 @@ static void CLI(m6502_t* m) {
 static void RTS(m6502_t* m) { 
     dummy_read(m->pc);
     dummy_read(m->s | 0x100);
-    u8 pcl = pop(m);
-    u8 pch = pop(m);
+    u8 pcl = pop;
+    u8 pch = pop;
     m->pc = pcl | (pch << 8); 
     dummy_read(m->pc);
     m->pc += 1;
@@ -286,7 +286,7 @@ static void ADC(m6502_t* m) {
 static void PLA(m6502_t* m) { 
     dummy_read(m->pc);
     dummy_read(m->s | 0x100);
-    m->a = pop(m);
+    m->a = pop;
     calculate_n(m->a);
     calculate_z(m->a);
 }

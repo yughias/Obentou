@@ -7,7 +7,6 @@ static bool isNegativeEdge(bool, bool);
 
 void gb_updateTimer(gb_t* gb){
     gb_timer_t* tmr = &gb->timer;
-    sm83_t* cpu = &gb->cpu;
     tmr->counter++;
     tmr->ignore_write = false;
 

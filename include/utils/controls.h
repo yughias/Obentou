@@ -167,11 +167,10 @@
     XY(BYTEPUSHER, F) \
     XY(BYTEPUSHER, END, F) \
 
-#define DECLARE_CONTROL_ENUM2(system, name) CONTROL_ ## system ## _ ## name,
-#define DECLARE_CONTROL_ENUM3(system, name, val) CONTROL_ ## system ## _ ## name = CONTROL_ ## system ## _ ## val,
-
 #define GET_MACRO_ENUM(_1, _2, _3, NAME, ...) NAME
 
+#define DECLARE_CONTROL_ENUM2(system, name) CONTROL_ ## system ## _ ## name,
+#define DECLARE_CONTROL_ENUM3(system, name, val) CONTROL_ ## system ## _ ## name = CONTROL_ ## system ## _ ## val,
 #define DECLARE_CONTROL_ENUM(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_ENUM3, DECLARE_CONTROL_ENUM2)(__VA_ARGS__)
 
 typedef enum control_t {
@@ -179,6 +178,8 @@ typedef enum control_t {
     CONTROLS_ENUM(DECLARE_CONTROL_ENUM)
     CONTROL_COUNT
 } control_t;
+
+extern const char controls_names[CONTROL_COUNT][32];
 
 void controls_init(control_t begin, control_t end);
 void controls_update();
@@ -193,5 +194,7 @@ bool controls_double_click();
 bool controls_gamepad_connected();
 bool controls_rumble(u16 low, u16 hi, u32 duration);
 void controls_get_gamepad_accelerometer(float* sensors);
+const char* controls_get_scancode_name(control_t input);
+const char* controls_get_gamepad_name(control_t input);
 
 #endif

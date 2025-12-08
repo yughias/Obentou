@@ -495,7 +495,7 @@ void updateMenuVect(HMENU new_menu, bool isRadio){
     n_menu++;
 }
 
-menuId addMenuTo(menuId parentId, const wchar_t* string, bool isRadio){
+menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
     menu_rendered = false;
     HMENU parent = NULL;
     if(parentId < n_menu)
@@ -504,14 +504,17 @@ menuId addMenuTo(menuId parentId, const wchar_t* string, bool isRadio){
         createMainMenu();
         parent = mainMenu;
     }
+    wchar_t* lstring = malloc(strlen(string)*sizeof(wchar_t)+1);
+    mbstowcs(lstring, string, strlen(string)+1);
     HMENU new_menu = CreateMenu();
-    AppendMenuW(parent, MF_POPUP, (UINT_PTR) new_menu, string);
+    AppendMenuW(parent, MF_POPUP, (UINT_PTR) new_menu, lstring);
     updateMenuVect(new_menu, isRadio);
     updateButtonVect(NULL, NULL, parentId);
+    free(lstring);
     return n_menu-1;
 }
 
-buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(void*), void* arg){
+buttonId addButtonTo(menuId parentId, const char* string, void (*callback)(void*), void* arg){
     menu_rendered = false;
     HMENU parent = NULL;
 
@@ -524,7 +527,10 @@ buttonId addButtonTo(menuId parentId, const wchar_t* string, void (*callback)(vo
         parent = mainMenu;
     }
 
-    AppendMenuW(parent, MF_STRING, n_button, string);
+    wchar_t* lstring = malloc(strlen(string)*sizeof(wchar_t)+1);
+    mbstowcs(lstring, string, strlen(string)+1);
+    AppendMenuW(parent, MF_STRING, n_button, lstring);
+    free(lstring);
     updateButtonVect(callback, arg, parentId);
 
     return n_button-1;
@@ -590,7 +596,7 @@ void enableButton(buttonId button_id, bool state){
     );
 }
 
-void setButtonTitle(buttonId button_id, const wchar_t* string){
+void setButtonTitle(buttonId button_id, const char* string){
     if(button_id >= n_button) return;
 
     button_t* b = &buttons[button_id];
@@ -598,12 +604,17 @@ void setButtonTitle(buttonId button_id, const wchar_t* string){
 
     if(menu_id >= n_menu) return;
 
+    wchar_t* lstring = malloc(strlen(string)*sizeof(wchar_t)+1);
+    mbstowcs(lstring, string, strlen(string)+1);
+
     ModifyMenuW(
         menus[menu_id].hMenu,
         b->position,
         MF_BYPOSITION | MF_STRING,
         button_id,
-        string
+        lstring
     );
+
+    free(lstring);
 }
 #endif

@@ -14,6 +14,8 @@ static VRAM_ALIGN mmc1_set_vram_align(u8 reg){
         case 0b11:
         return VRAM_V;
     }
+
+    return VRAM_UND;
 }   
 
 typedef struct mmc1_t {
@@ -137,6 +139,8 @@ MAPPER_PPU_READ(1,
 
     if(addr >= 0x3F00)
         return ppu->palette_ram[addr % PALETTE_RAM_SIZE];
+    
+    return 0;
 )
 
 MAPPER_PPU_WRITE(1,

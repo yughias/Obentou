@@ -30,6 +30,8 @@ MAPPER_PPU_READ(87,
 
     if(addr >= 0x3F00)
         return ppu->palette_ram[addr % PALETTE_RAM_SIZE];
+
+    return 0;
 )
 
 MAPPER_PPU_WRITE(87,

@@ -65,7 +65,7 @@ bool PV1000_detect(const archive_t* rom_archive, const archive_t* bios_archive){
         return true;
     
     file_t* f;
-    if(f = archive_get_file_by_ext(rom_archive, "bin")){
+    if((f = archive_get_file_by_ext(rom_archive, "bin"))){
         size_t size = f->size;
         if(size == (1 << 13) || size == (1 << 14))
             return true;

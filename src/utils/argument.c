@@ -79,8 +79,6 @@ void argument_update_recents(const char* rom_path_, const char* bios_path_) {
     get_fullpath(rom_path, rom_path_);
     get_fullpath(bios_path, bios_path_);
 
-    const char* ini_path = argument_get_ini_path();
-
     // find existing rom and bios pair
     for (int i = 0; i < 10; i++) {
         snprintf(rom_key, sizeof(rom_key), "ROM%d", i);

@@ -10,6 +10,8 @@ MAPPER_CPU_READ(7,
         u32 bank = (reg & 0b111) << 15;
         return cart->prg[(addr - 0x8000 + bank) % cart->prg_size];  
     }
+
+    return 0;
 )
 
 MAPPER_CPU_WRITE(7, 
@@ -33,6 +35,8 @@ MAPPER_PPU_READ(7,
 
     if(addr >= 0x3F00)
         return ppu->palette_ram[addr % PALETTE_RAM_SIZE];
+
+    return 0;
 )
 
 MAPPER_PPU_WRITE(7,

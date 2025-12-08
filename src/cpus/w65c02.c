@@ -216,7 +216,7 @@ static void BIT(w65c02_t* w) {
 static void PLP(w65c02_t* w) {
     dummy_read(w->pc);
     dummy_read(w->s | 0x100);
-    w->p = pop(w);
+    w->p = pop;
     w->p |= SET_U;
     w->p &= CLEAR_B;
 }
@@ -294,8 +294,8 @@ static void CLI(w65c02_t* w) {
 static void RTS(w65c02_t* w) { 
     dummy_read(w->pc);
     dummy_read(w->s | 0x100);
-    u8 pcl = pop(w);
-    u8 pch = pop(w);
+    u8 pcl = pop;
+    u8 pch = pop;
     w->pc = pcl | (pch << 8); 
     dummy_read(w->pc);
     w->pc += 1;
@@ -306,7 +306,6 @@ static void ADC(w65c02_t* w) {
     bool carry = w->p & SET_C;
     bool new_c;
     bool new_v;
-    bool dec_mode = w->p & SET_D;
     if(w->p & SET_D){
         w->slow_op ? dummy_read(0x7F) : dummy_read(w->mem_addr);
         u8 a0 = w->a & 0xF;
@@ -347,7 +346,7 @@ static void ADC(w65c02_t* w) {
 static void PLA(w65c02_t* w) { 
     dummy_read(w->pc);
     dummy_read(w->s | 0x100);
-    w->a = pop(w);
+    w->a = pop;
     calculate_n(w->a);
     calculate_z(w->a);
 }
@@ -355,7 +354,7 @@ static void PLA(w65c02_t* w) {
 static void PLX(w65c02_t* w) { 
     dummy_read(w->pc);
     dummy_read(w->s | 0x100);
-    w->x = pop(w);
+    w->x = pop;
     calculate_n(w->x);
     calculate_z(w->x);
 }
@@ -363,7 +362,7 @@ static void PLX(w65c02_t* w) {
 static void PLY(w65c02_t* w) { 
     dummy_read(w->pc);
     dummy_read(w->s | 0x100);
-    w->y = pop(w);
+    w->y = pop;
     calculate_n(w->y);
     calculate_z(w->y);
 }
@@ -510,7 +509,6 @@ static void SBC(w65c02_t* w) {
     bool carry = w->p & SET_C;
     bool new_c;
     bool new_v;
-    bool dec_mode = w->p & SET_D;
     if(w->p & SET_D){
         dummy_read(w->mem_addr);
         u8 a0 = w->a & 0xF;
@@ -746,7 +744,6 @@ void w65c02_step(w65c02_t* w){
             u8 addr_hi = read_byte(w->pc);
             w->mem_addr = addr_lo | (addr_hi << 8);
             if(w->slow_op || (u8)w->mem_addr + w->x > 0xFF){
-                u8 tmp_lo = w->mem_addr + w->x;
                 dummy_read(w->pc);
             }
             w->pc += 1;
@@ -761,7 +758,6 @@ void w65c02_step(w65c02_t* w){
             u8 addr_hi = read_byte(w->pc);
             w->mem_addr = addr_lo | (addr_hi << 8);
             if(w->slow_op || (u8)w->mem_addr + w->y > 0xFF){
-                u8 tmp_lo = w->mem_addr + w->y;
                 dummy_read(w->pc);
             }
             w->pc += 1;
@@ -783,7 +779,6 @@ void w65c02_step(w65c02_t* w){
             u8 addr_hi = read_byte((u8)(ll + 1));
             w->mem_addr = addr_lo | (addr_hi << 8);
             if(w->slow_op || (u8)w->mem_addr + w->y > 0xFF){
-                u8 tmp_lo = w->mem_addr + w->y;
                 dummy_read(w->pc);
             }
             w->pc += 1;

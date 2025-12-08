@@ -63,9 +63,9 @@ SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags);
 typedef size_t menuId;
 typedef size_t buttonId;
 #ifdef _WIN32
-menuId addMenuTo(menuId, const wchar_t*, bool);
-buttonId addButtonTo(menuId, const wchar_t*, void (*callback)(void*), void*);
-void setButtonTitle(buttonId, const wchar_t*);
+menuId addMenuTo(menuId, const char*, bool);
+buttonId addButtonTo(menuId, const char*, void (*callback)(void*), void*);
+void setButtonTitle(buttonId, const char*);
 void destroyAllMenus();
 void checkRadioButton(buttonId); 
 void tickButton(buttonId, bool);
