@@ -1,0 +1,13 @@
+/*
+
+!include/
+!lib/
+!src/
+!codegen/
+!ext/
+!*.dll
+!Makefile
+!config.rc
+!logo.ico
+!.github/
+!.gitignore

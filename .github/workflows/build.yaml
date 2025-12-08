@@ -1,0 +1,41 @@
+name: Build Obentou
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows-mingw:
+    name: Windows MinGW Build
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install MSYS2 + MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-binutils
+            mingw-w64-x86_64-make
+
+      - name: Build with MinGW
+        shell: msys2 {0}
+        run: |
+          mingw32-make
+
+      - name: Prepare Build Output
+        shell: powershell
+        run: |
+          mkdir release
+          Copy-Item *.exe release/
+          Copy-Item SDL3.dll release/
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obentou-windows
+          path: release/

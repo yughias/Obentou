@@ -84,7 +84,7 @@ menu_t* menus = NULL;
 
 HWND getWindowHandler();
 void createMainMenu();
-void updateButtonVect(void (*callback)(), void*, menuId);
+void updateButtonVect(void (*callback)(void*), void*, menuId);
 void updateMenuVect(HMENU, bool);
 
 #endif
@@ -470,7 +470,7 @@ void createMainMenu(){
         mainMenu = CreateMenu();
 }
 
-void updateButtonVect(void (*callback)(), void* arg, menuId parentMenu){
+void updateButtonVect(void (*callback)(void*), void* arg, menuId parentMenu){
     buttons = (button_t*)realloc(buttons, (n_button+1)*sizeof(button_t));
 
     buttons[n_button].callback = callback;
