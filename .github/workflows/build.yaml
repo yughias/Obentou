@@ -32,6 +32,7 @@ jobs:
           mkdir release
           cp *.exe release/
           cp SDL3.dll release/
+          cp config.ini release/
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
