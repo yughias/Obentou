@@ -4,7 +4,6 @@
 #include "types.h"
 
 #define CONTROLS_ENUM(XY) \
-    XY(HOTKEY, BEGIN) \
     XY(HOTKEY, PAUSE, BEGIN) \
     XY(HOTKEY, TURBO) \
     XY(HOTKEY, RESET) \
@@ -13,9 +12,8 @@
     XY(HOTKEY, SAVESTATE) \
     XY(HOTKEY, LOADSTATE) \
     XY(HOTKEY, OPEN) \
-    XY(HOTKEY, OPEN_BIOS) \
-    XY(HOTKEY, END, OPEN_BIOS) \
-    XY(HOTKEY_CMD, BEGIN) \
+    XY(HOTKEY, OPEN_BIOS, END) \
+    \
     XY(HOTKEY_CMD, PAUSE, BEGIN) \
     XY(HOTKEY_CMD, TURBO) \
     XY(HOTKEY_CMD, RESET) \
@@ -24,9 +22,8 @@
     XY(HOTKEY_CMD, SAVESTATE) \
     XY(HOTKEY_CMD, LOADSTATE) \
     XY(HOTKEY_CMD, OPEN) \
-    XY(HOTKEY_CMD, OPEN_BIOS) \
-    XY(HOTKEY_CMD, END, OPEN_BIOS) \
-    XY(GBC, BEGIN) \
+    XY(HOTKEY_CMD, OPEN_BIOS, END) \
+    \
     XY(GBC, A, BEGIN) \
     XY(GBC, B) \
     XY(GBC, START) \
@@ -34,9 +31,8 @@
     XY(GBC, RIGHT) \
     XY(GBC, LEFT) \
     XY(GBC, UP) \
-    XY(GBC, DOWN) \
-    XY(GBC, END, DOWN) \
-    XY(NES, BEGIN) \
+    XY(GBC, DOWN, END) \
+    \
     XY(NES, A, BEGIN) \
     XY(NES, B) \
     XY(NES, SELECT) \
@@ -44,9 +40,8 @@
     XY(NES, UP) \
     XY(NES, DOWN) \
     XY(NES, LEFT) \
-    XY(NES, RIGHT) \
-    XY(NES, END, RIGHT) \
-    XY(PV1000, BEGIN) \
+    XY(NES, RIGHT, END) \
+    \
     XY(PV1000, BTN_1, BEGIN) \
     XY(PV1000, BTN_2) \
     XY(PV1000, START) \
@@ -54,9 +49,8 @@
     XY(PV1000, UP) \
     XY(PV1000, DOWN) \
     XY(PV1000, LEFT) \
-    XY(PV1000, RIGHT) \
-    XY(PV1000, END, RIGHT) \
-    XY(WATARA, BEGIN) \
+    XY(PV1000, RIGHT, END) \
+    \
     XY(WATARA, A, BEGIN) \
     XY(WATARA, B) \
     XY(WATARA, START) \
@@ -64,9 +58,8 @@
     XY(WATARA, RIGHT) \
     XY(WATARA, LEFT) \
     XY(WATARA, UP) \
-    XY(WATARA, DOWN) \
-    XY(WATARA, END, DOWN) \
-    XY(PCE, BEGIN) \
+    XY(WATARA, DOWN, END) \
+    \
     XY(PCE, BTN_1, BEGIN) \
     XY(PCE, BTN_2) \
     XY(PCE, START) \
@@ -74,9 +67,8 @@
     XY(PCE, RIGHT) \
     XY(PCE, LEFT) \
     XY(PCE, UP) \
-    XY(PCE, DOWN) \
-    XY(PCE, END, DOWN) \
-    XY(TMS80, BEGIN) \
+    XY(PCE, DOWN, END) \
+    \
     XY(TMS80, 1, BEGIN) \
     XY(TMS80, Q) \
     XY(TMS80, A) \
@@ -146,9 +138,8 @@
     XY(TMS80, BTN_1) \
     XY(TMS80, BTN_2) \
     XY(TMS80, PAUSE) \
-    XY(TMS80, GG_START) \
-    XY(TMS80, END, GG_START) \
-    XY(BYTEPUSHER, BEGIN) \
+    XY(TMS80, GG_START, END) \
+    \
     XY(BYTEPUSHER, 0, BEGIN) \
     XY(BYTEPUSHER, 1) \
     XY(BYTEPUSHER, 2) \
@@ -164,13 +155,12 @@
     XY(BYTEPUSHER, C) \
     XY(BYTEPUSHER, D) \
     XY(BYTEPUSHER, E) \
-    XY(BYTEPUSHER, F) \
-    XY(BYTEPUSHER, END, F) \
+    XY(BYTEPUSHER, F, END) \
 
 #define GET_MACRO_ENUM(_1, _2, _3, NAME, ...) NAME
 
 #define DECLARE_CONTROL_ENUM2(system, name) CONTROL_ ## system ## _ ## name,
-#define DECLARE_CONTROL_ENUM3(system, name, val) CONTROL_ ## system ## _ ## name = CONTROL_ ## system ## _ ## val,
+#define DECLARE_CONTROL_ENUM3(system, name, val) DECLARE_CONTROL_ENUM2(system, name) CONTROL_ ## system ## _ ## val = CONTROL_ ## system ## _ ## name,
 #define DECLARE_CONTROL_ENUM(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_ENUM3, DECLARE_CONTROL_ENUM2)(__VA_ARGS__)
 
 typedef enum control_t {
@@ -196,5 +186,7 @@ bool controls_rumble(u16 low, u16 hi, u32 duration);
 void controls_get_gamepad_accelerometer(float* sensors);
 const char* controls_get_scancode_name(control_t input);
 const char* controls_get_gamepad_name(control_t input);
+void controls_set_scancode(control_t control, const char* new_scancode_name);
+void controls_set_gamepad(control_t control, const char* new_gamepad_name);
 
 #endif

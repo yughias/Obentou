@@ -19,10 +19,24 @@ static buttonId default_bios_button;
 static ctx_args_t speed_args[4];
 static ctx_args_t load_recent_args[10];
 static ctx_args_t slot_args[5];
+static control_t control_args[CONTROL_COUNT];
+static core_ctx_t* core_ctx_arg;
 
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
+
+static void controls_input_box_scancode(control_t* scancode_ptr){
+    const char* input = tinyfd_inputBox("Input box", "Enter scancode", controls_get_scancode_name(*scancode_ptr));
+    controls_set_scancode((control_t)*scancode_ptr, input); 
+    menu_create(core_ctx_arg);
+}
+
+static void controls_input_box_gamepad(control_t* gamepad_ptr){
+    const char* input = tinyfd_inputBox("Input box", "Enter gamepad", controls_get_gamepad_name(*gamepad_ptr));
+    controls_set_gamepad((control_t)*gamepad_ptr, input); 
+    menu_create(core_ctx_arg);
+}
 
 static void create_input_button_menu(menuId hotkey_menu, const char* name, control_t control_begin, control_t control_end, bool show_gamepad){
     menuId submenu = addMenuTo(hotkey_menu, name, false);
@@ -34,11 +48,12 @@ static void create_input_button_menu(menuId hotkey_menu, const char* name, contr
 
     for(int i = control_begin; i <= control_end; i++){
         char name[32];
+        control_args[i] = i;
         sprintf(name, "%s : %s", controls_names[i], controls_get_scancode_name(i));
-        addButtonTo(scancode_submenu, name, NULL, NULL);
+        addButtonTo(scancode_submenu, name, (void*)controls_input_box_scancode, &control_args[i]);
         if(show_gamepad){
             sprintf(name, "%s : %s", controls_names[i], controls_get_gamepad_name(i));
-            addButtonTo(gamepad_submenu, name, NULL, NULL);
+            addButtonTo(gamepad_submenu, name, (void*)controls_input_box_gamepad, &control_args[i]);
         }
     }
 }
@@ -192,6 +207,7 @@ void menu_speed_check(int speed_level){
 }
 
 void menu_create(core_ctx_t* ctx){
+    core_ctx_arg = ctx;
     destroyAllMenus();
 
     char* label = malloc(1024);

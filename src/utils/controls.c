@@ -4,6 +4,7 @@
 #include "SDL_MAINLOOP.h"
 
 #include "minIni.h"
+#include "tinyfiledialogs.h"
 
 #include <stdlib.h>
 
@@ -28,7 +29,7 @@ static bool hotkeys_prev_pressed_arr[HOTKEYS_COUNT];
 static SDL_Gamepad* gamepad = NULL;
 
 #define DECLARE_CONTROL_NAME2(system, name) [ CONTROL_ ## system ## _ ## name ] = #name,
-#define DECLARE_CONTROL_NAME3(system, name, val) [ CONTROL_ ## system ## _ ## name ] = #val,
+#define DECLARE_CONTROL_NAME3(system, name, val) [ CONTROL_ ## system ## _ ## name ] = #name,
 #define DECLARE_CONTROL_NAME(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_NAME3, DECLARE_CONTROL_NAME2)(__VA_ARGS__)
 
 const char controls_names[CONTROL_COUNT][32] = {
@@ -300,6 +301,20 @@ const char* controls_get_scancode_name(control_t input){
 const char* controls_get_gamepad_name(control_t input){
     const char* name = SDL_GetGamepadStringForButton(control_gamepad_maps[input]);
     return name && name[0] ? name : "None";
+}
+
+void controls_set_scancode(control_t control, const char* new_scancode_name){
+    if(!new_scancode_name)
+        return;
+    SDL_Scancode new_scancode = SDL_GetScancodeFromName(new_scancode_name);
+    control_scancode_maps[control] = new_scancode;
+}
+
+void controls_set_gamepad(control_t control, const char* new_gamepad_name){
+    if(!new_gamepad_name)
+        return;
+    SDL_GamepadButton new_gamepad = SDL_GetGamepadButtonFromString(new_gamepad_name);
+    control_gamepad_maps[control] = new_gamepad;
 }
 
 void controls_load_maps(){
