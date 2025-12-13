@@ -323,11 +323,13 @@ byte_vec_t TMS80_savestate(tms80_t* tms80){
 
 void TMS80_loadstate(tms80_t* tms80, byte_vec_t* state){
     deserialize_tms80_t(tms80, state->data);
-    if(tms80->bios_masked){
-        tms80->z80.readMemory = tms80_sms_readMemory;
-        tms80->z80.writeMemory = tms80_sms_writeMemory;
-    } else if(tms80->bios) {
-        tms80->z80.readMemory = tms80_sms_bios_readMemory;
-        tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
+    if(tms80->type == SMS || tms80->type == GG){
+        if(tms80->bios_masked){
+            tms80->z80.readMemory = tms80_sms_readMemory;
+            tms80->z80.writeMemory = tms80_sms_writeMemory;
+        } else if(tms80->bios) {
+            tms80->z80.readMemory = tms80_sms_bios_readMemory;
+            tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
+        }
     }
 }

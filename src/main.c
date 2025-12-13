@@ -174,7 +174,7 @@ void loop(){
         sum += states.data[i].allocated;
     }
 
-    printf("number of states: %llu, size: %f Mb\n", states.size, sum / powf(2, 20));
+    //printf("number of states: %llu, size: %f Mb\n", states.size, sum / powf(2, 20));
     //printf("%f\n", 1000.0f/deltaTime);
 
     controls_update();
