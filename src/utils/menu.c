@@ -26,6 +26,17 @@ static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTE
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
 
+static void menu_info(){
+    static const char* title = "Obentou";
+    static const char* description = 
+        "Made by yughias\n"
+        "Visit yughias.github.io\n"
+        "Version: v0.0.0"
+    ;
+
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, description, getMainWindow());
+}
+
 static void controls_input_box_scancode(control_t* scancode_ptr){
     const char* input = tinyfd_inputBox("Input box", "Enter scancode", controls_get_scancode_name(*scancode_ptr));
     controls_set_scancode((control_t)*scancode_ptr, input); 
@@ -304,6 +315,8 @@ void menu_create(core_ctx_t* ctx){
             continue;
         create_input_button_menu(input_menu, cores[i].name, cores[i].control_begin, cores[i].control_end, true);
     }
+
+    addButtonTo(-1, "About", (void*)menu_info, NULL);
 
     free(label);
 }
