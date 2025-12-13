@@ -10,7 +10,10 @@ CFLAGS := -Iinclude -Iext/include -O3 -flto=8 -Wall -Wno-unused-function -Werror
 DEBUG_FLAGS := -pg -no-pie
 LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
 
-all: $(EXE)
+all: $(EXE) config.ini
+
+config.ini: base_config.ini
+	cp base_config.ini config.ini
 
 $(EXE): $(OBJ) app.res
 	$(CC) $(OBJ) app.res $(CFLAGS) $(LIBS) -o $(EXE)
@@ -35,7 +38,7 @@ emcc:
 	-o website/emulator.js
 
 clean:
-	rm -rf obj $(EXE) app.res
+	rm -rf obj $(EXE) app.res config.ini
 
 loc:
 	find src -name \*.c | xargs wc -l
