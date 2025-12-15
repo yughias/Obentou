@@ -149,7 +149,7 @@ static void BRK(h6280_t* h) {
     fetch;
     push(h->pc >> 8);
     push(h->pc & 0xFF);
-    push((h->p | SET_B) & CLEAR_T);
+    push(h->p | SET_B);
     u8 lsb = read_byte(0xFFF6);
     u8 msb = read_byte(0xFFF7);
     h->pc = lsb | (msb << 8);
@@ -883,6 +883,8 @@ void h6280_irq(h6280_t* h, u16 vector){
     u8 msb = read_byte(vector + 1);
     h->pc = lsb | (msb << 8);
     h->p |= SET_I;
+    h->p &= CLEAR_D;
+    h->p &= CLEAR_T;
     h->cycles += 7;
 }
 
