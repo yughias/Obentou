@@ -38,17 +38,6 @@ void setup(){
 }
 
 void loop(){
-    if(hotkeys_pressed(CONTROL_HOTKEY_REWIND)){
-        byte_vec_t* prev = rewind_recover_state();
-        if(prev)
-            emu_ctx.core->loadstate(emu_ctx.emu, prev); 
-    } else {
-        if (emu_ctx.core && emu_ctx.core->savestate) {
-            byte_vec_t state = emu_ctx.core->savestate(emu_ctx.emu);
-            rewind_add_state(&state);
-        }
-    }
-
     //rewind_print_info();
 
     controls_update();
@@ -88,5 +77,21 @@ void loop(){
     if(hotkeys_released(CONTROL_HOTKEY_PAUSE))
         core_switch_pause(&emu_ctx);
 
-    core_ctx_run_frame(&emu_ctx);
+     if(hotkeys_pressed(CONTROL_HOTKEY_REWIND)){
+        byte_vec_t* prev = rewind_recover_state();
+        if(prev){
+            emu_ctx.core->loadstate(emu_ctx.emu, prev); 
+            sound_pause(true);
+            while(!hasRendered())
+                emu_ctx.core->run_frame(emu_ctx.emu);
+            sound_dequeue();
+        }
+    } else {
+        if (emu_ctx.core && emu_ctx.core->savestate) {
+            byte_vec_t state = emu_ctx.core->savestate(emu_ctx.emu);
+            rewind_add_state(&state);
+        }
+        core_ctx_run_frame(&emu_ctx);
+    }
+
 }

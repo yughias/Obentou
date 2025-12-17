@@ -31,6 +31,7 @@ static SDL_Surface* front_surface;
 static SDL_Surface* windowIcon;
 
 static bool running;
+static bool has_rendered;
 
 void (*onExit)();
 
@@ -204,6 +205,7 @@ int main(int argc, char** argv){
 
 void mainloop(){
     frameCount++;
+    has_rendered = false;
 
     #ifdef _WIN32
     MSG msg;
@@ -383,6 +385,7 @@ void renderPixels(){
     back_surface = front_surface;
     front_surface = tmp;
     pixels = back_surface->pixels;
+    has_rendered = true;
 }
 
 void setWindowSize(int w, int h){
@@ -433,6 +436,10 @@ void renderBufferToWindow(){
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, drawBuffer, NULL, NULL);
     SDL_RenderPresent(renderer);
+}
+
+bool hasRendered(){
+    return has_rendered;
 }
 
 bool filterResize(void* userdata, SDL_Event* event){

@@ -78,3 +78,7 @@ void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sou
 void sound_queue_samples(const void* samples, size_t size){ 
     SDL_PutAudioStreamData(audio_stream, samples, size);
 }
+
+void sound_dequeue(){
+    SDL_ClearAudioStream(audio_stream);
+}

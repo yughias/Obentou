@@ -50,6 +50,7 @@ void getRGB(int, Uint8*, Uint8*, Uint8*);
 void rect(int, int, int, int, int);
 void loadWindowIcon(const char*);
 void setScalingMode(SDL_RendererLogicalPresentation mode);
+bool hasRendered();
 
 void renderPixels();
 
