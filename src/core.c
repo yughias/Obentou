@@ -5,6 +5,7 @@
 #include "utils/menu.h"
 #include "utils/argument.h"
 #include "utils/state.h"
+#include "utils/rewind.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -90,12 +91,12 @@ void core_switch_pause(core_ctx_t* ctx){
 }
 
 void core_ctx_close(core_ctx_t* ctx){
+    sound_close();
+
     core_close_emu(ctx);
 
     archive_free(ctx->rom);
     archive_free(ctx->bios);
-
-    sound_close();
 }
 
 void core_restart(core_ctx_t* ctx){
@@ -129,4 +130,6 @@ void core_restart(core_ctx_t* ctx){
     if(first_loading && core->loadstate && state_get_autosave()){
         state_load_autosave(ctx);
     }
+
+    rewind_init();
 }

@@ -44,6 +44,8 @@ XYZ(HOTKEY, RESET, "r"); \
 XYZ(HOTKEY, CMD_RESET, "left ctrl"); \
 XYZ(HOTKEY, TURBO, "tab"); \
 XYZ(HOTKEY, CMD_TURBO, "none"); \
+XYZ(HOTKEY, REWIND, "tab"); \
+XYZ(HOTKEY, CMD_REWIND, "left shift"); \
 XYZ(HOTKEY, OPEN, "o"); \
 XYZ(HOTKEY, CMD_OPEN, "left ctrl"); \
 XYZ(HOTKEY, SPEEDUP, "="); \
@@ -195,6 +197,7 @@ XYZ(TMS80, SHF, "left shift");
 XYZ(HOTKEY, PAUSE, "none"); \
 XYZ(HOTKEY, RESET, "none"); \
 XYZ(HOTKEY, TURBO, "none"); \
+XYZ(HOTKEY, REWIND, "none"); \
 XYZ(HOTKEY, OPEN,  "none"); \
 XYZ(HOTKEY, SPEEDUP, "none"); \
 XYZ(HOTKEY, SLOWDOWN, "none"); \

@@ -51,7 +51,7 @@ static void controls_input_box_gamepad(control_t* gamepad_ptr){
 
 static void create_input_button_menu(menuId hotkey_menu, const char* name, control_t control_begin, control_t control_end, bool show_gamepad){
     menuId submenu = addMenuTo(hotkey_menu, name, false);
-    menuId scancode_submenu = addMenuTo(submenu, "Scancode", false);
+    menuId scancode_submenu = addMenuTo(submenu, "Keyboard", false);
     menuId gamepad_submenu;
 
     if(show_gamepad)
