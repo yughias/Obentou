@@ -8,6 +8,8 @@
 #include "tinyfiledialogs.h"
 #include "minIni.h"
 
+#include "version.h"
+
 #include "SDL_MAINLOOP.h"
 
 #define MAX_SHOW_PATH_LENGTH 48
@@ -31,7 +33,7 @@ static void menu_info(){
     static const char* description = 
         "Made by yughias\n"
         "Visit yughias.github.io\n"
-        "Version: v0.0.0"
+        "Version: " OBENTOU_VERSION
     ;
 
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, description, getMainWindow());

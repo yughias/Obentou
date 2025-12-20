@@ -1,0 +1,1 @@
+#define OBENTOU_VERSION "v0.0.0 (dev)"
