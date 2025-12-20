@@ -12,6 +12,8 @@
 
 #include "SDL_MAINLOOP.h"
 
+#include <time.h>
+
 #define MAX_SHOW_PATH_LENGTH 48
 
 static buttonId pause_button;
@@ -27,6 +29,27 @@ static core_ctx_t* core_ctx_arg;
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
+
+static void save_screenshot(core_ctx_t* ctx)
+{
+    const char* base_path = ctx->rom ? archive_get_path(ctx->rom) : archive_get_path(ctx->bios);
+    char base[FILENAME_MAX];
+    char path[FILENAME_MAX];
+
+    path_set_ext(base_path, base, "");
+    base[strlen(base) - 1] = '\0';
+
+    time_t now = time(NULL);
+    struct tm* tm = localtime(&now);
+
+    char datetime[32];
+    strftime(datetime, sizeof(datetime), "%Y%m%d_%H%M%S", tm);
+
+    snprintf(path, sizeof(path), "%s_%s_%u.bmp", base, datetime, frameCount);
+
+    SDL_SaveBMP(getMainWindowSurface(), path);
+}
+
 
 static void menu_info(){
     static const char* title = "Obentou";
@@ -283,6 +306,9 @@ void menu_create(core_ctx_t* ctx){
     addButtonTo(scaling_menu, "Integer", (void*)menu_change_scaling_mode, &integer_mode);
     addButtonTo(scaling_menu, "Stretch", (void*)menu_change_scaling_mode, &stretch_mode);
     checkRadioButton(fit_button);
+
+    if(ctx->core)
+        addButtonTo(video_menu, "Screenshot", (void*)save_screenshot, ctx);
 
     pause_button = addButtonTo(emu_menu, "Pause", (void*)core_switch_pause, ctx);
     addButtonTo(emu_menu, "Restart", (void*)core_restart, ctx);
