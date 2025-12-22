@@ -35,7 +35,6 @@ At the moment the supported cores are:
 | -------------------------------------------- | -----------------------------| ----------------------- |
 | ![](imgs/4.bmp) |![](imgs/5.bmp) | ![](imgs/6.bmp) |
 | ![](imgs/7.bmp) | ![](imgs/8.bmp) | ![](imgs/9.bmp) | 
-| -------------------------------------------- | -----------------------------| ----------------------- |
 | ![](imgs/10.bmp) | ![](imgs/11.bmp) | ![](imgs/12.bmp) | 
 
 ## Cores that will be supported on the future
@@ -49,5 +48,5 @@ At the moment the supported cores are:
 ## Next features
 
 - [ ] Disable illegal input combinations
-- [ ] Multiple players
+- [ ] Multiple controllers support
 - [ ] Netplay
