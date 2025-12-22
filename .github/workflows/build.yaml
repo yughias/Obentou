@@ -31,7 +31,7 @@ jobs:
       - name: Build with MinGW
         shell: msys2 {0}
         run: |
-          mingw32-make
+          mingw32-make -j8
 
       - name: Prepare Build Output
         shell: powershell
