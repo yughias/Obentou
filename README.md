@@ -32,7 +32,7 @@ At the moment the supported cores are:
 ## Screenshots
 
 | ![](imgs/1.bmp) | ![](imgs/2.bmp) | ![](imgs/3.bmp) | 
-| -------------------------------------------- | -----------------------------| ----------------------- |
+| :-------: | :-------: | :-------: |
 | ![](imgs/4.bmp) |![](imgs/5.bmp) | ![](imgs/6.bmp) |
 | ![](imgs/7.bmp) | ![](imgs/8.bmp) | ![](imgs/9.bmp) | 
 | ![](imgs/10.bmp) | ![](imgs/11.bmp) | ![](imgs/12.bmp) | 
