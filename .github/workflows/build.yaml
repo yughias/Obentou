@@ -2,6 +2,13 @@ name: Build Obentou
 
 on:
   push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   windows-mingw:
@@ -39,3 +46,14 @@ jobs:
         with:
           name: obentou-windows
           path: release/
+
+      - name: Zip Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: powershell
+        run: Compress-Archive -Path release/* -DestinationPath obentou-windows.zip
+
+      - name: Publish Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: obentou-windows.zip
