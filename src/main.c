@@ -21,7 +21,7 @@ static void obentou_exit(){
 }
 
 void setup(){
-    setTitle("MULTI-SYSTEM EMU");
+    setTitle("Obentou");
     onExit = obentou_exit;
     controls_load_maps();
 
@@ -38,8 +38,6 @@ void setup(){
 }
 
 void loop(){
-    //rewind_print_info();
-
     controls_update();
     camera_update();
 

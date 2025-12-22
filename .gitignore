@@ -13,3 +13,5 @@
 !.gitignore
 !base_config.ini
 !LICENSE
+!imgs/
+!README.md
