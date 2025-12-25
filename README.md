@@ -17,7 +17,7 @@ At the moment the supported cores are:
 - [X] NES
 - [X] PCE (PC-Engine)
 - [X] PV1000 (Casio PV-1000)
-- [X] TMS80 (TMS918 + Z80 systems) (sms/gg/sg1000/sc3000)
+- [X] TMS80 (TMS9918 + Z80 systems) (sms/gg/sg1000/sc3000)
 - [X] WATARA (Watara Super Vision)
 
 ## Features
