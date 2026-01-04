@@ -869,6 +869,8 @@ void h6280_nmi(h6280_t* h){
     u8 msb = read_byte(0xFFFD);
     h->pc = lsb | (msb << 8);
     h->p |= SET_I;
+    h->p &= CLEAR_D;
+    h->p &= CLEAR_T;
     h->cycles += 7;
 }
 
