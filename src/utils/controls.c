@@ -28,6 +28,14 @@ static bool hotkeys_prev_pressed_arr[HOTKEYS_COUNT];
 
 static SDL_Gamepad* gamepad = NULL;
 
+static bool disable_illegal;
+static control_t dpad;
+
+#define DPAD_UP pressed[dpad+0 - begin]
+#define DPAD_DOWN pressed[dpad+1 - begin]
+#define DPAD_LEFT pressed[dpad+2 - begin]
+#define DPAD_RIGHT pressed[dpad+3 - begin]
+
 #define DECLARE_CONTROL_NAME2(system, name) [ CONTROL_ ## system ## _ ## name ] = #name,
 #define DECLARE_CONTROL_NAME3(system, name, val) [ CONTROL_ ## system ## _ ## name ] = #name,
 #define DECLARE_CONTROL_NAME(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_NAME3, DECLARE_CONTROL_NAME2)(__VA_ARGS__)
@@ -338,6 +346,21 @@ void controls_init(control_t begin_, control_t end_) {
     prev_pressed = malloc(ACTIVE_BUTTONS * sizeof(bool));
     memset(pressed, 0, ACTIVE_BUTTONS * sizeof(bool));
     memset(prev_pressed, 0, ACTIVE_BUTTONS * sizeof(bool));
+
+    disable_illegal = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
+
+    dpad = CONTROL_NONE;
+    for(int i = begin; i <= end; i++){
+        const char* name = controls_names[i];
+        if(strstr(name, "UP")){
+            dpad = i;
+            break;
+        }
+    }
+}
+
+void controls_disable_illegal_input(bool disable){
+    disable_illegal = disable;
 }
 
 void controls_free(){
@@ -385,6 +408,13 @@ void controls_update(){
 
     for(int i = begin; i <= end; i++){
         pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
+    }
+
+    if(disable_illegal && dpad){
+        DPAD_UP &= !(DPAD_UP && DPAD_DOWN);
+        DPAD_DOWN &= !(DPAD_UP && DPAD_DOWN);
+        DPAD_LEFT &= !(DPAD_LEFT && DPAD_RIGHT);
+        DPAD_RIGHT &= !(DPAD_LEFT && DPAD_RIGHT);
     }
 }
 

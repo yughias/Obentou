@@ -20,6 +20,7 @@ static buttonId pause_button;
 static buttonId speed_buttons[4];
 static buttonId fullscreen_button;
 static buttonId default_bios_button;
+static buttonId disable_illegal_input_button;
 static ctx_args_t speed_args[4];
 static ctx_args_t load_recent_args[10];
 static ctx_args_t slot_args[5];
@@ -50,6 +51,13 @@ static void save_screenshot(core_ctx_t* ctx)
     SDL_SaveBMP(getMainWindowSurface(), path);
 }
 
+static void menu_disable_illegal(void* arg){
+    bool val = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
+    val ^= 1;
+    ini_putbool("GENERAL", "DISABLE_ILLEGAL_INPUT", val, argument_get_ini_path());
+    tickButton(disable_illegal_input_button, val);
+    controls_disable_illegal_input(val);
+}
 
 static void menu_info(){
     static const char* title = "Obentou";
@@ -331,6 +339,8 @@ void menu_create(core_ctx_t* ctx){
     addButtonTo(recent_menu, "Clear History", (void*)menu_clear_recent, ctx);
 
     menuId input_menu = addMenuTo(-1, "Input", false);
+    disable_illegal_input_button = addButtonTo(input_menu, "Disable illegal input", menu_disable_illegal, NULL);
+    tickButton(disable_illegal_input_button, ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path()));
     menuId hotkey_menu = addMenuTo(input_menu, "Hotkeys", false);
     create_input_button_menu(hotkey_menu, "Main key", CONTROL_HOTKEY_BEGIN, CONTROL_HOTKEY_END, true);
     create_input_button_menu(hotkey_menu, "Secondary key", CONTROL_HOTKEY_CMD_BEGIN, CONTROL_HOTKEY_CMD_END, false);

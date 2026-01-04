@@ -30,10 +30,10 @@
     XY(GBC, B) \
     XY(GBC, START) \
     XY(GBC, SELECT) \
-    XY(GBC, RIGHT) \
-    XY(GBC, LEFT) \
     XY(GBC, UP) \
-    XY(GBC, DOWN, END) \
+    XY(GBC, DOWN) \
+    XY(GBC, LEFT) \
+    XY(GBC, RIGHT, END) \
     \
     XY(NES, A, BEGIN) \
     XY(NES, B) \
@@ -57,19 +57,19 @@
     XY(WATARA, B) \
     XY(WATARA, START) \
     XY(WATARA, SELECT) \
-    XY(WATARA, RIGHT) \
-    XY(WATARA, LEFT) \
     XY(WATARA, UP) \
-    XY(WATARA, DOWN, END) \
+    XY(WATARA, DOWN) \
+    XY(WATARA, LEFT) \
+    XY(WATARA, RIGHT, END) \
     \
     XY(PCE, BTN_1, BEGIN) \
     XY(PCE, BTN_2) \
     XY(PCE, START) \
     XY(PCE, SELECT) \
-    XY(PCE, RIGHT) \
-    XY(PCE, LEFT) \
     XY(PCE, UP) \
-    XY(PCE, DOWN, END) \
+    XY(PCE, DOWN) \
+    XY(PCE, LEFT) \
+    XY(PCE, RIGHT, END) \
     \
     XY(TMS80, 1, BEGIN) \
     XY(TMS80, Q) \
@@ -190,5 +190,6 @@ const char* controls_get_scancode_name(control_t input);
 const char* controls_get_gamepad_name(control_t input);
 void controls_set_scancode(control_t control, const char* new_scancode_name);
 void controls_set_gamepad(control_t control, const char* new_gamepad_name);
+void controls_disable_illegal_input(bool disable);
 
 #endif
