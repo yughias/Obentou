@@ -411,10 +411,11 @@ void controls_update(){
     }
 
     if(disable_illegal && dpad){
-        DPAD_UP &= !(DPAD_UP && DPAD_DOWN);
-        DPAD_DOWN &= !(DPAD_UP && DPAD_DOWN);
-        DPAD_LEFT &= !(DPAD_LEFT && DPAD_RIGHT);
-        DPAD_RIGHT &= !(DPAD_LEFT && DPAD_RIGHT);
+        bool dp[4] = { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT };
+        DPAD_UP &= !(dp[0] && dp[1]);
+        DPAD_DOWN &= !(dp[0] && dp[1]);
+        DPAD_LEFT &= !(dp[2] && dp[3]);
+        DPAD_RIGHT &= !(dp[2] && dp[3]);
     }
 }
 
