@@ -129,6 +129,14 @@ int main(int argc, char** argv){
     main_argc = argc;
     main_argv = argv;
 
+    #ifdef _WIN32
+    if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
+        freopen("CONIN$",  "r", stdin);
+    }
+    #endif
+
     SDL_Init(
         SDL_INIT_VIDEO |
         SDL_INIT_AUDIO |
