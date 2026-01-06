@@ -313,6 +313,7 @@ void menu_create(core_ctx_t* ctx){
     buttonId fit_button = addButtonTo(scaling_menu, "Fit", (void*)menu_change_scaling_mode, &fit_mode);
     addButtonTo(scaling_menu, "Integer", (void*)menu_change_scaling_mode, &integer_mode);
     addButtonTo(scaling_menu, "Stretch", (void*)menu_change_scaling_mode, &stretch_mode);
+    menu_change_scaling_mode(&fit_mode);
     checkRadioButton(fit_button);
 
     if(ctx->core)
