@@ -1,5 +1,4 @@
-SRC := $(shell find src -name '*.c') \
-       $(shell find ext -name '*.c')
+SRC := $(shell find src ext -name '*.c')
 OBJ := $(patsubst %.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
