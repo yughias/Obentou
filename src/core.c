@@ -123,10 +123,10 @@ void core_restart(core_ctx_t* ctx){
     core_close_emu(ctx);
 
     ctx->emu = core->init(ctx->rom, ctx->bios);
+    float push_rate = sound_get_push_rate();
 
     sound_open(&audio_spec, core->sound_callback, ctx->emu);
-    if(!sound_is_push_rate_set())
-        sound_set_push_rate(core->sound_push_rate);
+    sound_set_push_rate(core->sound_push_rate < 0 ? push_rate : core->sound_push_rate);
 
     controls_init(core->control_begin, core->control_end);
 

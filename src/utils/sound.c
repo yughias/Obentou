@@ -99,8 +99,8 @@ void sound_set_push_rate_multiplier(int multiplier) {
     push_rate_scaled = push_rate_reload * multiplier;
 }
 
-bool sound_is_push_rate_set(){
-    return push_rate_reload > 0.0f;
+float sound_get_push_rate(){
+    return push_rate_reload;
 }
 
 void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sound_get_sample_ptr func) {
