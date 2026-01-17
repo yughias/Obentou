@@ -379,7 +379,7 @@ void controls_update(){
         if(num_gamepads){
             gamepad = SDL_OpenGamepad(gamepads[0]);
             SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, true);
-            printf("opened %p\n", gamepad);
+            printf("opened %p %s\n", gamepad, SDL_GetGamepadName(gamepad));
         }
     } else if(!SDL_GamepadConnected(gamepad)){
         gamepad = NULL;
