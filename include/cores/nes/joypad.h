@@ -5,7 +5,7 @@
 
 typedef struct joypad_t {
     bool strobe;
-    u8 controller_1_shifter;
+    u8 controller_shifters[2];
 } joypad_t;
 
 u8 nes_joypad_read_1(joypad_t* joypad);

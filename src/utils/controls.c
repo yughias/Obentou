@@ -415,8 +415,8 @@ void controls_update(){
 
     for(int i = begin; i <= end; i++){
         int idx = i - begin;
-        for(int i = 0; i < MAX_PLAYERS; i++)
-            pressed[idx + ACTIVE_BUTTONS * i] = false;
+        for(int j = 0; j < MAX_PLAYERS; j++)
+            pressed[idx + ACTIVE_BUTTONS * j] = false;
         pressed[ACTIVE_BUTTONS * keyboard_player + idx] |= keystate[control_scancode_maps[i]];
         pressed[ACTIVE_BUTTONS * gamepad_player + idx] |= SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
     }
