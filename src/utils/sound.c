@@ -1,35 +1,76 @@
 #include "utils/sound.h"
-
 #include "types.h"
-
 #include "SDL_MAINLOOP.h"
-
 #include <stdio.h>
+#include <string.h>
 
-#define AUDIO_BUFFER_SIZE 1024
+#define AUDIO_BUFFER_SIZE 8192
+#define AUDIO_BUFFER_MASK (AUDIO_BUFFER_SIZE - 1)
 
 static SDL_AudioStream* audio_stream;
 static SDL_AudioStreamCallback audio_callback;
 static u8 audio_buffer[AUDIO_BUFFER_SIZE];
+static u8 silence_buffer[AUDIO_BUFFER_SIZE];
 static float push_rate_counter;
 static float push_rate_reload = -1;
 static float push_rate_scaled;
-static int buffer_idx;
+static bool is_paused = true;
+static SDL_AtomicInt rb_read;
+static SDL_AtomicInt rb_write;
+
 
 void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
-    if(isGrabbed())
+    if(isGrabbed()) {
+        if (additional_amount > 0)
+            SDL_PutAudioStreamData(stream, silence_buffer, additional_amount);
         return;
-    audio_callback(userdata, stream, additional_amount, total_amount);
+    }
+
+    if(audio_callback){
+        audio_callback(userdata, stream, additional_amount, total_amount);
+    } else {
+        int bytes_written = 0;
+        int read_pos = SDL_GetAtomicInt(&rb_read);
+        int write_pos = SDL_GetAtomicInt(&rb_write);
+        int available = write_pos - read_pos;
+        // TODO: SILENCE SHOULD BE SENT IF AVAILABLE < ADDITIONAL_AMOUNT
+        if (available > 0) {
+            int to_write = (available < total_amount) ? available : total_amount;
+            
+            int read_idx = read_pos & AUDIO_BUFFER_MASK;
+            int chunk1 = AUDIO_BUFFER_SIZE - read_idx;
+            
+            if (to_write <= chunk1) {
+                SDL_PutAudioStreamData(stream, &audio_buffer[read_idx], to_write);
+            } else {
+                SDL_PutAudioStreamData(stream, &audio_buffer[read_idx], chunk1);
+                SDL_PutAudioStreamData(stream, &audio_buffer[0], to_write - chunk1);
+            }
+            
+            SDL_AddAtomicInt(&rb_read, to_write);
+            bytes_written = to_write;
+        }
+
+        if (bytes_written < additional_amount) {
+            int missing = additional_amount - bytes_written;
+            SDL_PutAudioStreamData(stream, silence_buffer, missing);
+        }
+    }
 }
 
 void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, void* userdata) {
     if(audio_stream)
         sound_close();
     audio_callback = callback;
-    audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, audio_spec, callback ? sound_callback : NULL, userdata);
+    audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, audio_spec, sound_callback, userdata);
+    SDL_SetAtomicInt(&rb_read, 0);
+    SDL_SetAtomicInt(&rb_write, 0);
 }
 
 void sound_pause(bool pause) {
+    is_paused = pause;
+    if(pause == SDL_AudioStreamDevicePaused(audio_stream))
+        return;
     if(pause)
         SDL_PauseAudioStreamDevice(audio_stream);
     else
@@ -41,14 +82,17 @@ void sound_close() {
     sound_set_push_rate(-1);
     audio_callback = NULL;
     audio_stream = NULL;
-    buffer_idx = 0;
+    is_paused = true;
+    SDL_SetAtomicInt(&rb_read, 0);
+    SDL_SetAtomicInt(&rb_write, 0);
 }
 
 void sound_set_push_rate(float push_rate) {
     push_rate_counter = 0;
     push_rate_reload = push_rate;
     push_rate_scaled = push_rate_reload;
-    buffer_idx = 0;
+    SDL_SetAtomicInt(&rb_read, 0);
+    SDL_SetAtomicInt(&rb_write, 0);
 }
 
 void sound_set_push_rate_multiplier(int multiplier) {
@@ -60,25 +104,34 @@ bool sound_is_push_rate_set(){
 }
 
 void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sound_get_sample_ptr func) {
+    if(is_paused)
+        return;
     push_rate_counter -= cycles;
     while(push_rate_counter <= 0) {
         push_rate_counter += push_rate_scaled;
-        func(ctx, sample);
-        memcpy(&audio_buffer[buffer_idx], sample, sample_size);
-        buffer_idx += sample_size;
-        if(buffer_idx == AUDIO_BUFFER_SIZE) {
-            SDL_PutAudioStreamData(audio_stream, audio_buffer, AUDIO_BUFFER_SIZE);
-            buffer_idx = 0;   
+        
+        int read_pos = SDL_GetAtomicInt(&rb_read);
+        int write_pos = SDL_GetAtomicInt(&rb_write);
+        int free_space = AUDIO_BUFFER_SIZE - (write_pos - read_pos);
+
+        if(free_space >= sample_size){
+            func(ctx, sample);
+            
+            int write_idx = write_pos & AUDIO_BUFFER_MASK;
+            int chunk1 = AUDIO_BUFFER_SIZE - write_idx;
+            
+            if(sample_size <= chunk1) {
+                memcpy(&audio_buffer[write_idx], sample, sample_size);
+            } else {
+                memcpy(&audio_buffer[write_idx], sample, chunk1);
+                memcpy(&audio_buffer[0], (u8*)sample + chunk1, sample_size - chunk1);
+            }
+            
+            SDL_AddAtomicInt(&rb_write, sample_size);
         }
     }
-    if(push_rate_counter <= 0)
-        printf("negative push rate counter\n");
 }
 
 void sound_queue_samples(const void* samples, size_t size){ 
     SDL_PutAudioStreamData(audio_stream, samples, size);
-}
-
-void sound_dequeue(){
-    SDL_ClearAudioStream(audio_stream);
 }

@@ -96,7 +96,6 @@ void loop(){
             sound_pause(true);
             while(!hasRendered())
                 emu_ctx.core->run_frame(emu_ctx.emu);
-            sound_dequeue();
         }
     } else {
         if (emu_ctx.core && emu_ctx.core->savestate) {
