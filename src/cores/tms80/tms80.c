@@ -10,34 +10,39 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KEY(x) CONTROL_TMS80_ ## x
-#define NO_KEY CONTROL_NONE
+#define KEY(x, y) {CONTROL_TMS80_ ## x, y}
+#define NO_KEY {CONTROL_NONE, 0}
 
 #define tms80_SET_REGION(tms80, zone) \
 tms80->cycles_per_frame = zone ## _CYCLES_PER_FRAME; \
 tms80->refresh_rate = zone ## _REFRESH_RATE; \
 tms80->vdp.region = REGION_ ## zone;
 
-static control_t keypad_row_a[8][8] = {
-    { KEY(1),  KEY(Q),    KEY(A),    KEY(Z),     KEY(ED),    KEY(COMMA),     KEY(K),             KEY(I)            },
-    { KEY(2),  KEY(W),    KEY(S),    KEY(X),     KEY(SPC),   KEY(DOT),       KEY(L),             KEY(O)            },
-    { KEY(3),  KEY(E),    KEY(D),    KEY(C),     KEY(HC),    KEY(SLASH),     KEY(SEMICOLON),     KEY(P)            },
-    { KEY(4),  KEY(R),    KEY(F),    KEY(V),     KEY(ID),    KEY(PI),        KEY(COLON),         KEY(AT)           },
-    { KEY(5),  KEY(T),    KEY(G),    KEY(B),     NO_KEY,     KEY(DA),        KEY(CLOSE_BRACKET), KEY(OPEN_BRACKET) },
-    { KEY(6),  KEY(Y),    KEY(H),    KEY(N),     NO_KEY,     KEY(LA),        KEY(CR),            NO_KEY            },
-    { KEY(7),  KEY(U),    KEY(J),    KEY(M),     NO_KEY,     KEY(RA),        KEY(UA),            NO_KEY            },
-    { KEY(UP), KEY(DOWN), KEY(LEFT), KEY(RIGHT), KEY(BTN_1), KEY(BTN_2),     NO_KEY,             NO_KEY            }
+typedef struct keypad_t {
+    control_t key;
+    int player;
+} keypad_t;
+
+static keypad_t keypad_row_a[8][8] = {
+    { KEY(1,  0),  KEY(Q,   0), KEY(A,    0), KEY(Z,     0), KEY(ED,    0), KEY(COMMA, 0), KEY(K,             0), KEY(I,            0) },
+    { KEY(2,  0),  KEY(W,   0), KEY(S,    0), KEY(X,     0), KEY(SPC,   0), KEY(DOT,   0), KEY(L,             0), KEY(O,            0) },
+    { KEY(3,  0),  KEY(E,   0), KEY(D,    0), KEY(C,     0), KEY(HC,    0), KEY(SLASH, 0), KEY(SEMICOLON,     0), KEY(P,            0) },
+    { KEY(4,  0),  KEY(R,   0), KEY(F,    0), KEY(V,     0), KEY(ID,    0), KEY(PI,    0), KEY(COLON,         0), KEY(AT,           0) },
+    { KEY(5,  0),  KEY(T,   0), KEY(G,    0), KEY(B,     0), NO_KEY,        KEY(DA,    0), KEY(CLOSE_BRACKET, 0), KEY(OPEN_BRACKET, 0) },
+    { KEY(6,  0),  KEY(Y,   0), KEY(H,    0), KEY(N,     0), NO_KEY,        KEY(LA,    0), KEY(CR,            0), NO_KEY               },
+    { KEY(7,  0),  KEY(U,   0), KEY(J,    0), KEY(M,     0), NO_KEY,        KEY(RA,    0), KEY(UA,            0), NO_KEY               },
+    { KEY(UP, 0), KEY(DOWN, 0), KEY(LEFT, 0), KEY(RIGHT, 0), KEY(BTN_1, 0), KEY(BTN_2, 0), KEY(UP,            1), KEY(DOWN,         1) }
 };
 
-static control_t keypad_row_b[8][4] = {
-    { KEY(8),      NO_KEY,   NO_KEY,   NO_KEY   },
-    { KEY(9),      NO_KEY,   NO_KEY,   NO_KEY   },
-    { KEY(0),      NO_KEY,   NO_KEY,   NO_KEY   },
-    { KEY(MINUS),  NO_KEY,   NO_KEY,   NO_KEY   },
-    { KEY(CARET),  NO_KEY,   NO_KEY,   NO_KEY   },
-    { KEY(YEN),    NO_KEY,   NO_KEY,   KEY(FNC) },
-    { KEY(BRK),    KEY(GRP), KEY(CTL), KEY(SHF) },
-    { NO_KEY,      NO_KEY,   NO_KEY,   NO_KEY   }
+static keypad_t keypad_row_b[8][4] = {
+    { KEY(8,     0), NO_KEY,        NO_KEY,        NO_KEY        },
+    { KEY(9,     0), NO_KEY,        NO_KEY,        NO_KEY        },
+    { KEY(0,     0), NO_KEY,        NO_KEY,        NO_KEY        },
+    { KEY(MINUS, 0), NO_KEY,        NO_KEY,        NO_KEY        },
+    { KEY(CARET, 0), NO_KEY,        NO_KEY,        NO_KEY        },
+    { KEY(YEN,   0), NO_KEY,        NO_KEY,        KEY(FNC,   0) },
+    { KEY(BRK,   0), KEY(GRP,   0), KEY(CTL,   0), KEY(SHF,   0) },
+    { KEY(LEFT,  1), KEY(RIGHT, 1), KEY(BTN_1, 1), KEY(BTN_2, 1) }
 };
 
 static TMS80_TYPE detect_type(const archive_t* rom_archive){
@@ -228,9 +233,11 @@ u8 tms80_get_keypad_a(tms80_t* tms80){
     u8 row = tms80->keypad_reg & 0b111;
     u8 out = 0xFF;
 
-    for(int i = 0; i < 8; i++)
-        if(controls_pressed(keypad_row_a[row][i], 0))
+    for(int i = 0; i < 8; i++){
+        keypad_t key = keypad_row_a[row][i];
+        if(controls_pressed(key.key, key.player))
             out &= ~(1 << i);
+    }
 
     return out;
 }
@@ -239,9 +246,11 @@ u8 tms80_get_keypad_b(tms80_t* tms80){
     u8 row = tms80->keypad_reg & 0b111;
     u8 out = 0xFF;
 
-    for(int i = 0; i < 4; i++)
-        if(controls_pressed(keypad_row_b[row][i], 0))
+    for(int i = 0; i < 4; i++){
+        keypad_t key = keypad_row_b[row][i];
+        if(controls_pressed(key.key, key.player))
             out &= ~(1 << i);
+    }
 
     return out;
 }
