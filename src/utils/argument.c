@@ -15,7 +15,7 @@ static const char *const usages[] = {
 static const char brief_description[] = "\nObentou is a multi system emulator supporting different emulators";
 static const char description[] = "";
 
-void argument_get(const char** rom_path, const char** bios_path, const char** force_core) {
+void argument_get(const char** rom_path, const char** bios_path, const char** force_core, int* autorun) {
     *rom_path = NULL;
     *bios_path = NULL;
     *force_core = NULL;
@@ -25,6 +25,7 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
         OPT_STRING('r', "rom", rom_path, "the rom to be loaded", NULL, 0, 0),
         OPT_STRING('b', "bios", bios_path, "the bios to be loaded, if the system requires it", NULL, 0, 0),
         OPT_STRING('c', "core", force_core, "force core", NULL, 0, 0),
+        OPT_INTEGER('a', "autorun", autorun, "auto execute rom and quit after X frames", NULL, 0, 0),
         OPT_END(),
     };
 

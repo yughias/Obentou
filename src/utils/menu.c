@@ -21,6 +21,7 @@ static buttonId speed_buttons[4];
 static buttonId fullscreen_button;
 static buttonId default_bios_button;
 static buttonId disable_illegal_input_button;
+static buttonId autosave_button;
 static ctx_args_t speed_args[4];
 static ctx_args_t load_recent_args[10];
 static ctx_args_t slot_args[5];
@@ -31,7 +32,7 @@ static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTE
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
 
-static void save_screenshot(core_ctx_t* ctx)
+void menu_save_screenshot(core_ctx_t* ctx)
 {
     const char* base_path = ctx->rom ? archive_get_path(ctx->rom) : archive_get_path(ctx->bios);
     char base[FILENAME_MAX];
@@ -51,7 +52,7 @@ static void save_screenshot(core_ctx_t* ctx)
     SDL_SaveBMP(getMainWindowSurface(), path);
 }
 
-static void menu_disable_illegal(void* arg){
+static void menu_disable_illegal(){
     bool val = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
     val ^= 1;
     ini_putbool("GENERAL", "DISABLE_ILLEGAL_INPUT", val, argument_get_ini_path());
@@ -68,6 +69,11 @@ static void menu_info(){
     ;
 
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, description, getMainWindow());
+}
+
+static void menu_switch_autosave(){
+    state_switch_autosave();
+    tickButton(autosave_button, state_get_autosave());
 }
 
 static void controls_input_box_scancode(control_t* scancode_ptr){
@@ -286,9 +292,9 @@ void menu_create(core_ctx_t* ctx){
         if(ctx->core->savestate && ctx->core->loadstate){
             menuId state_menu = addMenuTo(-1, "State", false);
             menuId slot_menu = addMenuTo(state_menu, "Select Slot", true);
-            menuId auto_savestate = addButtonTo(state_menu, "Auto Load on Open", (void*)state_switch_autosave, NULL);
+            autosave_button = addButtonTo(state_menu, "Auto Load on Open", (void*)menu_switch_autosave, NULL);
             buttonId slot_btns[5];
-            tickButton(auto_savestate, state_get_autosave());
+            tickButton(autosave_button, state_get_autosave());
             addButtonTo(state_menu, "Save State", (void*)state_save_slot, ctx);
             addButtonTo(state_menu, "Load State", (void*)state_load_slot, ctx);
             for(int i = 0; i < sizeof(slot_btns) / sizeof(slot_btns[0]); i++){
@@ -317,7 +323,7 @@ void menu_create(core_ctx_t* ctx){
     checkRadioButton(fit_button);
 
     if(ctx->core)
-        addButtonTo(video_menu, "Screenshot", (void*)save_screenshot, ctx);
+        addButtonTo(video_menu, "Screenshot", (void*)menu_save_screenshot, ctx);
 
     pause_button = addButtonTo(emu_menu, "Pause", (void*)core_switch_pause, ctx);
     addButtonTo(emu_menu, "Restart", (void*)core_restart, ctx);
@@ -340,7 +346,7 @@ void menu_create(core_ctx_t* ctx){
     addButtonTo(recent_menu, "Clear History", (void*)menu_clear_recent, ctx);
 
     menuId input_menu = addMenuTo(-1, "Input", false);
-    disable_illegal_input_button = addButtonTo(input_menu, "Disable illegal input", menu_disable_illegal, NULL);
+    disable_illegal_input_button = addButtonTo(input_menu, "Disable illegal input", (void*)menu_disable_illegal, NULL);
     tickButton(disable_illegal_input_button, ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path()));
     menuId hotkey_menu = addMenuTo(input_menu, "Hotkeys", false);
     create_input_button_menu(hotkey_menu, "Main key", CONTROL_HOTKEY_BEGIN, CONTROL_HOTKEY_END, true);

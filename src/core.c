@@ -33,6 +33,9 @@ const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_ar
         if(force_core && !strcmp(cores[i].name, force_core)){
             return &cores[i];
         }
+    }
+
+    for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
         if(cores[i].detect(rom_archive, bios_archive)){
             printf("Detected core: %s\n", cores[i].name);
             return &cores[i];

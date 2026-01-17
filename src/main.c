@@ -28,11 +28,25 @@ void setup(){
     const char* rom_path;
     const char* bios_path;
     const char* force_core;
-    argument_get(&rom_path, &bios_path, &force_core);
+    int autorun = false;
+    argument_get(&rom_path, &bios_path, &force_core, &autorun);
 
     core_ctx_init(&emu_ctx, rom_path, bios_path, force_core);
 
     core_restart(&emu_ctx);
+
+    if(autorun){
+        fclose(stdout);
+        fclose(stderr);
+        if(emu_ctx.core){
+            sound_pause(true);
+            for(int i = 0; i < autorun; i++)
+                emu_ctx.core->run_frame(emu_ctx.emu);
+            menu_save_screenshot(&emu_ctx);
+        }
+        obentou_exit();
+        exit(EXIT_SUCCESS);
+    }
 
     setWindowSize(512, 512);
 }
