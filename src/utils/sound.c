@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define AUDIO_BUFFER_SIZE 8192
+#define AUDIO_BUFFER_SIZE (1 << 16)
 #define AUDIO_BUFFER_MASK (AUDIO_BUFFER_SIZE - 1)
 
 static SDL_AudioStream* audio_stream;
@@ -21,20 +21,18 @@ static SDL_AtomicInt rb_write;
 
 void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     if(isGrabbed()) {
-        if (additional_amount > 0)
-            SDL_PutAudioStreamData(stream, silence_buffer, additional_amount);
+        SDL_PutAudioStreamData(stream, silence_buffer, additional_amount);
         return;
     }
 
     if(audio_callback){
         audio_callback(userdata, stream, additional_amount, total_amount);
     } else {
-        int bytes_written = 0;
         int read_pos = SDL_GetAtomicInt(&rb_read);
         int write_pos = SDL_GetAtomicInt(&rb_write);
         int available = write_pos - read_pos;
-        // TODO: SILENCE SHOULD BE SENT IF AVAILABLE < ADDITIONAL_AMOUNT
-        if (available > 0) {
+
+        if (available > additional_amount) {
             int to_write = (available < total_amount) ? available : total_amount;
             
             int read_idx = read_pos & AUDIO_BUFFER_MASK;
@@ -48,12 +46,8 @@ void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amou
             }
             
             SDL_AddAtomicInt(&rb_read, to_write);
-            bytes_written = to_write;
-        }
-
-        if (bytes_written < additional_amount) {
-            int missing = additional_amount - bytes_written;
-            SDL_PutAudioStreamData(stream, silence_buffer, missing);
+        } else {
+            SDL_PutAudioStreamData(stream, silence_buffer, additional_amount);
         }
     }
 }
