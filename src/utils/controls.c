@@ -14,6 +14,7 @@
 
 #define ACTIVE_BUTTONS (end - begin + 1)
 #define HOTKEYS_COUNT (CONTROL_HOTKEY_END - CONTROL_HOTKEY_BEGIN + 1)
+#define MAX_PLAYERS 2
 
 static SDL_Scancode control_scancode_maps[CONTROL_COUNT];
 static SDL_GamepadButton control_gamepad_maps[CONTROL_COUNT];
@@ -31,10 +32,13 @@ static SDL_Gamepad* gamepad = NULL;
 static bool disable_illegal;
 static control_t dpad;
 
-#define DPAD_UP pressed[dpad+0 - begin]
-#define DPAD_DOWN pressed[dpad+1 - begin]
-#define DPAD_LEFT pressed[dpad+2 - begin]
-#define DPAD_RIGHT pressed[dpad+3 - begin]
+static int keyboard_player;
+static int gamepad_player;
+
+#define DPAD_UP(player) pressed[dpad+0 - begin + player * ACTIVE_BUTTONS]
+#define DPAD_DOWN(player) pressed[dpad+1 - begin + player * ACTIVE_BUTTONS]
+#define DPAD_LEFT(player) pressed[dpad+2 - begin + player * ACTIVE_BUTTONS]
+#define DPAD_RIGHT(player) pressed[dpad+3 - begin + player * ACTIVE_BUTTONS]
 
 #define DECLARE_CONTROL_NAME2(system, name) [ CONTROL_ ## system ## _ ## name ] = #name,
 #define DECLARE_CONTROL_NAME3(system, name, val) [ CONTROL_ ## system ## _ ## name ] = #name,
@@ -342,12 +346,15 @@ void controls_init(control_t begin_, control_t end_) {
     controls_free();
     begin = begin_;
     end = end_;
-    pressed = malloc(ACTIVE_BUTTONS * sizeof(bool));
-    prev_pressed = malloc(ACTIVE_BUTTONS * sizeof(bool));
-    memset(pressed, 0, ACTIVE_BUTTONS * sizeof(bool));
-    memset(prev_pressed, 0, ACTIVE_BUTTONS * sizeof(bool));
+    pressed = malloc(ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
+    prev_pressed = malloc(ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
+    memset(pressed, 0, ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
+    memset(prev_pressed, 0, ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
 
     disable_illegal = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
+
+    keyboard_player = ini_getl("GENERAL", "KEYBOARD_PLAYER", 0, argument_get_ini_path());
+    gamepad_player = ini_getl("GENERAL", "GAMEPAD_PLAYER", 0, argument_get_ini_path());
 
     dpad = CONTROL_NONE;
     for(int i = begin; i <= end; i++){
@@ -404,33 +411,40 @@ void controls_update(){
     if(!pressed || !prev_pressed)
         return;
     
-    memcpy(prev_pressed, pressed, ACTIVE_BUTTONS * sizeof(bool));
+    memcpy(prev_pressed, pressed, ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
 
     for(int i = begin; i <= end; i++){
-        pressed[i - begin] = keystate[control_scancode_maps[i]] || SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
+        int idx = i - begin;
+        for(int i = 0; i < MAX_PLAYERS; i++)
+            pressed[idx + ACTIVE_BUTTONS * i] = false;
+        pressed[ACTIVE_BUTTONS * keyboard_player + idx] |= keystate[control_scancode_maps[i]];
+        pressed[ACTIVE_BUTTONS * gamepad_player + idx] |= SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
     }
 
     if(disable_illegal && dpad){
-        bool dp[4] = { DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT };
-        DPAD_UP &= !(dp[0] && dp[1]);
-        DPAD_DOWN &= !(dp[0] && dp[1]);
-        DPAD_LEFT &= !(dp[2] && dp[3]);
-        DPAD_RIGHT &= !(dp[2] && dp[3]);
+        for(int i = 0; i < MAX_PLAYERS; i++){
+            bool dp[4] = { DPAD_UP(i), DPAD_DOWN(i), DPAD_LEFT(i), DPAD_RIGHT(i) };
+            DPAD_UP(i) &= !(dp[0] && dp[1]);
+            DPAD_DOWN(i) &= !(dp[0] && dp[1]);
+            DPAD_LEFT(i) &= !(dp[2] && dp[3]);
+            DPAD_RIGHT(i) &= !(dp[2] && dp[3]);
+        }
     }
 }
 
-bool controls_pressed(control_t control){
+bool controls_pressed(control_t control, int port){
     if(control == CONTROL_NONE)
         return false;
 
-    return pressed[control - begin];
+    return pressed[control - begin + ACTIVE_BUTTONS * port];
 }
 
-bool controls_released(control_t control){
+bool controls_released(control_t control, int port){
     if(control == CONTROL_NONE)
         return false;
 
-    return !pressed[control - begin] && prev_pressed[control - begin];
+    int idx = control - begin + ACTIVE_BUTTONS * port;
+    return !pressed[idx] && prev_pressed[idx];
 }
 
 bool hotkeys_pressed(control_t control){
@@ -478,4 +492,12 @@ bool controls_double_click(){
     }
 
     return out;
+}
+
+void controls_set_keyboard_player(int player){
+    keyboard_player = player;
+}
+
+void controls_set_gamepad_player(int player){
+    gamepad_player = player;
 }

@@ -20,7 +20,7 @@ u8 pce_controller_read(controller_t* c){
     
     u8 out = 0xF;
     for(int i = 0; i < 4; i++)
-        out &= ~(controls_pressed(buttons[c->taps][i]) << i);
+        out &= ~(controls_pressed(buttons[c->taps][i], 0) << i);
 
     return out;
 }

@@ -229,7 +229,7 @@ u8 tms80_get_keypad_a(tms80_t* tms80){
     u8 out = 0xFF;
 
     for(int i = 0; i < 8; i++)
-        if(controls_pressed(keypad_row_a[row][i]))
+        if(controls_pressed(keypad_row_a[row][i], 0))
             out &= ~(1 << i);
 
     return out;
@@ -240,14 +240,14 @@ u8 tms80_get_keypad_b(tms80_t* tms80){
     u8 out = 0xFF;
 
     for(int i = 0; i < 4; i++)
-        if(controls_pressed(keypad_row_b[row][i]))
+        if(controls_pressed(keypad_row_b[row][i], 0))
             out &= ~(1 << i);
 
     return out;
 }
 
 u8 tms80_gg_get_start_button(){
-    if(controls_pressed(CONTROL_TMS80_GG_START))
+    if(controls_pressed(CONTROL_TMS80_GG_START, 0))
         return 0x40;
 
     return 0xC0;
@@ -258,7 +258,7 @@ void TMS80_run_frame(tms80_t* tms80){
     vdp_t* vdp = &tms80->vdp;
     sn76489_t* apu = &tms80->apu;
 
-    if(tms80->type != GG && controls_released(CONTROL_TMS80_PAUSE))
+    if(tms80->type != GG && controls_released(CONTROL_TMS80_PAUSE, 0))
         z80_nmi(z80);
 
     while(z80->cycles < tms80->cycles_per_frame){

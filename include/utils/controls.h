@@ -178,8 +178,8 @@ void controls_update();
 void controls_free();
 void controls_load_maps();
 void controls_save_maps();
-bool controls_pressed(control_t input);
-bool controls_released(control_t input);
+bool controls_pressed(control_t input, int port);
+bool controls_released(control_t input, int port);
 bool hotkeys_pressed(control_t input);
 bool hotkeys_released(control_t input);
 bool controls_double_click();
@@ -191,5 +191,6 @@ const char* controls_get_gamepad_name(control_t input);
 void controls_set_scancode(control_t control, const char* new_scancode_name);
 void controls_set_gamepad(control_t control, const char* new_gamepad_name);
 void controls_disable_illegal_input(bool disable);
-
+void controls_set_keyboard_player(int player);
+void controls_set_gamepad_player(int player);
 #endif

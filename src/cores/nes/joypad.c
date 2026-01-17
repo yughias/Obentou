@@ -28,6 +28,6 @@ void nes_joypad_write(joypad_t* joypad, u8 byte){
     joypad->strobe = byte & 1;
     if(joypad->strobe){
         for(int i = 0; i < 8; i++)
-            joypad->controller_1_shifter |= controls_pressed(maps[i]) << i;
+            joypad->controller_1_shifter |= controls_pressed(maps[i], 0) << i;
     }
 }

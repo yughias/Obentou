@@ -22,6 +22,10 @@ static buttonId fullscreen_button;
 static buttonId default_bios_button;
 static buttonId disable_illegal_input_button;
 static buttonId autosave_button;
+static buttonId keyboard_player_select_button[2];
+static buttonId gamepad_player_select_button[2];
+static int keyboard_player_select_id[2] = {0, 1};
+static int gamepad_player_select_id[2] = {0, 1};
 static ctx_args_t speed_args[4];
 static ctx_args_t load_recent_args[10];
 static ctx_args_t slot_args[5];
@@ -50,6 +54,18 @@ void menu_save_screenshot(core_ctx_t* ctx)
     snprintf(path, sizeof(path), "%s_%s_%u.bmp", base, datetime, frameCount);
 
     SDL_SaveBMP(getMainWindowSurface(), path);
+}
+
+static void set_keyboard_player(int* id_ptr){
+    int id = *id_ptr;
+    ini_putl("GENERAL", "KEYBOARD_PLAYER", id, argument_get_ini_path());
+    controls_set_keyboard_player(id);
+}
+
+static void set_gamepad_player(int* id_ptr){
+    int id = *id_ptr;
+    ini_putl("GENERAL", "GAMEPAD_PLAYER", id, argument_get_ini_path());
+    controls_set_gamepad_player(id);
 }
 
 static void menu_disable_illegal(){
@@ -348,6 +364,16 @@ void menu_create(core_ctx_t* ctx){
     menuId input_menu = addMenuTo(-1, "Input", false);
     disable_illegal_input_button = addButtonTo(input_menu, "Disable illegal input", (void*)menu_disable_illegal, NULL);
     tickButton(disable_illegal_input_button, ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path()));
+    menuId peripherals_menu = addMenuTo(input_menu, "Peripherals", false);
+    menuId keyboard_menu = addMenuTo(peripherals_menu, "Keyboard", true);
+    menuId gamepad_menu = addMenuTo(peripherals_menu, "Gamepad", true);
+    for(int i = 0; i < 2; i++){
+        char name[2] = {'1' + i, 0};
+        keyboard_player_select_button[i] = addButtonTo(keyboard_menu, name, (void*)set_keyboard_player, &keyboard_player_select_id[i]);
+        gamepad_player_select_button[i] = addButtonTo(gamepad_menu, name, (void*)set_gamepad_player, &gamepad_player_select_id[i]);
+    }
+    checkRadioButton(keyboard_player_select_button[ini_getl("GENERAL", "KEYBOARD_PLAYER", 0, argument_get_ini_path())]);
+    checkRadioButton(gamepad_player_select_button[ini_getl("GENERAL", "GAMEPAD_PLAYER", 0, argument_get_ini_path())]);
     menuId hotkey_menu = addMenuTo(input_menu, "Hotkeys", false);
     create_input_button_menu(hotkey_menu, "Main key", CONTROL_HOTKEY_BEGIN, CONTROL_HOTKEY_END, true);
     create_input_button_menu(hotkey_menu, "Secondary key", CONTROL_HOTKEY_CMD_BEGIN, CONTROL_HOTKEY_CMD_END, false);

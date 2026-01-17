@@ -22,7 +22,7 @@ static void update_keys(bytepusher_t* bp){
 
     for(int i = 0; i < 16; i++){
         control_t btn = CONTROL_BYTEPUSHER_0 + i;
-        bool pressed = controls_pressed(btn);
+        bool pressed = controls_pressed(btn, 0);
         memory[i < 8] |= pressed << (i & 7);
     }
 }

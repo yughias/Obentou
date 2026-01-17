@@ -288,7 +288,7 @@ static u8 watara_get_controller(){
 
     u8 out = 0xFF;
     for(int i = 0; i < 8; i++)
-        out &= ~(controls_pressed(controls[i]) << i);
+        out &= ~(controls_pressed(controls[i], 0) << i);
 
     return out;
 }

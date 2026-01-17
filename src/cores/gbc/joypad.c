@@ -15,10 +15,10 @@ static void emulateJoypad(joypad_t* joy){
     u8 new_action_btn = 0x0F;
 
     for(int i = 0; i < 4; i++){
-        if(controls_pressed(controls[i]))
+        if(controls_pressed(controls[i], 0))
             new_action_btn &= ~(1 << i);
 
-        if(controls_pressed(controls[i + 4]))
+        if(controls_pressed(controls[i + 4], 0))
             new_arrow_btn &= ~(1 << i);
     }
 
