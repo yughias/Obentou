@@ -3,6 +3,9 @@
 
 #include "types.h"
 
+#define MAX_PLAYERS 2
+#define MAX_GAMEPADS 4
+
 #define CONTROLS_ENUM(XY) \
     XY(HOTKEY, PAUSE, BEGIN) \
     XY(HOTKEY, TURBO) \
@@ -192,5 +195,8 @@ void controls_set_scancode(control_t control, const char* new_scancode_name);
 void controls_set_gamepad(control_t control, const char* new_gamepad_name);
 void controls_disable_illegal_input(bool disable);
 void controls_set_keyboard_player(int player);
-void controls_set_gamepad_player(int player);
+void controls_set_gamepad_player(int gamepad_idx, int player);
+void controls_get_gamepad_info(int index, char* name, int len, int* id);
+int controls_get_gamepad_player(int gamepad_idx);
+bool controls_gamepad_search();
 #endif

@@ -52,6 +52,8 @@ void setup(){
 }
 
 void loop(){
+    if(controls_gamepad_search())
+        menu_create(&emu_ctx);
     controls_update();
     camera_update();
 

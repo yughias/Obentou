@@ -192,7 +192,8 @@ static void vdc_event_start_line(vdc_t* v){
         }
     }
 
-    if(v->frame_counter == get_end_render_line(v) + 3){
+    // FIX THE + dma period
+    if(v->frame_counter == get_end_render_line(v) + 2){
         if(v->satb_dma){
             if(!(v->regs[DCR] & (1 << 4)))
                 v->satb_dma = false;

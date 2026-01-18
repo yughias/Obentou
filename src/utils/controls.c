@@ -14,7 +14,6 @@
 
 #define ACTIVE_BUTTONS (end - begin + 1)
 #define HOTKEYS_COUNT (CONTROL_HOTKEY_END - CONTROL_HOTKEY_BEGIN + 1)
-#define MAX_PLAYERS 2
 
 static SDL_Scancode control_scancode_maps[CONTROL_COUNT];
 static SDL_GamepadButton control_gamepad_maps[CONTROL_COUNT];
@@ -27,13 +26,13 @@ static bool* prev_pressed;
 static bool hotkeys_pressed_arr[HOTKEYS_COUNT];
 static bool hotkeys_prev_pressed_arr[HOTKEYS_COUNT];
 
-static SDL_Gamepad* gamepad = NULL;
+static SDL_Gamepad* gamepads[MAX_GAMEPADS];
 
 static bool disable_illegal;
 static control_t dpad;
 
 static int keyboard_player;
-static int gamepad_player;
+static int gamepad_players[MAX_GAMEPADS];
 
 #define DPAD_UP(player) pressed[dpad+0 - begin + player * ACTIVE_BUTTONS]
 #define DPAD_DOWN(player) pressed[dpad+1 - begin + player * ACTIVE_BUTTONS]
@@ -350,11 +349,17 @@ void controls_init(control_t begin_, control_t end_) {
     prev_pressed = malloc(ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
     memset(pressed, 0, ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
     memset(prev_pressed, 0, ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
+    memset(gamepads, 0, MAX_GAMEPADS * sizeof(SDL_Gamepad*));
 
     disable_illegal = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
 
     keyboard_player = ini_getl("GENERAL", "KEYBOARD_PLAYER", 0, argument_get_ini_path());
-    gamepad_player = ini_getl("GENERAL", "GAMEPAD_PLAYER", 0, argument_get_ini_path());
+
+    for(int i = 0; i < MAX_GAMEPADS; i++){
+        char key[32];
+        sprintf(key, "GAMEPAD_%d_PLAYER", i);
+        gamepad_players[i] = ini_getl("GENERAL", key, 0, argument_get_ini_path());
+    }
 
     dpad = CONTROL_NONE;
     for(int i = begin; i <= end; i++){
@@ -374,25 +379,59 @@ void controls_free(){
     free(pressed);
     free(prev_pressed);
 
-    if(gamepad){
-        SDL_CloseGamepad(gamepad);
+    for(int i = 0; i < MAX_GAMEPADS; i++){
+        if(gamepads[i]){
+            SDL_CloseGamepad(gamepads[i]);
+            gamepads[i] = NULL;
+        }
     }
 }
 
-void controls_update(){
-    if(!gamepad){
-        int num_gamepads;
-        SDL_JoystickID* gamepads = SDL_GetGamepads(&num_gamepads);
-        if(num_gamepads){
-            gamepad = SDL_OpenGamepad(gamepads[0]);
-            SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, true);
-            printf("opened %p %s\n", gamepad, SDL_GetGamepadName(gamepad));
+static bool is_gamepad_opened(SDL_JoystickID id) {
+    for (int i = 0; i < MAX_GAMEPADS; i++) {
+        if (gamepads[i] && SDL_GetGamepadID(gamepads[i]) == id) {
+            return true;
         }
-    } else if(!SDL_GamepadConnected(gamepad)){
-        gamepad = NULL;
-        printf("closed %p\n", gamepad);
+    }
+    return false;
+}
+
+bool controls_gamepad_search() {
+    int num_joysticks = 0;
+    SDL_JoystickID* joystick_ids = SDL_GetGamepads(&num_joysticks);
+    bool changed = false;
+
+    for(int i = 0; i < MAX_GAMEPADS; i++){
+        if(gamepads[i] && !SDL_GamepadConnected(gamepads[i])){
+            printf("closed %p %s\n", gamepads[i], SDL_GetGamepadName(gamepads[i]));
+            SDL_CloseGamepad(gamepads[i]);
+            gamepads[i] = NULL;
+            changed = true;
+        }
     }
 
+    if (joystick_ids) {
+        for (int j = 0; j < num_joysticks; j++) {
+            if (is_gamepad_opened(joystick_ids[j]))
+                continue;
+
+            for (int i = 0; i < MAX_GAMEPADS; i++) {
+                if (!gamepads[i]) {
+                    gamepads[i] = SDL_OpenGamepad(joystick_ids[j]);
+                    SDL_SetGamepadSensorEnabled(gamepads[i], SDL_SENSOR_ACCEL, true);
+                    printf("opened slot %d: %p %s\n", i, gamepads[i], SDL_GetGamepadName(gamepads[i]));
+                    changed = true;
+                    break;
+                }
+            }
+        }
+        SDL_free(joystick_ids);
+    }
+
+    return changed;
+}
+
+void controls_update(){
     const bool* keystate = SDL_GetKeyboardState(NULL);
 
     memcpy(hotkeys_prev_pressed_arr, hotkeys_pressed_arr, HOTKEYS_COUNT * sizeof(bool));
@@ -402,7 +441,13 @@ void controls_update(){
         int hotkey_idx = CONTROL_HOTKEY_BEGIN + i;
         bool active = keystate[control_scancode_maps[cmd_idx]] || (control_scancode_maps[cmd_idx] == SDL_SCANCODE_UNKNOWN);
         bool key = keystate[control_scancode_maps[hotkey_idx]];
-        bool gamepad_btn = SDL_GetGamepadButton(gamepad, control_gamepad_maps[hotkey_idx]);
+        bool gamepad_btn = false;
+        for(int g = 0; g < MAX_GAMEPADS; g++){
+            if(gamepads[g] && SDL_GetGamepadButton(gamepads[g], control_gamepad_maps[hotkey_idx])){
+                gamepad_btn = true;
+                break;
+            }
+        }
         bool hit = (active && key) || gamepad_btn;
         hotkeys_pressed_arr[i] = hit;
     }
@@ -417,8 +462,13 @@ void controls_update(){
         int idx = i - begin;
         for(int j = 0; j < MAX_PLAYERS; j++)
             pressed[idx + ACTIVE_BUTTONS * j] = false;
+        
         pressed[ACTIVE_BUTTONS * keyboard_player + idx] |= keystate[control_scancode_maps[i]];
-        pressed[ACTIVE_BUTTONS * gamepad_player + idx] |= SDL_GetGamepadButton(gamepad, control_gamepad_maps[i]);
+
+        for(int k = 0; k < MAX_GAMEPADS; k++){
+            if(gamepads[k])
+                pressed[ACTIVE_BUTTONS * gamepad_players[k] + idx] |= SDL_GetGamepadButton(gamepads[k], control_gamepad_maps[i]);
+        }
     }
 
     if(disable_illegal && dpad){
@@ -456,18 +506,41 @@ bool hotkeys_released(control_t control){
 }
 
 bool controls_gamepad_connected(){
-    return gamepad;
+    for(int i = 0; i < MAX_GAMEPADS; i++)
+        if(gamepads[i])
+            return true;
+    return false;
 }
 
 bool controls_rumble(u16 low, u16 hi, u32 duration){
-    return SDL_RumbleGamepad(gamepad, low, hi, duration);
+    bool ret = false;
+    for(int i = 0; i < MAX_GAMEPADS; i++){
+        if(gamepads[i] && SDL_RumbleGamepad(gamepads[i], low, hi, duration))
+            ret = true;
+    }
+    return ret;
 }
 
 void controls_get_gamepad_accelerometer(float* sensors){
     sensors[0] = 0.0f;
     sensors[1] = 0.0f;
     sensors[2] = 0.0f;
-    SDL_GetGamepadSensorData(gamepad, SDL_SENSOR_ACCEL, sensors, 3);
+    for(int i = 0; i < MAX_GAMEPADS; i++){
+        if(gamepads[i]){
+            SDL_GetGamepadSensorData(gamepads[i], SDL_SENSOR_ACCEL, sensors, 3);
+            return;
+        }
+    }
+}
+
+void controls_get_gamepad_info(int index, char* name, int len, int* id) {
+    if (!gamepads[index]) {
+        snprintf(name, len, "Empty Slot");
+        *id = -1;
+        return;
+    }
+    strncpy(name, SDL_GetGamepadName(gamepads[index]), len);
+    *id = SDL_GetGamepadID(gamepads[index]);
 }
 
 bool controls_double_click(){
@@ -498,6 +571,10 @@ void controls_set_keyboard_player(int player){
     keyboard_player = player;
 }
 
-void controls_set_gamepad_player(int player){
-    gamepad_player = player;
+void controls_set_gamepad_player(int gamepad_idx, int player){
+    gamepad_players[gamepad_idx] = player;
+}
+
+int controls_get_gamepad_player(int gamepad_idx){
+    return gamepad_players[gamepad_idx];
 }

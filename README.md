@@ -47,6 +47,5 @@ At the moment the supported cores are:
 
 ## Next features
 
-- [ ] Disable illegal input combinations
-- [ ] Multiple controllers support
 - [ ] Netplay
+- [ ] Correct Timing on PCE

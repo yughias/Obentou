@@ -2,6 +2,7 @@
 #include "utils/sound.h"
 #include "utils/argument.h"
 #include "utils/state.h"
+#include "utils/controls.h"
 
 #include "core.h"
 
@@ -23,9 +24,15 @@ static buttonId default_bios_button;
 static buttonId disable_illegal_input_button;
 static buttonId autosave_button;
 static buttonId keyboard_player_select_button[2];
-static buttonId gamepad_player_select_button[2];
+
+typedef struct {
+    int gamepad_idx;
+    int player_idx;
+} gamepad_assign_t;
+
+static gamepad_assign_t gamepad_assign_args[MAX_GAMEPADS][2];
 static int keyboard_player_select_id[2] = {0, 1};
-static int gamepad_player_select_id[2] = {0, 1};
+
 static ctx_args_t speed_args[4];
 static ctx_args_t load_recent_args[10];
 static ctx_args_t slot_args[5];
@@ -62,10 +69,12 @@ static void set_keyboard_player(int* id_ptr){
     controls_set_keyboard_player(id);
 }
 
-static void set_gamepad_player(int* id_ptr){
-    int id = *id_ptr;
-    ini_putl("GENERAL", "GAMEPAD_PLAYER", id, argument_get_ini_path());
-    controls_set_gamepad_player(id);
+static void set_gamepad_player(gamepad_assign_t* args){
+    controls_set_gamepad_player(args->gamepad_idx, args->player_idx);
+    
+    char key[32];
+    sprintf(key, "GAMEPAD_%d_PLAYER", args->gamepad_idx);
+    ini_putl("GENERAL", key, args->player_idx, argument_get_ini_path());
 }
 
 static void menu_disable_illegal(){
@@ -278,6 +287,13 @@ void menu_create(core_ctx_t* ctx){
 
     char* label = malloc(1024);
 
+    for(int g = 0; g < MAX_GAMEPADS; g++){
+        for(int p = 0; p < 2; p++){
+            gamepad_assign_args[g][p].gamepad_idx = g;
+            gamepad_assign_args[g][p].player_idx = p;
+        }
+    }
+
     for(int i = 0; i < 4; i++){
         speed_args[i].ctx = ctx;
         speed_args[i].value = i;
@@ -366,14 +382,34 @@ void menu_create(core_ctx_t* ctx){
     tickButton(disable_illegal_input_button, ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path()));
     menuId peripherals_menu = addMenuTo(input_menu, "Peripherals", false);
     menuId keyboard_menu = addMenuTo(peripherals_menu, "Keyboard", true);
-    menuId gamepad_menu = addMenuTo(peripherals_menu, "Gamepad", true);
     for(int i = 0; i < 2; i++){
         char name[2] = {'1' + i, 0};
         keyboard_player_select_button[i] = addButtonTo(keyboard_menu, name, (void*)set_keyboard_player, &keyboard_player_select_id[i]);
-        gamepad_player_select_button[i] = addButtonTo(gamepad_menu, name, (void*)set_gamepad_player, &gamepad_player_select_id[i]);
     }
     checkRadioButton(keyboard_player_select_button[ini_getl("GENERAL", "KEYBOARD_PLAYER", 0, argument_get_ini_path())]);
-    checkRadioButton(gamepad_player_select_button[ini_getl("GENERAL", "GAMEPAD_PLAYER", 0, argument_get_ini_path())]);
+    
+    for(int i = 0; i < MAX_GAMEPADS; i++) {
+        char pad_name[64];
+        int pad_id;
+        controls_get_gamepad_info(i, pad_name, 64, &pad_id);
+
+        if(pad_id == -1)
+            continue;
+
+        char menu_name[128];
+        snprintf(menu_name, sizeof(menu_name), "%d: %s", i, pad_name);
+        menuId gp_menu = addMenuTo(peripherals_menu, menu_name, true);
+
+        buttonId p_btns[2];
+        for(int p = 0; p < MAX_PLAYERS; p++) {
+            char p_name[2] = {'1' + p, 0};
+            p_btns[p] = addButtonTo(gp_menu, p_name, (void*)set_gamepad_player, &gamepad_assign_args[i][p]);
+        }
+
+        int current_player = controls_get_gamepad_player(i);
+        checkRadioButton(p_btns[current_player]);
+    }
+
     menuId hotkey_menu = addMenuTo(input_menu, "Hotkeys", false);
     create_input_button_menu(hotkey_menu, "Main key", CONTROL_HOTKEY_BEGIN, CONTROL_HOTKEY_END, true);
     create_input_button_menu(hotkey_menu, "Secondary key", CONTROL_HOTKEY_CMD_BEGIN, CONTROL_HOTKEY_CMD_END, false);
