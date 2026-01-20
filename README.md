@@ -37,6 +37,25 @@ At the moment the supported cores are:
 | ![](imgs/7.bmp) | ![](imgs/8.bmp) | ![](imgs/9.bmp) | 
 | ![](imgs/10.bmp) | ![](imgs/11.bmp) | ![](imgs/12.bmp) | 
 
+## Build Instructions
+
+### Prerequisites
+
+- Windows OS
+- MinGW-w64 installed
+- A Bash-like shell (e.g., Git Bash)
+
+### Build Steps
+
+1. Clone the repository.
+2. Run the following commands:
+    ```bash
+    mingw32-make
+    ```
+
+After a successful build, an executable named ``obentou.exe`` will be generated.
+
+
 ## Cores that will be supported on the future
 
 - [ ] ZX-Spectrum 48k
