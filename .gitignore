@@ -15,3 +15,8 @@
 !LICENSE
 !imgs/
 !README.md
+
+!website/
+website/*.data
+website/*.wasm
+website/*.js

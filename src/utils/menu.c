@@ -77,7 +77,7 @@ static void set_gamepad_player(gamepad_assign_t* args){
     ini_putl("GENERAL", key, args->player_idx, argument_get_ini_path());
 }
 
-static void menu_disable_illegal(){
+static void menu_disable_illegal(void* dummy){
     bool val = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
     val ^= 1;
     ini_putbool("GENERAL", "DISABLE_ILLEGAL_INPUT", val, argument_get_ini_path());
@@ -85,7 +85,7 @@ static void menu_disable_illegal(){
     controls_disable_illegal_input(val);
 }
 
-static void menu_info(){
+static void menu_info(void* dummy){
     static const char* title = "Obentou";
     static const char* description = 
         "Made by yughias\n"
@@ -96,7 +96,7 @@ static void menu_info(){
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, title, description, getMainWindow());
 }
 
-static void menu_switch_autosave(){
+static void menu_switch_autosave(void* dummy){
     state_switch_autosave();
     tickButton(autosave_button, state_get_autosave());
 }

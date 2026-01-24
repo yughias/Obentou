@@ -108,6 +108,7 @@ void core_restart(core_ctx_t* ctx){
     menu_create(ctx);
 
     if(!core){
+        sound_open(NULL, NULL, NULL);
         ctx->emu = NULL;
         size(1, 1);
         frameRate(60);

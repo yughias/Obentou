@@ -57,6 +57,7 @@ misrepresented as being the original software.
     |__________________________________________|
 */
 
+#ifndef __EMSCRIPTEN__
 
 #if defined(__GNUC__) || defined(__clang__)
 #ifndef _GNU_SOURCE
@@ -8398,4 +8399,115 @@ tinyfd_messageBox("The selected hexcolor is",
 #pragma warning(default:4996)
 #pragma warning(default:4100)
 #pragma warning(default:4706)
+#endif
+
+#else
+
+#include <emscripten.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+#define BUFFER_SIZE 1024
+static char string_buffer[BUFFER_SIZE];
+
+EM_ASYNC_JS(char*, get_file_from_browser, (int allowMultiple), {
+    return new Promise((resolve, reject) => {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.style.display = 'none';
+        input.multiple = allowMultiple;
+
+        input.onchange = async function(e) {
+            var files = e.target.files;
+            if (files.length === 0) {
+                resolve(0);
+                return;
+            }
+
+            var file = files[0];
+            var arrayBuffer = await file.arrayBuffer();
+            var uint8Arr = new Uint8Array(arrayBuffer);
+
+            var vfs_name = '/' + file.name;
+            FS.writeFile(vfs_name, uint8Arr);
+
+            var lengthBytes = lengthBytesUTF8(vfs_name) + 1;
+            var stringOnWasmHeap = _malloc(lengthBytes);
+            stringToUTF8(vfs_name, stringOnWasmHeap, lengthBytes);
+
+            resolve(stringOnWasmHeap);
+            
+            document.body.removeChild(input);
+        };
+
+        input.oncancel = function() {
+            resolve(0);
+            document.body.removeChild(input);
+        };
+
+        document.body.appendChild(input);
+        input.click();
+    });
+});
+
+char *tinyfd_openFileDialog(const char *aTitle,
+                            const char *aDefaultPathAndOrFile,
+                            int aNumOfFilterPatterns,
+                            const char * const *aFilterPatterns,
+                            const char *aSingleFilterDescription,
+                            int aAllowMultipleSelects) {
+
+    char *wasm_heap_filename = get_file_from_browser(aAllowMultipleSelects);
+
+    if (!wasm_heap_filename) {
+        return NULL;
+    }
+
+    printf("Selected: %s\n", wasm_heap_filename);
+
+	strncpy(string_buffer, wasm_heap_filename, BUFFER_SIZE - 1);
+	string_buffer[BUFFER_SIZE - 1] = '\0';
+    free(wasm_heap_filename);
+
+    return string_buffer;
+}
+
+EM_JS(char*, js_prompt, (const char* title, const char* message, const char* def), {
+    var t = title ? UTF8ToString(title) : "";
+    var m = message ? UTF8ToString(message) : "";
+    var d = def ? UTF8ToString(def) : "";
+
+    var text = t ? (t + "\n\n" + m) : m;
+    var result = prompt(text, d);
+
+    if (result === null) {
+        return 0;
+    }
+
+    var len = lengthBytesUTF8(result) + 1;
+    var buf = _malloc(len);
+    stringToUTF8(result, buf, len);
+    return buf;
+});
+
+char * tinyfd_inputBox(
+    char const * aTitle,
+    char const * aMessage,
+    char const * aDefaultInput)
+{
+    const char *def = aDefaultInput ? aDefaultInput : "";
+
+    char *wasm_heap_input = js_prompt(aTitle, aMessage, def);
+    if (!wasm_heap_input) {
+        return NULL;
+    }
+
+	strncpy(string_buffer, wasm_heap_input, BUFFER_SIZE - 1);
+	string_buffer[BUFFER_SIZE - 1] = '\0';
+    free(wasm_heap_input);
+
+    return string_buffer;
+}
+
 #endif

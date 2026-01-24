@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "cores/gbc/memory_table.h"
+#include "cores/gbc/mbcs/mbc_cam.h"
 
 void GBC_run_frame(gb_t* gb){
     sm83_t* cpu = &gb->cpu;
@@ -92,9 +93,12 @@ bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive){
 
 void GBC_close(gb_t* gb, const char* sav_path){
     gb_saveSav(gb, sav_path);
-    free(gb->mbc.data);
     if(gb->noCart)
         free(gb->ROM);
+    if(gb->mbc.hasCamera)
+        gb_mbc_cam_free(gb);
+    else
+        free(gb->mbc.data);
 }
 
 byte_vec_t GBC_savestate(gb_t* gb){

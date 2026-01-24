@@ -1,0 +1,115 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    background: #FFF;
+}
+
+div#sdl-menu-bar {
+    position: relative;
+    width: 100%;
+    height: 26px;
+    background: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    z-index: 99999;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    user-select: none;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+canvas {
+    flex-grow: 1 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+    object-fit: contain;
+    outline: none;
+    image-rendering: pixelated;
+}
+
+.sdl-menu-item {
+    padding: 0 10px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    color: #000;
+    white-space: nowrap;
+    flex-grow: 0 !important;
+    width: auto !important;
+}
+
+.sdl-menu-item:hover {
+    background: #d0d0d0;
+}
+
+.sdl-dropdown {
+    display: none;
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    min-width: 150px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    flex-direction: column;
+    z-index: 100000;
+}
+
+div#sdl-menu-bar>.sdl-menu-item>.sdl-dropdown {
+    top: 100%;
+    left: 0;
+}
+
+.sdl-dropdown .sdl-menu-item .sdl-dropdown {
+    top: 0;
+    left: 100%;
+    margin-left: -1px;
+}
+
+.sdl-menu-item:hover>.sdl-dropdown {
+    display: flex;
+}
+
+/* Buttons */
+.sdl-menu-btn {
+    padding: 6px 15px;
+    text-align: left;
+    background: none;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    color: #000;
+    font-family: inherit;
+    display: block;
+}
+
+.sdl-menu-btn:hover {
+    background: #4a90e2;
+    color: white;
+}
+
+.sdl-menu-btn:disabled {
+    color: #aaa;
+    cursor: default;
+}
+
+.submenu-arrow::after {
+    content: '▸';
+    float: right;
+    margin-left: 10px;
+}

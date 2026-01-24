@@ -5,6 +5,9 @@
 
 #include "argparse.h"
 
+#ifdef __EMSCRIPTEN__
+#define _fullpath(dest, base, maxlen) SDL_strlcpy(dest, base, maxlen)
+#endif
 
 static const char *const usages[] = {
     "obentou.exe <rom path> [options]",
