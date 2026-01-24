@@ -3,18 +3,25 @@ OBJ := $(patsubst %.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
 CC := gcc
-CFLAGS_COMMON := -Iinclude -Iext/include -O3 -flto=8
+CFLAGS_COMMON := -Iinclude -Iext/include -O3
 DEBUG_FLAGS := -pg -no-pie
 
 ifeq ($(OS),Windows_NT)
     EXE := obentou.exe
     LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
-    PLATFORM_CFLAGS := -mwindows
+    PLATFORM_CFLAGS := -flto=8 -Wall -Wno-unused-function -Werror  -mwindows
     RES_OBJ := app.res
+
+else ifeq ($(shell uname -s),Darwin)
+    EXE := obentou
+    LIBS := $(shell pkg-config --static --libs sdl3) -lm -liconv -lobjc
+    PLATFORM_CFLAGS := -flto=thin $(shell pkg-config --cflags sdl3) -arch arm64
+	CFLAGS_COMMON := -Iinclude -Iext/include -O3
+    RES_OBJ :=
 else
     EXE := obentou
-	LIBS := $(shell pkg-config --static --libs sdl3) -lGL -lm
-    PLATFORM_CFLAGS := $(shell pkg-config --cflags sdl3)
+    LIBS := $(shell pkg-config --static --libs sdl3) -lGL -lm
+    PLATFORM_CFLAGS := -flto=8 $(shell pkg-config --cflags sdl3)
     RES_OBJ :=
 endif
 
