@@ -44,8 +44,10 @@ MAPPER_CPU_READ(1,
     switch(mode){
         case 0b00:
         case 0b01:
-        u8 bank = mmc1->prg & 0x1E;
-        prg_addr = addr - 0x8000 + (bank << 14);
+        {
+            u8 bank = mmc1->prg & 0x1E;
+            prg_addr = addr - 0x8000 + (bank << 14);
+        }
         break;
 
         case 0b10:

@@ -7,6 +7,10 @@
 
 #ifdef __EMSCRIPTEN__
 #define _fullpath(dest, base, maxlen) SDL_strlcpy(dest, base, maxlen)
+#elif defined(__linux__) || defined(__unix__)
+    char *_fullpath(char *target, const char *path, size_t size) {
+        return realpath(path, target);
+    }
 #endif
 
 static const char *const usages[] = {

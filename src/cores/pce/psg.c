@@ -42,12 +42,14 @@ void pce_psg_write(psg_t* psg, u8 offset, u8 value){
         break;
 
         case PSG_SOUND_DATA:
-        bool dda = (psg->ch[psg->selector].ctrl >> 6) & 0b01;
-        if(dda)
-            psg->ch[psg->selector].dac = value & 0x1F;
-        else {
-            psg->ch[psg->selector].data[psg->ch[psg->selector].idx] = value & 0x1F;
-            psg->ch[psg->selector].idx = (psg->ch[psg->selector].idx + 1) & 0x1F;
+        {
+            bool dda = (psg->ch[psg->selector].ctrl >> 6) & 0b01;
+            if(dda)
+                psg->ch[psg->selector].dac = value & 0x1F;
+            else {
+                psg->ch[psg->selector].data[psg->ch[psg->selector].idx] = value & 0x1F;
+                psg->ch[psg->selector].idx = (psg->ch[psg->selector].idx + 1) & 0x1F;
+            }
         }
         break;
 

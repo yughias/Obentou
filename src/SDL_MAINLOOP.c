@@ -425,12 +425,14 @@ void mainloop(){
             break;
 
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            Uint32 id = event.window.windowID;
-            SDL_Window* target_win = SDL_GetWindowFromID(id);
-            if(target_win == window)
-                running = 0;
-            else
-                SDL_DestroyWindow(target_win);
+            {
+                Uint32 id = event.window.windowID;
+                SDL_Window* target_win = SDL_GetWindowFromID(id);
+                if(target_win == window)
+                    running = 0;
+                else
+                    SDL_DestroyWindow(target_win);
+            }
             break;
 
             case SDL_EVENT_KEY_DOWN:
@@ -637,6 +639,7 @@ void createMainMenu(){
 }
 #endif
 
+#if defined(_WIN32) || defined(__EMSCRIPTEN__)
 menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
     #ifdef _WIN32
         menu_rendered = false;
@@ -787,3 +790,4 @@ void setButtonTitle(buttonId button_id, const char* string){
         js_set_button_title(button_id, string);
     #endif
 }
+#endif

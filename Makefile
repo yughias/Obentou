@@ -2,20 +2,31 @@ SRC := $(shell find src ext -name '*.c')
 OBJ := $(patsubst %.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
-
 CC := gcc
-EXE := obentou.exe
-CFLAGS := -Iinclude -Iext/include -O3 -flto=8 -Wall -Wno-unused-function -Werror -mwindows
+CFLAGS_COMMON := -Iinclude -Iext/include -O3 -flto=8
 DEBUG_FLAGS := -pg -no-pie
-LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
+
+ifeq ($(OS),Windows_NT)
+    EXE := obentou.exe
+    LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
+    PLATFORM_CFLAGS := -mwindows
+    RES_OBJ := app.res
+else
+    EXE := obentou
+	LIBS := $(shell pkg-config --static --libs sdl3) -lGL -lm
+    PLATFORM_CFLAGS := $(shell pkg-config --cflags sdl3)
+    RES_OBJ :=
+endif
+
+CFLAGS := $(CFLAGS_COMMON) $(PLATFORM_CFLAGS)
 
 all: $(EXE) config.ini
 
 config.ini: base_config.ini
 	cp base_config.ini config.ini
 
-$(EXE): $(OBJ) app.res
-	$(CC) $(OBJ) app.res $(CFLAGS) $(LIBS) -o $(EXE)
+$(EXE): $(OBJ) $(RES_OBJ)
+	$(CC) $(OBJ) $(RES_OBJ) $(CFLAGS) $(LIBS) -o $(EXE)
 
 obj/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -41,7 +52,7 @@ emcc:
 	-o website/obentou.js
 
 clean:
-	rm -rf obj $(EXE) app.res config.ini
+	rm -rf obj obentou obentou.exe app.res config.ini
 
 loc:
 	find src -name \*.c | xargs wc -l
