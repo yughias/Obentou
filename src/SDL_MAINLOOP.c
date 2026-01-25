@@ -50,14 +50,14 @@ void updateMenuVect(void* new_menu_handle, bool isRadio) {
 
 void checkRadioButton(buttonId button_id);
 
-#ifdef __EMSCRIPTEN__
+static int last_element_clicked = -1;
 
-static int last_clicked = -1;
+#ifdef __EMSCRIPTEN__
 
 EMSCRIPTEN_KEEPALIVE
 void emscripten_handle_click(int buttonId) {
     printf("C-Side: Received click for button ID %d\n", buttonId);
-    last_clicked = buttonId;
+    last_element_clicked = buttonId;
 }
 
 EM_JS(void, js_init_menu_dom, (), {
@@ -357,9 +357,7 @@ void mainloop(){
         if(msg.message == WM_COMMAND){
             unsigned int button_id = LOWORD(msg.wParam); 
             if(button_id < n_button){
-                checkRadioButton(button_id);
-                if(buttons[button_id].callback)
-                    (*buttons[button_id].callback)(buttons[button_id].arg);
+                last_element_clicked = button_id;
             }
         }
 
@@ -367,23 +365,18 @@ void mainloop(){
         DispatchMessage(&msg);
     }
     #endif
-    #ifdef __EMSCRIPTEN__
-    if (last_clicked >= 0 && last_clicked < n_button) {
-        // Handle Radio Logic logic
-        menuId parentId = buttons[last_clicked].parent_menu;
+    if (last_element_clicked >= 0 && last_element_clicked < n_button) {
+        menuId parentId = buttons[last_element_clicked].parent_menu;
         if(parentId >= 0 && parentId < n_menu && menus[parentId].is_radio) {
-            checkRadioButton(last_clicked);
-        }
-        
-        // Execute Callback
-        if (buttons[last_clicked].callback) {
-            (*buttons[last_clicked].callback)(buttons[last_clicked].arg);
+            checkRadioButton(last_element_clicked);
         }
 
-        last_clicked = -1;
+        if (buttons[last_element_clicked].callback) {
+            (*buttons[last_element_clicked].callback)(buttons[last_element_clicked].arg);
+        }
+
+        last_element_clicked = -1;
     }
-    #endif
-
     pmouseX = mouseX;
     pmouseY = mouseY;
     float m_x, m_y;
