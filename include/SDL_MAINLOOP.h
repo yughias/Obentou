@@ -63,7 +63,7 @@ SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags);
 
 typedef size_t menuId;
 typedef size_t buttonId;
-#if defined(_WIN32) || defined(__EMSCRIPTEN__)
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
 menuId addMenuTo(menuId, const char*, bool);
 buttonId addButtonTo(menuId, const char*, void (*callback)(void*), void*);
 void setButtonTitle(buttonId, const char*);

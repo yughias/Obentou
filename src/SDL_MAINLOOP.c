@@ -4,6 +4,33 @@
 #include <emscripten.h>
 #endif
 
+static int last_element_clicked = -1;
+
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#import <Cocoa/Cocoa.h>
+
+@interface SdlMenuHandler : NSObject
+- (void)menuClick:(id)sender;
+@end
+
+static SdlMenuHandler* macMenuHandler = nil;
+
+@implementation SdlMenuHandler
+- (void)menuClick:(id)sender {
+    NSMenuItem* item = (NSMenuItem*)sender;
+    last_element_clicked = [item tag];
+}
+@end
+
+void initMacMenu() {
+    if(!macMenuHandler) {
+        macMenuHandler = [[SdlMenuHandler alloc] init];
+        [NSApp setMainMenu:[[NSMenu alloc] init]];
+    }
+}
+#endif
+
 #define MAX_NAME  64
 
 typedef struct {
@@ -49,8 +76,6 @@ void updateMenuVect(void* new_menu_handle, bool isRadio) {
 }
 
 void checkRadioButton(buttonId button_id);
-
-static int last_element_clicked = -1;
 
 #ifdef __EMSCRIPTEN__
 
@@ -632,7 +657,7 @@ void createMainMenu(){
 }
 #endif
 
-#if defined(_WIN32) || defined(__EMSCRIPTEN__)
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
 menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
     #ifdef _WIN32
         menu_rendered = false;
@@ -653,6 +678,17 @@ menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
         js_init_menu_dom();
         js_add_menu(n_menu, parentId, string);
         updateMenuVect(NULL, isRadio);
+    #elif defined(__APPLE__)
+        initMacMenu();
+        NSMenu* parent = (parentId >= n_menu) ? [NSApp mainMenu] : (__bridge NSMenu*)menus[parentId].hMenu;
+        
+        NSMenu* newMenu = [[NSMenu alloc] initWithTitle:[NSString stringWithUTF8String:string]];
+        NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:string] action:nil keyEquivalent:@""];
+        
+        [item setSubmenu:newMenu];
+        [parent addItem:item];
+        
+        updateMenuVect((__bridge void*)newMenu, isRadio);
     #endif
 
     updateButtonVect(NULL, NULL, parentId);
@@ -675,6 +711,14 @@ buttonId addButtonTo(menuId parentId, const char* string, void (*callback)(void*
     #elif defined(__EMSCRIPTEN__)
         js_init_menu_dom();
         js_add_button(n_button, parentId, string);
+    #elif defined(__APPLE__)
+        initMacMenu();
+        NSMenu* parent = (parentId >= n_menu) ? [NSApp mainMenu] : (__bridge NSMenu*)menus[parentId].hMenu;
+        
+        NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:[NSString stringWithUTF8String:string] action:@selector(menuClick:) keyEquivalent:@""];
+        [item setTarget:macMenuHandler];
+        [item setTag:n_button];
+        [parent addItem:item];
     #endif
 
     updateButtonVect(callback, arg, parentId);
@@ -689,6 +733,9 @@ void destroyAllMenus(){
         mainMenu = NULL;
     #elif defined(__EMSCRIPTEN__)
         js_destroy_menus();
+    #elif defined(__APPLE__)
+        [NSApp setMainMenu:nil];
+        macMenuHandler = nil;
     #endif
 
     free(buttons);
@@ -715,9 +762,15 @@ void checkRadioButton(buttonId button_id){
                 MF_BYPOSITION
             );
         #elif defined(__EMSCRIPTEN__)
-            for(size_t i=0; i<n_button; i++) {
+            for(size_t i=0; i < n_button; i++) {
                 if(buttons[i].parent_menu == menu_id) {
                     js_tick_button(i, (i == button_id));
+                }
+            }
+        #elif defined(__APPLE__)
+            for(size_t i = 0; i < n_button; i++) {
+                if(buttons[i].parent_menu == menu_id) {
+                    tickButton(i, (i == button_id));
                 }
             }
         #endif
@@ -739,6 +792,13 @@ void tickButton(buttonId button_id, bool state){
         );
     #elif defined(__EMSCRIPTEN__)
         js_tick_button(button_id, state);
+    #elif defined(__APPLE__)
+        button_t* b = &buttons[button_id];
+        if(b->parent_menu < n_menu) {
+            NSMenu* parent = (__bridge NSMenu*)menus[b->parent_menu].hMenu;
+            NSMenuItem* item = [parent itemWithTag:button_id];
+            [item setState:state ? NSControlStateValueOn : NSControlStateValueOff];
+        }
     #endif
 }
 
@@ -757,6 +817,13 @@ void enableButton(buttonId button_id, bool state){
         );
     #elif defined(__EMSCRIPTEN__)
         js_enable_button(button_id, state);
+    #elif defined(__APPLE__)
+        button_t* b = &buttons[button_id];
+        if(b->parent_menu < n_menu) {
+            NSMenu* parent = (__bridge NSMenu*)menus[b->parent_menu].hMenu;
+            NSMenuItem* item = [parent itemWithTag:button_id];
+            [item setEnabled:state];
+        }
     #endif
 }
 
@@ -781,6 +848,13 @@ void setButtonTitle(buttonId button_id, const char* string){
         free(lstring);
     #elif defined(__EMSCRIPTEN__)
         js_set_button_title(button_id, string);
+    #elif defined(__APPLE__)
+        button_t* b = &buttons[button_id];
+        if(b->parent_menu < n_menu) {
+            NSMenu* parent = (__bridge NSMenu*)menus[b->parent_menu].hMenu;
+            NSMenuItem* item = [parent itemWithTag:button_id];
+            [item setTitle:[NSString stringWithUTF8String:string]];
+        }
     #endif
 }
 #endif
