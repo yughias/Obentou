@@ -17,6 +17,7 @@
 !README.md
 
 !website/
+website/*.ico
 website/*.data
 website/*.wasm
 website/*.js

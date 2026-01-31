@@ -64,6 +64,7 @@ emcc:
 	--preload-file base_config.ini@config.ini \
 	-sEXPORTED_FUNCTIONS=[_main] \
 	-o website/obentou.js
+	cp logo.ico website/favicon.ico
 
 clean:
 	rm -rf obj obentou obentou.exe app.res config.ini
