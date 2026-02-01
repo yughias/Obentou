@@ -11,7 +11,7 @@
 
 static core_ctx_t emu_ctx;
 
-static void obentou_exit(){
+void obentou_exit(){
     sound_close();
     camera_close();
     controls_free();

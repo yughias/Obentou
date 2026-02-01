@@ -199,6 +199,13 @@ static void menu_clear_recent(core_ctx_t* ctx){
         snprintf(rom_arg, sizeof(rom_arg), "ROM%d", i);
         snprintf(bios_arg, sizeof(bios_arg), "BIOS%d", i);
 
+        #ifdef __EMSCRIPTEN__
+        char file_to_delete[FILENAME_MAX];
+        argument_get_path(file_to_delete, "RECENTS", rom_arg);
+        if(file_to_delete[0]) 
+            remove(file_to_delete);
+        #endif
+
         argument_set_path("", "RECENTS", rom_arg);
         argument_set_path("", "RECENTS", bios_arg);
     }

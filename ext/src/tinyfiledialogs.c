@@ -8429,7 +8429,7 @@ EM_ASYNC_JS(char*, get_file_from_browser, (int allowMultiple), {
             var arrayBuffer = await file.arrayBuffer();
             var uint8Arr = new Uint8Array(arrayBuffer);
 
-            var vfs_name = '/' + file.name;
+            var vfs_name = '/ROMs/' + file.name;
             FS.writeFile(vfs_name, uint8Arr);
 
             var lengthBytes = lengthBytesUTF8(vfs_name) + 1;

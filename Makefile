@@ -57,12 +57,14 @@ nes-mappers:
 emcc:
 	emcc -Iinclude -Iext/include $(SRC) -O3 -flto=full \
 	-sUSE_SDL=3 \
-	-sINVOKE_RUN=1 \
+	-sINVOKE_RUN=0 \
 	-sSTACK_SIZE=2MB \
 	-sINITIAL_MEMORY=128MB -sALLOW_MEMORY_GROWTH=1 \
 	-sASYNCIFY \
+	-lidbfs.js \
 	--preload-file base_config.ini@config.ini \
-	-sEXPORTED_FUNCTIONS=[_main] \
+	-sEXPORTED_FUNCTIONS="['_main', '_obentou_exit']" \
+	-sEXPORTED_RUNTIME_METHODS="['FS', 'callMain']" \
 	-o website/obentou.js
 	cp logo.ico website/favicon.ico
 

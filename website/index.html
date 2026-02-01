@@ -13,8 +13,60 @@
 
     <script>
         var Module = {
-            canvas: document.getElementById('canvas')
+            canvas: document.getElementById('canvas'),
+            onRuntimeInitialized: function () {
+                Module.FS.mkdir('/ROMs');
+                Module.FS.mount(Module.FS.filesystems.IDBFS, {}, '/ROMs');
+
+                Module.FS.syncfs(true, function (err) {
+                    if (err) {
+                        console.error('Error syncing FS from DB:', err);
+                    } else {
+                        console.log('FS synced from DB successfully.');
+
+                        if (Module.FS.analyzePath('/ROMs/config.ini').exists) {
+                            var persistentConfig = Module.FS.readFile('/ROMs/config.ini');
+                            Module.FS.writeFile('/config.ini', persistentConfig);
+                            console.log('Persistent config loaded.');
+                        }
+                    }
+
+                    var originalClose = Module.FS.close;
+                    var syncTimeout = null;
+
+                    Module.FS.close = function (stream) {
+                        var result = originalClose(stream);
+
+                        if (stream.node && stream.node.mount && stream.node.mount.mountpoint === '/ROMs') {
+
+                            if (syncTimeout) {
+                                clearTimeout(syncTimeout);
+                            }
+
+                            syncTimeout = setTimeout(function () {
+                                console.log('File activity stopped. Syncing to DB...');
+                                Module.FS.syncfs(false, function (err) {
+                                    if (err) console.error('Auto-sync failed:', err);
+                                    else console.log('Auto-sync complete.');
+                                });
+                            }, 200);
+                        }
+
+                        return result;
+                    };
+
+                    Module.callMain();
+                });
+            }
         };
+
+        window.addEventListener("beforeunload", function (e) {
+            Module._obentou_exit();
+            Module.FS.syncfs(false, function (err) {
+                if (err) console.error('Error saving to DB:', err);
+                else console.log('Saved to DB successfully.');
+            });
+        });
     </script>
 
     <script async src="obentou.js"></script>

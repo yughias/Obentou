@@ -60,8 +60,12 @@ const char* argument_get_ini_path(){
     if(ini_path[0])
         return ini_path;
 
+    #ifdef __EMSCRIPTEN__
+    snprintf(ini_path, FILENAME_MAX, "/ROMs/config.ini");
+    #else
     const char* base_path = SDL_GetBasePath();
     snprintf(ini_path, FILENAME_MAX, "%sconfig.ini", base_path);
+    #endif
     return ini_path;
 }
 
@@ -115,6 +119,24 @@ void argument_update_recents(const char* rom_path_, const char* bios_path_) {
         argument_set_path(rom_value, "RECENTS", rom_key);
         argument_set_path(bios_value, "RECENTS", bios_key);
     }
+
+    #ifdef __EMSCRIPTEN__
+    // If we are inserting a NEW entry the item at 
+    // position 10 (index 9) will be pushed out of the list and lost.
+    // We remove the actual file to clean up the persistent IDBFS storage.
+    if(existing_index == -1) {
+        char old_rom[FILENAME_MAX];
+        char old_bios[FILENAME_MAX];
+    
+        argument_get_path(old_rom, "RECENTS", "ROM9");
+        argument_get_path(old_bios, "RECENTS", "BIOS9");
+
+        if (old_rom[0]) {
+            remove(old_rom);
+            printf("Auto-cleaned old ROM: %s\n", old_rom);
+        }
+    }
+    #endif
 
     // downshift
     for(int i = 9; i > 0; i--){
