@@ -91,6 +91,9 @@ void sound_set_push_rate(float push_rate) {
 
 void sound_set_push_rate_multiplier(int multiplier) {
     push_rate_scaled = push_rate_reload * multiplier;
+    // set frequency ratio only if callback method is used
+    if(audio_callback)
+        SDL_SetAudioStreamFrequencyRatio(audio_stream, multiplier);
 }
 
 float sound_get_push_rate(){
@@ -127,5 +130,7 @@ void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sou
 }
 
 void sound_queue_samples(const void* samples, size_t size){ 
+    int speed = push_rate_scaled / push_rate_reload + 0.5f;
+    SDL_SetAudioStreamFrequencyRatio(audio_stream, speed);
     SDL_PutAudioStreamData(audio_stream, samples, size);
 }
