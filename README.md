@@ -4,9 +4,10 @@
 
 Obentou is a multi system emulator with the goal to collect all the emulators I developed in these years.
 
-## Download
+## Releases
 
-Releases can be found [here](https://github.com/yughias/Obentou/releases/)
+The emscripten port of Obentou can be found [here](https://yughias.github.io/Obentou).
+Releases can be found [here](https://github.com/yughias/Obentou/releases/).
 
 ## Supported Core
 
