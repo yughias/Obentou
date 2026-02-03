@@ -424,7 +424,7 @@ void menu_create(core_ctx_t* ctx){
     if(ctx->core)
         create_input_button_menu(input_menu, ctx->core->name, ctx->core->control_begin, ctx->core->control_end, true);
 
-    for(int i = 0; i < sizeof(cores) / sizeof(cores[0]); i++){
+    for(int i = 0; i < n_cores; i++){
         if(ctx->core && !strcmp(ctx->core->name, cores[i].name))
             continue;
         create_input_button_menu(input_menu, cores[i].name, cores[i].control_begin, cores[i].control_end, true);

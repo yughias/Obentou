@@ -12,6 +12,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "cores/watara/interface.h"
+#include "cores/pv1000/interface.h"
+#include "cores/pce/interface.h"
+#include "cores/bytepusher/interface.h"
+#include "cores/tms80/interface.h"
+#include "cores/nes/interface.h"
+#include "cores/gbc/interface.h"
+
+#define LOAD_CORE(core) \
+{ \
+    .name = #core, \
+    .init = core##_init, \
+    .detect = core##_detect, \
+    .run_frame = core##_run_frame, \
+    .close = core##_close, \
+    .width = core##_WIDTH, \
+    .height = core##_HEIGHT, \
+    .fps = core##_FPS, \
+    .audio_spec = core##_AUDIO_SPEC, \
+    .sound_push_rate = core##_SOUND_PUSH_RATE, \
+    .sound_callback = core##_sound_callback, \
+    .control_begin = CONTROL_##core##_BEGIN, \
+    .control_end = CONTROL_##core##_END, \
+    .savestate = core##_savestate, \
+    .loadstate = core##_loadstate, \
+    .has_bios = core##_has_bios \
+}
+
+const core_t cores[] = {
+    LOAD_CORE(WATARA),
+    LOAD_CORE(PV1000),
+    LOAD_CORE(PCE),
+    LOAD_CORE(BYTEPUSHER),
+    LOAD_CORE(TMS80),
+    LOAD_CORE(NES),
+    LOAD_CORE(GBC)
+};
+
+#undef LOAD_CORE
+
+const size_t n_cores = sizeof(cores)/sizeof(core_t);
+
 static void save_sav(core_ctx_t* ctx){
     char sav_path[FILENAME_MAX];
     path_set_ext(archive_get_path(ctx->rom), sav_path, "sav");
@@ -29,13 +71,13 @@ static void core_close_emu(core_ctx_t* ctx){
 }
 
 const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core){
-    for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
+    for(int i = 0; i < n_cores; i++){
         if(force_core && !strcmp(cores[i].name, force_core)){
             return &cores[i];
         }
     }
 
-    for(int i = 0; i < sizeof(cores)/sizeof(core_t); i++){
+    for(int i = 0; i < n_cores; i++){
         if(cores[i].detect(rom_archive, bios_archive)){
             printf("Detected core: %s\n", cores[i].name);
             return &cores[i];

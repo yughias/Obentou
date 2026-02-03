@@ -10,14 +10,6 @@
 #include "utils/vec.h"
 #include "utils/serializer.h"
 
-#include "cores/watara/interface.h"
-#include "cores/pv1000/interface.h"
-#include "cores/pce/interface.h"
-#include "cores/bytepusher/interface.h"
-#include "cores/tms80/interface.h"
-#include "cores/nes/interface.h"
-#include "cores/gbc/interface.h"
-
 typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*run_frame_ptr)(void* ctx);
 typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
@@ -43,38 +35,6 @@ typedef struct core_t {
     bool has_bios;
 } core_t;
 
-#define LOAD_CORE(core) \
-{ \
-    .name = #core, \
-    .init = core##_init, \
-    .detect = core##_detect, \
-    .run_frame = core##_run_frame, \
-    .close = core##_close, \
-    .width = core##_WIDTH, \
-    .height = core##_HEIGHT, \
-    .fps = core##_FPS, \
-    .audio_spec = core##_AUDIO_SPEC, \
-    .sound_push_rate = core##_SOUND_PUSH_RATE, \
-    .sound_callback = core##_sound_callback, \
-    .control_begin = CONTROL_##core##_BEGIN, \
-    .control_end = CONTROL_##core##_END, \
-    .savestate = core##_savestate, \
-    .loadstate = core##_loadstate, \
-    .has_bios = core##_has_bios \
-}
-
-static const core_t cores[] = {
-    LOAD_CORE(WATARA),
-    LOAD_CORE(PV1000),
-    LOAD_CORE(PCE),
-    LOAD_CORE(BYTEPUSHER),
-    LOAD_CORE(TMS80),
-    LOAD_CORE(NES),
-    LOAD_CORE(GBC)
-};
-
-#undef LOAD_CORE
-
 typedef struct core_ctx_t {
     int speed_level;
     bool pause;
@@ -88,6 +48,9 @@ typedef struct ctx_args_t {
     core_ctx_t* ctx;
     int value;
 } ctx_args_t;
+
+extern const core_t cores[];
+extern const size_t n_cores;
 
 const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core);
 void core_restart(core_ctx_t* ctx);
