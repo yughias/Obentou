@@ -379,6 +379,7 @@ byte_vec_t PCE_savestate(pce_t* p){
     return state;
 }
 
-void PCE_loadstate(pce_t* p, byte_vec_t* state){
-    deserialize_pce_t(p, state->data);
+bool PCE_loadstate(pce_t* p, byte_vec_t* state){
+    const u8* end = state->data + state->size;
+    return deserialize_pce_t(p, state->data, state->data + state->size) == end;
 }

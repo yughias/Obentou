@@ -330,8 +330,10 @@ byte_vec_t TMS80_savestate(tms80_t* tms80){
     return state;
 }
 
-void TMS80_loadstate(tms80_t* tms80, byte_vec_t* state){
-    deserialize_tms80_t(tms80, state->data);
+bool TMS80_loadstate(tms80_t* tms80, byte_vec_t* state){
+    const u8* end = state->data + state->size;
+    u8* ptr = deserialize_tms80_t(tms80, state->data, state->data + state->size);
+    if(!ptr) return false;
     if(tms80->type == SMS || tms80->type == GG){
         if(tms80->bios_masked){
             tms80->z80.readMemory = tms80_sms_readMemory;
@@ -341,4 +343,5 @@ void TMS80_loadstate(tms80_t* tms80, byte_vec_t* state){
             tms80->z80.writeMemory = tms80_sms_bios_writeMemory;
         }
     }
+    return ptr == end;
 }

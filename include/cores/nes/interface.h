@@ -5,7 +5,7 @@ void NES_run_frame(void* ctx);
 void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool NES_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t NES_savestate(void* ctx);
-void NES_loadstate(void* ctx, byte_vec_t* state);
+bool NES_loadstate(void* ctx, byte_vec_t* state);
 void NES_close(void* ctx, const char* sav_path);
 
 #define NES_WIDTH 256

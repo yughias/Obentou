@@ -15,7 +15,7 @@ typedef void (*run_frame_ptr)(void* ctx);
 typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*close_ptr)(void* ctx, const char* sav_path);
 typedef byte_vec_t (*savestate_ptr)(void* ctx);
-typedef void (*loadstate_ptr)(void* ctx, byte_vec_t* state);
+typedef bool (*loadstate_ptr)(void* ctx, byte_vec_t* state);
 
 typedef struct core_t {
     const char name[32];

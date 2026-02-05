@@ -31,7 +31,7 @@
     X(u8, ram, RAM_SIZE, 1, 0) \
     X(bool, cart_irq, 1, 0) \
     X(void*, mapper, 0, 0) \
-    X(size_t, mapper_size, 1, 0)
+    X(size_t, mapper_size, 0, 0)
 
 DECLARE_SERIALIZABLE_STRUCT(nes, NES_STRUCT);
 

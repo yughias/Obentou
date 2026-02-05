@@ -111,8 +111,11 @@ byte_vec_t GBC_savestate(gb_t* gb){
     return state;
 }
 
-void GBC_loadstate(gb_t* gb, byte_vec_t* state){
-    u8* data = deserialize_gb_t(gb, state->data);
+bool GBC_loadstate(gb_t* gb, byte_vec_t* state){
+    const u8* end = state->data + state->size;
+    u8* data = deserialize_gb_t(gb, state->data, state->data + state->size);
+    if(!data) return false;
+
     if(gb->mbc.dataSize)
         memcpy(gb->mbc.data, data, gb->mbc.dataSize);
     if(gb->BOOTROM_ENABLED){
@@ -123,4 +126,6 @@ void GBC_loadstate(gb_t* gb, byte_vec_t* state){
     }
     gb->ppu.frameSkip = true;
     gb->ppu.lastFrameOn = false;
+
+    return data == end;
 }

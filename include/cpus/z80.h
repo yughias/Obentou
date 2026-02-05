@@ -78,6 +78,6 @@ void z80_nmi(z80_t*);
 
 typedef struct byte_vec_t byte_vec_t;
 void serialize_z80_t(z80_t*, byte_vec_t*);
-u8* deserialize_z80_t(z80_t*, u8*);
+u8* deserialize_z80_t(z80_t*, u8*, u8*);
 
 #endif

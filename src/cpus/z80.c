@@ -205,7 +205,9 @@ void serialize_z80_t(z80_t* z80, byte_vec_t* vec){
     byte_vec_push_array(vec, (u8*)&z80->cycles, sizeof(z80->cycles));
 }
 
-u8* deserialize_z80_t(z80_t* z80, u8* data){
+u8* deserialize_z80_t(z80_t* z80, u8* data, u8* end) {
+    if (data + 7 > end) return NULL;
+
     z80->HALTED = *(data++);
     z80->IFF1 = *(data++);
     z80->IFF2 = *(data++);
@@ -214,26 +216,53 @@ u8* deserialize_z80_t(z80_t* z80, u8* data){
     z80->INTERRUPT_MODE = *(data++);
     z80->INTERRUPT_VECT = *(data++);
 
+    if (data + sizeof(z80->AF) > end) return NULL;
     memcpy(&z80->AF, data, sizeof(z80->AF)); data += sizeof(z80->AF);
+
+    if (data + sizeof(z80->BC) > end) return NULL;
     memcpy(&z80->BC, data, sizeof(z80->BC)); data += sizeof(z80->BC);
+
+    if (data + sizeof(z80->DE) > end) return NULL;
     memcpy(&z80->DE, data, sizeof(z80->DE)); data += sizeof(z80->DE);
+
+    if (data + sizeof(z80->HL) > end) return NULL;
     memcpy(&z80->HL, data, sizeof(z80->HL)); data += sizeof(z80->HL);
+
+    if (data + sizeof(z80->IX) > end) return NULL;
     memcpy(&z80->IX, data, sizeof(z80->IX)); data += sizeof(z80->IX);
+
+    if (data + sizeof(z80->IY) > end) return NULL;
     memcpy(&z80->IY, data, sizeof(z80->IY)); data += sizeof(z80->IY);
+
+    if (data + sizeof(z80->WZ) > end) return NULL;
     memcpy(&z80->WZ, data, sizeof(z80->WZ)); data += sizeof(z80->WZ);
+
+    if (data + sizeof(z80->AF_) > end) return NULL;
     memcpy(&z80->AF_, data, sizeof(z80->AF_)); data += sizeof(z80->AF_);
+
+    if (data + sizeof(z80->BC_) > end) return NULL;
     memcpy(&z80->BC_, data, sizeof(z80->BC_)); data += sizeof(z80->BC_);
+
+    if (data + sizeof(z80->DE_) > end) return NULL;
     memcpy(&z80->DE_, data, sizeof(z80->DE_)); data += sizeof(z80->DE_);
+
+    if (data + sizeof(z80->HL_) > end) return NULL;
     memcpy(&z80->HL_, data, sizeof(z80->HL_)); data += sizeof(z80->HL_);
 
+    if (data + sizeof(z80->SP) > end) return NULL;
     memcpy(&z80->SP, data, sizeof(z80->SP)); data += sizeof(z80->SP);
+
+    if (data + sizeof(z80->PC) > end) return NULL;
     memcpy(&z80->PC, data, sizeof(z80->PC)); data += sizeof(z80->PC);
 
+    if (data + 3 > end) return NULL;
     z80->I = *(data++);
     z80->R = *(data++);
     z80->Q = *(data++);
 
+    if (data + sizeof(z80->cycles) > end) return NULL;
     memcpy(&z80->cycles, data, sizeof(z80->cycles)); data += sizeof(z80->cycles);
+
     return data;
 }
 

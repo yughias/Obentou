@@ -5,7 +5,7 @@ void GBC_run_frame(void* ctx);
 void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t GBC_savestate(void* ctx);
-void GBC_loadstate(void* ctx, byte_vec_t* state);
+bool GBC_loadstate(void* ctx, byte_vec_t* state);
 void GBC_close(void* ctx, const char* sav_path);
 
 #define GBC_WIDTH 160

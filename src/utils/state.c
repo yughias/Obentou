@@ -21,15 +21,17 @@ static byte_vec_t state_save(core_ctx_t* ctx) {
     return (byte_vec_t){.data = NULL, .size = 0};
 }
 
-static void state_load(core_ctx_t* ctx, byte_vec_t* state) {
+// return false only if savestate was corrupted
+static bool state_load(core_ctx_t* ctx, byte_vec_t* state) {
     if(!ctx->core)
-        return;
+        return true;
 
     if(ctx->core->loadstate){
         printf("loaded\n");
-        ctx->core->loadstate(ctx->emu, state);
+        return ctx->core->loadstate(ctx->emu, state);
     } else {
         printf("no savestate for %s\n", ctx->core->name);
+        return true;
     }
 }
 
@@ -76,8 +78,12 @@ void state_load_slot(core_ctx_t* ctx) {
     if(!file.data)
         return;
     size_t bmp_size = *(uint32_t*)(&file.data[2]);
-    state_load(ctx, &(byte_vec_t){.data = file.data + bmp_size, .size = file.size - bmp_size});
+    bool ok = state_load(ctx, &(byte_vec_t){.data = file.data + bmp_size, .size = file.size - bmp_size});
     file_delete(&file);
+    if(!ok){
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Load State Error", "Failed to load state\nremoving it...", NULL);
+        remove(path);
+    }
 }
 
 void state_save_autosave(core_ctx_t* ctx) {

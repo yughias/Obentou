@@ -1331,21 +1331,43 @@ void serialize_sm83_t(sm83_t* cpu, byte_vec_t* state) {
     byte_vec_push_array(state, (u8*)&cpu->cycles, sizeof(cpu->cycles));
 }
 
-u8* deserialize_sm83_t(sm83_t* cpu, u8* data) {
+u8* deserialize_sm83_t(sm83_t* cpu, u8* data, u8* end) {
+    if (data + 6 > end) return NULL;
+
     cpu->HALTED = *(data++);
     cpu->IME = *(data++);
     cpu->EI_DELAY = *(data++);
     cpu->HALT_BUG = *(data++);
     cpu->IE = *(data++);
     cpu->IF = *(data++);
+    
+    if (data + sizeof(cpu->AF) > end) return NULL;
+    memcpy(&cpu->AF, data, sizeof(cpu->AF)); 
+    data += sizeof(cpu->AF);
 
-    memcpy(&cpu->AF, data, sizeof(cpu->AF)); data += sizeof(cpu->AF);
-    memcpy(&cpu->BC, data, sizeof(cpu->BC)); data += sizeof(cpu->BC);
-    memcpy(&cpu->DE, data, sizeof(cpu->DE)); data += sizeof(cpu->DE);
-    memcpy(&cpu->HL, data, sizeof(cpu->HL)); data += sizeof(cpu->HL);
-    memcpy(&cpu->SP, data, sizeof(cpu->SP)); data += sizeof(cpu->SP);
-    memcpy(&cpu->PC, data, sizeof(cpu->PC)); data += sizeof(cpu->PC);
+    if (data + sizeof(cpu->BC) > end) return NULL;
+    memcpy(&cpu->BC, data, sizeof(cpu->BC)); 
+    data += sizeof(cpu->BC);
 
-    memcpy(&cpu->cycles, data, sizeof(cpu->cycles)); data += sizeof(cpu->cycles);
+    if (data + sizeof(cpu->DE) > end) return NULL;
+    memcpy(&cpu->DE, data, sizeof(cpu->DE)); 
+    data += sizeof(cpu->DE);
+
+    if (data + sizeof(cpu->HL) > end) return NULL;
+    memcpy(&cpu->HL, data, sizeof(cpu->HL)); 
+    data += sizeof(cpu->HL);
+
+    if (data + sizeof(cpu->SP) > end) return NULL;
+    memcpy(&cpu->SP, data, sizeof(cpu->SP)); 
+    data += sizeof(cpu->SP);
+
+    if (data + sizeof(cpu->PC) > end) return NULL;
+    memcpy(&cpu->PC, data, sizeof(cpu->PC)); 
+    data += sizeof(cpu->PC);
+
+    if (data + sizeof(cpu->cycles) > end) return NULL;
+    memcpy(&cpu->cycles, data, sizeof(cpu->cycles)); 
+    data += sizeof(cpu->cycles);
+
     return data;
 }

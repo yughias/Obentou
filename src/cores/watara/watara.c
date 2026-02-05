@@ -305,6 +305,7 @@ byte_vec_t WATARA_savestate(watara_t* w){
     return state;
 }
 
-void WATARA_loadstate(watara_t* w, byte_vec_t* state){
-    deserialize_watara_t(w, state->data);
+bool WATARA_loadstate(watara_t* w, byte_vec_t* state){
+    const u8* end = state->data + state->size;
+    return deserialize_watara_t(w, state->data, state->data + state->size) == end;
 }

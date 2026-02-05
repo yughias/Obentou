@@ -77,6 +77,7 @@ byte_vec_t BYTEPUSHER_savestate(void* ctx){
     return state;
 }
 
-void BYTEPUSHER_loadstate(void* ctx, byte_vec_t* state){
-    deserialize_bytepusher_t(ctx, state->data);
+bool BYTEPUSHER_loadstate(void* ctx, byte_vec_t* state){
+    const u8* end = state->data + state->size;
+    return deserialize_bytepusher_t(ctx, state->data, state->data + state->size) == end;
 }

@@ -141,15 +141,28 @@ byte_vec_t NES_savestate(nes_t* nes){
     return state;
 }
 
-void NES_loadstate(nes_t* nes, byte_vec_t* state){
-    u8* ptr = deserialize_nes_t(nes, state->data);
+bool NES_loadstate(nes_t* nes, byte_vec_t* state) {
+    u8* end = state->data + state->size;
+    u8* ptr = deserialize_nes_t(nes, state->data, end);
+    if (!ptr) return false;
+
+    if (ptr + nes->ppu.vram_size > end) return false;
     memcpy(nes->ppu.vram, ptr, nes->ppu.vram_size);
     ptr += nes->ppu.vram_size;
-    if(nes->cart.is_chr_ram){
+
+    if (nes->cart.is_chr_ram) {
+        if (ptr + nes->cart.chr_size > end) return false;
         memcpy(nes->cart.chr, ptr, nes->cart.chr_size);
         ptr += nes->cart.chr_size;
     }
+
+    if (ptr + nes->cart.prg_ram_size > end) return false;
     memcpy(nes->cart.prg_ram, ptr, nes->cart.prg_ram_size);
     ptr += nes->cart.prg_ram_size;
+
+    if (ptr + nes->mapper_size > end) return false;
     memcpy(nes->mapper, ptr, nes->mapper_size);
+    ptr += nes->mapper_size;
+
+    return ptr == end;
 }

@@ -82,6 +82,7 @@ byte_vec_t PV1000_savestate(pv1000_t* pv1000){
     return state;
 }
 
-void PV1000_loadstate(pv1000_t* pv1000, byte_vec_t* state){
-    deserialize_pv1000_t(pv1000, state->data);
+bool PV1000_loadstate(pv1000_t* pv1000, byte_vec_t* state){
+    const u8* end = state->data + state->size;
+    return deserialize_pv1000_t(pv1000, state->data, state->data + state->size) == end;
 }
