@@ -258,22 +258,22 @@ static void apuMixer(void* ctx, void* s){
     samples[0] = 0;
     samples[1] = 0;
 
-    if(apu->NR51_REG & 1)
+    if(!sound_channel_muted[0] && (apu->NR51_REG & 1))
         samples[1] += apu->ch1_sample;
-    if(apu->NR51_REG & (1 << 1))
+    if(!sound_channel_muted[1] && (apu->NR51_REG & (1 << 1)))
         samples[1] += apu->ch2_sample;
-    if(apu->NR51_REG & (1 << 2))
+    if(!sound_channel_muted[2] && (apu->NR51_REG & (1 << 2)))
         samples[1] += apu->ch3_sample;
-    if(apu->NR51_REG & (1 << 3))
+    if(!sound_channel_muted[3] && (apu->NR51_REG & (1 << 3)))
         samples[1] += apu->ch4_sample;
     
-    if(apu->NR51_REG & (1 << 4))
+    if(!sound_channel_muted[0] && (apu->NR51_REG & (1 << 4)))
         samples[0] += apu->ch1_sample;
-    if(apu->NR51_REG & (1 << 5))
+    if(!sound_channel_muted[1] && (apu->NR51_REG & (1 << 5)))
         samples[0] += apu->ch2_sample;
-    if(apu->NR51_REG & (1 << 6))
+    if(!sound_channel_muted[2] && (apu->NR51_REG & (1 << 6)))
         samples[0] += apu->ch3_sample;
-    if(apu->NR51_REG & (1 << 7))
+    if(!sound_channel_muted[3] && (apu->NR51_REG & (1 << 7)))
         samples[0] += apu->ch4_sample;
     
     u8 volume[2];

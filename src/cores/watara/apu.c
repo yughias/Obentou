@@ -143,20 +143,20 @@ static void apu_get_sample(void* ctx, void* data){
     apu_t* apu = (apu_t*)ctx;
     sample_t sample;
     u8 waves[2] = { apu_wave_get_sample(&apu->waves[0]), apu_wave_get_sample(&apu->waves[1]) };
-    sample.r = waves[0];
-    sample.l = waves[1];
+    sample.r = sound_channel_muted[0] ? 0 : waves[0];
+    sample.l = sound_channel_muted[1] ? 0 : waves[1];
 
     u8 noise_sample = apu_noise_get_sample(&apu->noise);
     bool noise_l = apu->noise.ctrl & 0x08;
     bool noise_r = apu->noise.ctrl & 0x04;
-    sample.l += noise_sample * noise_l;
-    sample.r += noise_sample * noise_r;
+    sample.l += sound_channel_muted[2] ? 0 : noise_sample * noise_l;
+    sample.r += sound_channel_muted[2] ? 0 :noise_sample * noise_r;
 
     u8 ch3_sample = apu_ch3_get_sample(&apu->ch3);
     bool ch3_l = apu->ch3.ctrl & 0x08;
     bool ch3_r = apu->ch3.ctrl & 0x04;
-    sample.l += ch3_sample * ch3_l;
-    sample.r += ch3_sample * ch3_r;
+    sample.l += sound_channel_muted[3] ? 0 :ch3_sample * ch3_l;
+    sample.r += sound_channel_muted[3] ? 0 :ch3_sample * ch3_r;
 
     // clipping
     if(sample.l > 0xF)

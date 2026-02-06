@@ -1,5 +1,6 @@
 #include "cores/pv1000/pv1000.h"
 #include "cores/pv1000/psg.h"
+#include "utils/sound.h"
 
 #include <math.h>
 
@@ -9,7 +10,7 @@ static void send_samples(psg_t* psg, Uint8 * stream, int len){
         for(int j = 0; j < 3; j++){
             if(!psg->square_freq[j])
                 continue;
-            samples[j] = sin(psg->time_elapsed*2*M_PI*psg->square_freq[j]) > 0; 
+            samples[j] = sound_channel_muted[j] ? 0 : sin(psg->time_elapsed*2*M_PI*psg->square_freq[j]) > 0; 
         }
         if(psg->mixer){
             samples[0] = samples[0] ^ samples[1];

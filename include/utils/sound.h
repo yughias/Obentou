@@ -5,6 +5,8 @@
 
 #include "types.h"
 
+#define MAX_AUDIO_CHANNELS 8
+
 typedef void (*sound_get_sample_ptr)(void* ctx, void* sample);
 
 void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, void* userdata);
@@ -15,5 +17,7 @@ void sound_queue_samples(const void* samples, size_t size);
 void sound_pause(bool pause);
 void sound_set_push_rate_multiplier(int multiplier);
 float sound_get_push_rate();
+
+extern bool sound_channel_muted[MAX_AUDIO_CHANNELS];
 
 #endif

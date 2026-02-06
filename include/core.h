@@ -9,6 +9,7 @@
 #include "utils/archive.h"
 #include "utils/vec.h"
 #include "utils/serializer.h"
+#include "utils/sound.h"
 
 typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*run_frame_ptr)(void* ctx);
@@ -33,6 +34,7 @@ typedef struct core_t {
     savestate_ptr savestate;
     loadstate_ptr loadstate;
     bool has_bios;
+    const char apu_channels[MAX_AUDIO_CHANNELS][16];
 } core_t;
 
 typedef struct core_ctx_t {

@@ -17,6 +17,7 @@ static float push_rate_scaled;
 static bool is_paused = true;
 static SDL_AtomicInt rb_read;
 static SDL_AtomicInt rb_write;
+bool sound_channel_muted[MAX_AUDIO_CHANNELS];
 
 
 void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
@@ -79,6 +80,7 @@ void sound_close() {
     is_paused = true;
     SDL_SetAtomicInt(&rb_read, 0);
     SDL_SetAtomicInt(&rb_write, 0);
+    memset(sound_channel_muted, 0, sizeof(sound_channel_muted));
 }
 
 void sound_set_push_rate(float push_rate) {

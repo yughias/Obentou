@@ -87,7 +87,6 @@ typedef struct dmc_t {
     X(int, display_idx, 0, 0) \
     X(bool, inhibit_irq, 1, 0) \
     X(bool, frame_irq, 1, 0) \
-    X(bool, mute[5], 0, 0) \
     X(u8, display_buffers[5][DISPLAY_BUFFER_SIZE], 0, 0) \
     X(void*, ctx, 0, 0)
 

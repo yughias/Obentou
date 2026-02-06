@@ -39,6 +39,9 @@ static ctx_args_t slot_args[5];
 static control_t control_args[CONTROL_COUNT];
 static core_ctx_t* core_ctx_arg;
 
+static buttonId audio_channel_buttons[MAX_AUDIO_CHANNELS];
+static int apu_idxs[MAX_AUDIO_CHANNELS];
+
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
@@ -288,6 +291,12 @@ void menu_speed_check(int speed_level){
     checkRadioButton(speed_buttons[speed_level]);
 }
 
+static void apu_mute_channel(void* audio_idx){
+    int idx = *(int*)audio_idx;
+    sound_channel_muted[idx] ^= 1;
+    tickButton(audio_channel_buttons[idx], !sound_channel_muted[idx]);
+}
+
 void menu_create(core_ctx_t* ctx){
     core_ctx_arg = ctx;
     destroyAllMenus();
@@ -431,6 +440,17 @@ void menu_create(core_ctx_t* ctx){
     }
 
     addButtonTo(-1, "About", (void*)menu_info, NULL);
+
+    if(ctx->core && ctx->core->apu_channels[0][0]){
+        menuId apu_menu = addMenuTo(emu_menu, "APU", false);
+        for(int i = 0; i < MAX_AUDIO_CHANNELS; i++){
+            if(ctx->core->apu_channels[i][0]){
+                apu_idxs[i] = i;
+                audio_channel_buttons[i] = addButtonTo(apu_menu, ctx->core->apu_channels[i], apu_mute_channel, apu_idxs + i);
+                tickButton(audio_channel_buttons[i], true);
+            }
+        }
+    }
 
     free(label);
 }

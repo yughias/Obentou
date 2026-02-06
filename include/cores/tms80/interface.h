@@ -22,4 +22,6 @@ void TMS80_close(void* ctx, const char* sav_path);
     .freq = 44100, \
 } \
 
+#define TMS80_apu_channels "TONE0", "TONE1", "TONE2", "NOISE"
+
 #endif

@@ -276,11 +276,11 @@ void nes_apu_get_sample(void* ctx, void* s){
     float* sample = (float*)s;
     u8 ch[5]; 
 
-    ch[0] = apu->mute[0] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[0], 0);
-    ch[1] = apu->mute[1] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[1], 1);
-    ch[2] = apu->mute[2] ? 0 : nes_apu_get_triangle_sample(&apu->triangle);
-    ch[3] = apu->mute[3] ? 0 : nes_apu_get_noise_sample(&apu->noise);
-    ch[4] = apu->mute[4] ? 0 : nes_apu_get_dmc_sample(&apu->dmc);
+    ch[0] = sound_channel_muted[0] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[0], 0);
+    ch[1] = sound_channel_muted[1] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[1], 1);
+    ch[2] = sound_channel_muted[2] ? 0 : nes_apu_get_triangle_sample(&apu->triangle);
+    ch[3] = sound_channel_muted[3] ? 0 : nes_apu_get_noise_sample(&apu->noise);
+    ch[4] = sound_channel_muted[4] ? 0 : nes_apu_get_dmc_sample(&apu->dmc);
 
     if(apu->display_idx != DISPLAY_BUFFER_SIZE){
         for(int i = 0; i < 5; i++){

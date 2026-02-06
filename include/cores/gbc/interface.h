@@ -22,5 +22,6 @@ void GBC_close(void* ctx, const char* sav_path);
     .freq = 44100, \
 } \
 
+#define GBC_apu_channels "SQUARE+SWEEP", "SQUARE", "WAVE RAM", "NOISE"
 
 #endif

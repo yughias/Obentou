@@ -27,7 +27,7 @@ static void sn76489_get_sample(void* ctx, void* data){
     sample_t sample = 0;
     for(int i = 0; i < 4; i++){
         u16 ch_sample = sn->sample[i]*sn->attenuation[i];
-        sample += ch_sample;
+        sample += sound_channel_muted[i] ? 0 : ch_sample;
         if(sn->display_idx[i] != DISPLAY_BUFFER_SIZE){
             sn->display_buffers[i][sn->display_idx[i]++] = ch_sample;
         }
