@@ -17,6 +17,7 @@ typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_a
 typedef void (*close_ptr)(void* ctx, const char* sav_path);
 typedef byte_vec_t (*savestate_ptr)(void* ctx);
 typedef bool (*loadstate_ptr)(void* ctx, byte_vec_t* state);
+typedef void (*audio_callback_ptr)(void* userdata, Uint8* stream, int len);
 
 typedef struct core_t {
     const char name[32];
@@ -28,7 +29,7 @@ typedef struct core_t {
     const float fps;
     const float sound_push_rate;
     SDL_AudioSpec audio_spec;
-    SDL_AudioStreamCallback sound_callback;
+    audio_callback_ptr sound_callback;
     control_t control_begin;
     control_t control_end;
     savestate_ptr savestate;

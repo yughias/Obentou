@@ -8,8 +8,9 @@
 #define MAX_AUDIO_CHANNELS 8
 
 typedef void (*sound_get_sample_ptr)(void* ctx, void* sample);
+typedef void (*audio_callback_ptr)(void* userdata, Uint8* stream, int len);
 
-void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, void* userdata);
+void sound_open(SDL_AudioSpec *audio_spec, audio_callback_ptr callback, void* userdata);
 void sound_close();
 void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sound_get_sample_ptr func);
 void sound_set_push_rate(float push_rate);

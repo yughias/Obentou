@@ -8,7 +8,7 @@
 #define AUDIO_BUFFER_MASK (AUDIO_BUFFER_SIZE - 1)
 
 static SDL_AudioStream* audio_stream;
-static SDL_AudioStreamCallback audio_callback;
+static audio_callback_ptr audio_callback;
 static u8 audio_buffer[AUDIO_BUFFER_SIZE];
 static u8 silence_buffer[AUDIO_BUFFER_SIZE];
 static float push_rate_counter;
@@ -26,8 +26,13 @@ void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amou
         return;
     }
 
-    if(audio_callback){
-        audio_callback(userdata, stream, additional_amount, total_amount);
+    if(audio_callback){       
+        if(additional_amount > 0){
+            Uint8* data = SDL_stack_alloc(Uint8, additional_amount);
+            audio_callback(userdata, data, additional_amount);
+            SDL_PutAudioStreamData(stream, data, additional_amount);
+            SDL_stack_free(data);
+        }
     } else {
         int read_pos = SDL_GetAtomicInt(&rb_read);
         int write_pos = SDL_GetAtomicInt(&rb_write);
@@ -53,7 +58,7 @@ void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amou
     }
 }
 
-void sound_open(SDL_AudioSpec *audio_spec, SDL_AudioStreamCallback callback, void* userdata) {
+void sound_open(SDL_AudioSpec *audio_spec, audio_callback_ptr callback, void* userdata) {
     if(audio_stream)
         sound_close();
     audio_callback = callback;

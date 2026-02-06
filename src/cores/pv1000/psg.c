@@ -28,22 +28,12 @@ static void send_silence(psg_t* psg, Uint8 * stream, int len){
     psg->time_elapsed = 0;
 }
 
-void PV1000_sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount){
-    
-    if(additional_amount > 0){
-        Uint8* data = SDL_stack_alloc(Uint8, additional_amount);
+void PV1000_sound_callback(void* userdata, Uint8* data, int len){
+    pv1000_t* pv1000 = userdata;
+    psg_t* psg = &pv1000->psg;
 
-        if(data){
-            pv1000_t* pv1000 = userdata;
-            psg_t* psg = &pv1000->psg;
-
-            if(psg->enabled)
-                send_samples(psg, data, additional_amount);
-            else
-                send_silence(psg, data, additional_amount);
-
-            SDL_PutAudioStreamData(stream, data, additional_amount);
-            SDL_stack_free(data);
-        }
-    }
+    if(psg->enabled)
+        send_samples(psg, data, len);
+    else
+        send_silence(psg, data, len);
 }
