@@ -22,6 +22,6 @@ bool BYTEPUSHER_loadstate(void* ctx, byte_vec_t* state);
     .freq = 15360, \
 } \
 
-#define BYTEPUSHER_apu_channels "BUZZER"
+#define BYTEPUSHER_sound_channels { "BUZZER", -128, 127 }
 
 #endif

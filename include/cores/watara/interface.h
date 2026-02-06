@@ -24,6 +24,10 @@ bool WATARA_loadstate(void* ctx, byte_vec_t* state);
     .freq = 44100, \
 } \
 
-#define WATARA_apu_channels "SQUARE R", "SQUARE L", "NOISE", "ADMA"
+#define WATARA_sound_channels \
+{ "SQUARE R", 0, 15 }, \
+{ "SQUARE L", 0, 15 }, \
+{ "NOISE", 0, 15 }, \
+{ "ADMA", 0, 15 }
 
 #endif

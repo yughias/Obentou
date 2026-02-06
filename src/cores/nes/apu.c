@@ -276,11 +276,11 @@ void nes_apu_get_sample(void* ctx, void* s){
     float* sample = (float*)s;
     u8 ch[5]; 
 
-    ch[0] = sound_channel_muted[0] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[0], 0);
-    ch[1] = sound_channel_muted[1] ? 0 : nes_apu_get_pulse_sample(&apu->pulses[1], 1);
-    ch[2] = sound_channel_muted[2] ? 0 : nes_apu_get_triangle_sample(&apu->triangle);
-    ch[3] = sound_channel_muted[3] ? 0 : nes_apu_get_noise_sample(&apu->noise);
-    ch[4] = sound_channel_muted[4] ? 0 : nes_apu_get_dmc_sample(&apu->dmc);
+    ch[0] = sound_set_channel_sample(nes_apu_get_pulse_sample(&apu->pulses[0], 0), 0);
+    ch[1] = sound_set_channel_sample(nes_apu_get_pulse_sample(&apu->pulses[1], 1), 1);
+    ch[2] = sound_set_channel_sample(nes_apu_get_triangle_sample(&apu->triangle), 2);
+    ch[3] = sound_set_channel_sample(nes_apu_get_noise_sample(&apu->noise), 3);
+    ch[4] = sound_set_channel_sample(nes_apu_get_dmc_sample(&apu->dmc), 4);
 
     if(apu->display_idx != DISPLAY_BUFFER_SIZE){
         for(int i = 0; i < 5; i++){
@@ -428,100 +428,6 @@ u8 nes_apu_get_status(apu_t* apu){
 
     apu->frame_irq = false;
     return byte;
-}
-
-
-void nes_apu_draw_wave(int x0, int y0, u8* buffer, int scale, SDL_Surface* s){
-    int* pixels = (int*)s->pixels;
-    const int white = color(255, 255, 255);
-
-    float avg = 0;
-    for(int i = 0; i < DISPLAY_BUFFER_SIZE; i++)
-        avg += buffer[i];
-    avg /= DISPLAY_BUFFER_SIZE;
-
-    y0 += avg * scale;
-
-    int idx = 0;
-    int start = -1;
-    int end = -1;
-    for(int i = s->w/4; i < DISPLAY_BUFFER_SIZE; i++){
-        u8 s0 = buffer[i-1];
-        u8 s1 = buffer[i];
-        if(start == -1 && s0 < avg && s1 >= avg){
-            start = i;
-        } else if(start != -1 && s1 < avg && s0 >= avg){
-            end = i;
-            break;
-        } 
-    }
-
-    if(start == -1)
-        start = 0;
-    if(end == -1)
-        end = start;
-    idx = (start + end) / 2;
-    idx -= s->w/4;
-    if(idx < 0)
-        idx = 0;
-    
-    int prev;
-    for(int i = 0; i < s->w/2; i++){
-        int sample_idx = idx;
-        if(sample_idx >= DISPLAY_BUFFER_SIZE)
-            sample_idx = DISPLAY_BUFFER_SIZE ? DISPLAY_BUFFER_SIZE-1 : 0;
-        int sample = y0 - buffer[sample_idx] * scale;
-        if(!i)
-            prev = sample;
-        if(sample >= prev){
-            for(int j = prev; j <= sample; j++)
-                pixels[x0 + i + j * s->w] = white;
-        } else {
-            for(int j = sample; j <= prev; j++)
-                pixels[x0 + i + j * s->w] = white;
-        }
-        idx += 1;
-        prev = sample;
-    }
-}
-
-void nes_apu_draw_waves(apu_t* apu, SDL_Window** win){
-    Uint32 id = SDL_GetWindowID(*win);
-    if(!id){
-        *win = NULL;
-        return;
-    }
-    // display waveforms only if buffer is full
-    if(apu->display_idx != DISPLAY_BUFFER_SIZE)
-        return;
-    SDL_Surface* s = SDL_GetWindowSurface(*win);
-    int* pixels = (int*)s->pixels;
-    SDL_FillSurfaceRect(s, NULL, 0);
-
-    for(int y = 0; y < 2; y++){
-        for(int x = 0; x < 2; x++){
-            int idx =  x + y*2;
-            int x0 = x*s->w/2;
-            int y0 = s->h/6 + y*s->h/3;
-            u8* buf = apu->display_buffers[idx];
-            nes_apu_draw_wave(x0, y0, buf, 4, s);
-        }   
-    }
-
-    // DMC
-    nes_apu_draw_wave(0, s->h - s->h/6, apu->display_buffers[4], 1, s);
-
-    const int grey = color(100, 100, 100);
-    for(int i = 0; i < s->w; i++){
-        pixels[i + s->h / 3 * s->w] = grey;
-        pixels[i + 2 * s->h / 3 * s->w] = grey;
-    }
-    for(int i = 0; i < s->h; i++)
-        pixels[s->w / 2 + i * s->w] = grey;
-    
-    apu->display_idx = 0;
-
-    SDL_UpdateWindowSurface(*win);
 }
 
 void nes_apu_clock_quarter_frame(apu_t* apu){

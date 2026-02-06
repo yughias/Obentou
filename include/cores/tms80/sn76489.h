@@ -37,15 +37,10 @@ typedef struct sn76489_t {
     bool lfsr_freq2_counter;
 
     int latched_idx;
-
-    u16 display_buffers[4][DISPLAY_BUFFER_SIZE];
-    int display_idx[4];
 } sn76489_t;
 
 void tms80_sn76489_push_sample(sn76489_t* sn, int cycles);
 void tms80_sn76489_update(sn76489_t* sn, int cycles);
 void tms80_sn76489_write(sn76489_t* sn, u8 byte);
-
-void tms80_sn76489_draw_waves(sn76489_t* sn, SDL_Window** win);
 
 #endif

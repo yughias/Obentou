@@ -61,6 +61,9 @@ char** getArgvs();
 
 SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags);
 
+void createWidget(const char* name, int w, int h, void (*callback)(void*), void* userdata);
+void destroyAllWidgets();
+
 typedef size_t menuId;
 typedef size_t buttonId;
 #if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__)

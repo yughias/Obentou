@@ -1,4 +1,5 @@
 #include "utils/sound.h"
+
 #include "types.h"
 #include "SDL_MAINLOOP.h"
 #include <stdio.h>
@@ -19,6 +20,120 @@ static SDL_AtomicInt rb_read;
 static SDL_AtomicInt rb_write;
 bool sound_channel_muted[MAX_AUDIO_CHANNELS];
 
+#define DISPLAY_BUFFER_SAMPLES 1024
+
+typedef struct wave_info_t {
+    int buffer[DISPLAY_BUFFER_SAMPLES];
+    int idx;
+    int min;
+    int max;
+} wave_info_t;
+
+wave_info_t wave_info[MAX_AUDIO_CHANNELS];
+
+int sound_set_channel_sample(int sample, int channel){
+    int out = sample;
+    if(sound_channel_muted[channel])
+        out = 0;
+
+    if(wave_info[channel].idx != DISPLAY_BUFFER_SAMPLES)
+        wave_info[channel].buffer[wave_info[channel].idx++] = out;
+    return out;
+}
+
+static void draw_wave(void* arg){
+    wave_info_t* info = (wave_info_t*)arg;
+    const int white = -1;
+
+    if(info->idx < DISPLAY_BUFFER_SAMPLES) return;
+    info->idx = 0;
+
+    memset(pixels, 0, width * height * sizeof(int));
+
+    int range = info->max - info->min;
+
+    float avg = 0;
+    for(int i = 0; i < DISPLAY_BUFFER_SAMPLES; i++)
+        avg += info->buffer[i];
+    avg /= DISPLAY_BUFFER_SAMPLES;
+
+    int local_min = info->max;
+    int local_max = info->min;
+    for(int i = 0; i < DISPLAY_BUFFER_SAMPLES; i++){
+        local_min = SDL_min(local_min, info->buffer[i]);
+        local_max = SDL_max(local_max, info->buffer[i]);
+    }
+
+    int trigger_idx = 0;
+    int candidate_idx = 0;
+    int state = 0;
+
+    for(int i = width / 2; i < DISPLAY_BUFFER_SAMPLES; i++){
+        int val = info->buffer[i];
+        int prev_val = info->buffer[i-1];
+
+        if (state == 0) {
+            // STATE 0: ARMING
+            if (prev_val == local_min && val != local_min) {
+                candidate_idx = i;
+                state = 1;
+            }
+        } 
+        else if (state == 1) {
+            // STATE 1: MAX
+            if (val == local_max) {
+                state = 2;
+            }
+        } 
+        else if (state == 2) {
+            // STATE 2: OFF
+            if (prev_val != local_min && val == local_min) {
+                trigger_idx = candidate_idx;
+                break;
+            }
+        }
+    }
+
+    int idx = trigger_idx - (width / 2);
+    if(idx < 0) idx = 0;
+
+    int prev_y;
+    int center_y = height - 32;
+
+    for(int i = 0; i < width; i++){
+        int sample_idx = idx++;
+        if(sample_idx >= DISPLAY_BUFFER_SAMPLES) 
+            sample_idx = DISPLAY_BUFFER_SAMPLES - 1;
+
+        int val = info->buffer[sample_idx];
+
+        int offset = ((val - info->min) * (center_y - 32)) / range;
+        
+        int sample_y = center_y - offset; 
+
+        if(i == 0) prev_y = sample_y;
+
+        int y_min = (sample_y < prev_y) ? sample_y : prev_y;
+        int y_max = (sample_y < prev_y) ? prev_y : sample_y;
+
+        if (y_min < 0) y_min = 0;
+        if (y_max >= height) y_max = height - 1;
+
+        if (y_min < height && y_max >= 0) {
+            for(int j = y_min; j <= y_max; j++)
+                pixels[i + j * width] = white;
+        }
+
+        prev_y = sample_y;
+    }
+}
+
+void sound_open_wave_viewer(const char* name, int min, int max, int idx){
+    wave_info[idx].idx = 0;
+    wave_info[idx].min = min;
+    wave_info[idx].max = max;
+    createWidget(name, 512, 512, draw_wave, wave_info + idx);
+}
 
 void sound_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount) {
     if(isGrabbed()) {

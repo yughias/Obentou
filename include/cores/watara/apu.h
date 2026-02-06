@@ -65,13 +65,9 @@ typedef struct apu_t {
     apu_read_func read;
 
     void* ctx;
-
-    u8 display_buffers[4][DISPLAY_BUFFER_SIZE];
-    int display_idx;
 } apu_t;
 
 void watara_apu_step(apu_t* apu, int cycles);
 void watara_apu_push_sample(apu_t* apu, int cycles);
-void watara_apu_draw_waves(apu_t* apu, SDL_Window** win);
 
 #endif

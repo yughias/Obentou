@@ -22,6 +22,12 @@ bool PCE_loadstate(void* ctx, byte_vec_t* state);
     .freq = 44100, \
 } \
 
-#define PCE_apu_channels "WAVE0", "WAVE1", "WAVE2", "WAVE3", "WAVE4 OR NOISE", "WAVE5 OR NOISE"
+#define PCE_sound_channels \
+{ "WAVE0", 0, 31 }, \
+{ "WAVE1", 0, 31 }, \
+{ "WAVE2", 0, 31 }, \
+{ "WAVE3", 0, 31 }, \
+{ "WAVE4 OR NOISE", 0, 31 }, \
+{ "WAVE5 OR NOISE", 0, 31 }
 
 #endif

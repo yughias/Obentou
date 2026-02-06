@@ -8,9 +8,11 @@ static void send_samples(psg_t* psg, Uint8 * stream, int len){
     for(int i = 0; i < len; i++){
         Uint8 samples[3] = {0, 0, 0};
         for(int j = 0; j < 3; j++){
-            if(!psg->square_freq[j])
+            if(!psg->square_freq[j]){
+                sound_set_channel_sample(0, j); 
                 continue;
-            samples[j] = sound_channel_muted[j] ? 0 : sin(psg->time_elapsed*2*M_PI*psg->square_freq[j]) > 0; 
+            }
+            samples[j] = sound_set_channel_sample(sin(psg->time_elapsed*2*M_PI*psg->square_freq[j]) > 0, j); 
         }
         if(psg->mixer){
             samples[0] = samples[0] ^ samples[1];

@@ -297,6 +297,12 @@ static void apu_mute_channel(void* audio_idx){
     tickButton(audio_channel_buttons[idx], !sound_channel_muted[idx]);
 }
 
+static void menu_open_wave_viewer(void* audio_idx){
+    int idx = *(int*)audio_idx;
+    const sound_channel_t *ch = &core_ctx_arg->core->sound_channels[idx];
+    sound_open_wave_viewer(ch->name, ch->min, ch->max, idx);
+}
+
 void menu_create(core_ctx_t* ctx){
     core_ctx_arg = ctx;
     destroyAllMenus();
@@ -441,13 +447,15 @@ void menu_create(core_ctx_t* ctx){
 
     addButtonTo(-1, "About", (void*)menu_info, NULL);
 
-    if(ctx->core && ctx->core->apu_channels[0][0]){
+    if(ctx->core && ctx->core->sound_channels[0].name){
         menuId apu_menu = addMenuTo(emu_menu, "APU", false);
         for(int i = 0; i < MAX_AUDIO_CHANNELS; i++){
-            if(ctx->core->apu_channels[i][0]){
+            if(ctx->core->sound_channels[i].name){
                 apu_idxs[i] = i;
-                audio_channel_buttons[i] = addButtonTo(apu_menu, ctx->core->apu_channels[i], apu_mute_channel, apu_idxs + i);
+                menuId audio_channel_menu = addMenuTo(apu_menu, ctx->core->sound_channels[i].name, false);
+                audio_channel_buttons[i] = addButtonTo(audio_channel_menu, "Enabled", apu_mute_channel, apu_idxs + i);
                 tickButton(audio_channel_buttons[i], true);
+                addButtonTo(audio_channel_menu, "Waveform", menu_open_wave_viewer, apu_idxs + i);
             }
         }
     }

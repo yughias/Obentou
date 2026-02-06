@@ -123,8 +123,9 @@ static void psg_get_sample(void* ctx, void* data){
         if(right_idx > 0xF) right_idx = 0xF;
         left_idx = (left_idx << 1) | extra_attenuation;
         right_idx = (right_idx << 1) | extra_attenuation;
-        sample.left += sound_channel_muted[i] ? 0 : ch->dac * volume_lut[left_idx];
-        sample.right += sound_channel_muted[i] ? 0 : ch->dac * volume_lut[right_idx];
+        bool enabled = sound_set_channel_sample(ch->dac, i);
+        sample.left += enabled ? ch->dac * volume_lut[left_idx] : 0;
+        sample.right += enabled ? ch->dac * volume_lut[right_idx] : 0;
     }
     
     memcpy(data, &sample, sizeof(sample_t));

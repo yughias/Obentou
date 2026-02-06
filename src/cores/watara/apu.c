@@ -143,20 +143,22 @@ static void apu_get_sample(void* ctx, void* data){
     apu_t* apu = (apu_t*)ctx;
     sample_t sample;
     u8 waves[2] = { apu_wave_get_sample(&apu->waves[0]), apu_wave_get_sample(&apu->waves[1]) };
-    sample.r = sound_channel_muted[0] ? 0 : waves[0];
-    sample.l = sound_channel_muted[1] ? 0 : waves[1];
+    sample.r = sound_set_channel_sample(waves[0], 0);
+    sample.l = sound_set_channel_sample(waves[1], 1);
 
     u8 noise_sample = apu_noise_get_sample(&apu->noise);
     bool noise_l = apu->noise.ctrl & 0x08;
     bool noise_r = apu->noise.ctrl & 0x04;
-    sample.l += sound_channel_muted[2] ? 0 : noise_sample * noise_l;
-    sample.r += sound_channel_muted[2] ? 0 :noise_sample * noise_r;
+    bool muted = sound_set_channel_sample(noise_sample, 2);
+    sample.l += muted ? 0 : noise_sample * noise_l;
+    sample.r += muted ? 0 :noise_sample * noise_r;
 
     u8 ch3_sample = apu_ch3_get_sample(&apu->ch3);
     bool ch3_l = apu->ch3.ctrl & 0x08;
     bool ch3_r = apu->ch3.ctrl & 0x04;
-    sample.l += sound_channel_muted[3] ? 0 :ch3_sample * ch3_l;
-    sample.r += sound_channel_muted[3] ? 0 :ch3_sample * ch3_r;
+    muted = sound_set_channel_sample(ch3_sample, 3);
+    sample.l += muted ? 0 :ch3_sample * ch3_l;
+    sample.r += muted ? 0 :ch3_sample * ch3_r;
 
     // clipping
     if(sample.l > 0xF)
@@ -166,113 +168,10 @@ static void apu_get_sample(void* ctx, void* data){
     sample.l <<= 3;
     sample.r <<= 3;
 
-    if(apu->display_idx != DISPLAY_BUFFER_SIZE){
-        apu->display_buffers[0][apu->display_idx] = waves[0];
-        apu->display_buffers[1][apu->display_idx] = waves[1];
-        apu->display_buffers[2][apu->display_idx] = noise_sample;
-        apu->display_buffers[3][apu->display_idx] = ch3_sample;
-        apu->display_idx += 1;
-    }
-
     memcpy(data, &sample, sizeof(sample_t));
 }
 
 void watara_apu_push_sample(apu_t* apu, int cycles){
     sample_t sample;
     sound_push_sample(cycles, sizeof(sample_t), apu, &sample, apu_get_sample);
-}
-
-static void apu_draw_wave(int x0, int y0, u8* buffer, SDL_Surface* s, int scale){
-    int* pixels = (int*)s->pixels;
-    const int white = color(255, 255, 255);
-
-    float avg = 0;
-    for(int i = 0; i < DISPLAY_BUFFER_SIZE; i++)
-        avg += buffer[i];
-    avg /= DISPLAY_BUFFER_SIZE;
-
-    int idx = 0;
-    int start = -1;
-    int end = -1;
-    int max_val = -(1 << 16);
-    int min_val = (1 << 16);
-    for(int i = s->w/4; i < DISPLAY_BUFFER_SIZE; i++){
-        u8 s0 = buffer[i-1];
-        u8 s1 = buffer[i];
-        if(s0 < min_val)
-            min_val = s0;
-        if(s0 > max_val)
-            max_val = s1;
-        if(s0 < avg && s1 >= avg){
-            start = i;
-        }
-        if(start != -1 && s1 < avg && s0 >= avg){
-            end = i;
-            break;
-        } 
-    }
-
-    y0 += (max_val - min_val) * scale / 2;
-
-    if(start == -1)
-        start = 0;
-    if(end == -1)
-        end = start;
-    idx = (start + end) / 2;
-    idx -= s->w/4;
-    if(idx < 0)
-        idx = 0;
-    
-    int prev;
-    for(int i = 0; i < s->w/2; i++){
-        int sample_idx = idx;
-        if(sample_idx >= DISPLAY_BUFFER_SIZE)
-            sample_idx = DISPLAY_BUFFER_SIZE ? DISPLAY_BUFFER_SIZE-1 : 0;
-        int sample = y0 - buffer[sample_idx] * scale;
-        if(!i)
-            prev = sample;
-        if(sample >= prev){
-            for(int j = prev; j <= sample; j++)
-                pixels[x0 + i + j * s->w] = white;
-        } else {
-            for(int j = sample; j <= prev; j++)
-                pixels[x0 + i + j * s->w] = white;
-        }
-        idx += 1;
-        prev = sample;
-    }
-}
-
-void watara_apu_draw_waves(apu_t* apu, SDL_Window** win){
-    Uint32 id = SDL_GetWindowID(*win);
-    if(!id){
-        *win = NULL;
-        return;
-    }
-    if(apu->display_idx != DISPLAY_BUFFER_SIZE)
-        return;
-    SDL_Surface* s = SDL_GetWindowSurface(*win);
-    int* pixels = (int*)s->pixels;
-    SDL_FillSurfaceRect(s, NULL, 0);
-    for(int y = 0; y < 2; y++){
-        for(int x = 0; x < 2; x++){
-            int idx =  x + y*2;
-            int x0 = x*s->w/2;
-            int y0 = y*s->h/2 + s->h/4;
-            u8* buf = apu->display_buffers[idx];
-            apu_draw_wave(x0, y0, buf, s, 8);
-        }   
-    }
-
-    const int grey = color(100, 100, 100);
-    for(int i = 0; i < s->w; i++){
-        pixels[i + s->h / 2 * s->w] = grey;
-    }
-    for(int i = 0; i < s->h; i++)
-        pixels[s->w / 2 + i * s->w] = grey;
-    
-    memset(apu->display_buffers, 0, sizeof(apu->display_buffers));
-    apu->display_idx = 0;
-
-    SDL_UpdateWindowSurface(*win);
 }

@@ -77,7 +77,7 @@ void state_load_slot(core_ctx_t* ctx) {
     file_load(&file, path, false);
     if(!file.data)
         return;
-    size_t bmp_size = *(uint32_t*)(&file.data[2]);
+    size_t bmp_size = *(u32*)(&file.data[2]);
     bool ok = state_load(ctx, &(byte_vec_t){.data = file.data + bmp_size, .size = file.size - bmp_size});
     file_delete(&file);
     if(!ok){

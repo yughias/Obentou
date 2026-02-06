@@ -244,8 +244,8 @@ static bool is_fullscreen;
 static bool menu_rendered;
 static int menu_height;
 
-HWND hwnd = NULL;
-HMENU mainMenu = NULL;
+static HWND hwnd = NULL;
+static HMENU mainMenu = NULL;
 
 HWND getWindowHandler();
 void createMainMenu();
@@ -286,6 +286,20 @@ void emscripten_mainloop(){
     }   
 }
 #endif
+
+#define MAX_WIDGETS 16
+
+typedef struct widget_t {
+    bool valid;
+    int width;
+    int height;
+    SDL_Window* window;
+    const char* name;
+    void (*callback)(void*);
+    void* data;
+} widget_t;
+
+widget_t widgets[MAX_WIDGETS];
 
 int main(int argc, char** argv){
     main_argc = argc;
@@ -361,8 +375,8 @@ int main(int argc, char** argv){
     SDL_DestroySurface(back_surface);
     SDL_DestroySurface(front_surface);
 
-    free(buttons);
-    free(menus);
+    destroyAllMenus();
+    destroyAllWidgets();
 
     SDL_DestroyWindow(window);
 
@@ -450,6 +464,10 @@ void mainloop(){
                     running = 0;
                 else
                     SDL_DestroyWindow(target_win);
+                for(int i = 0; i < MAX_WIDGETS; i++){
+                    if(widgets[i].valid && widgets[i].window == target_win)
+                        widgets[i].valid = false;
+                }
             }
             break;
 
@@ -462,6 +480,24 @@ void mainloop(){
 
     loop();
     renderBufferToWindow();
+
+    // widget loop
+    int* tmp_pix = pixels;
+    int tmp_w = width;
+    int tmp_h = height;
+    for(int i = 0; i < MAX_WIDGETS; i++){
+        if(widgets[i].valid){
+            SDL_Surface* surface = SDL_GetWindowSurface(widgets[i].window);
+            pixels = (int*)surface->pixels;
+            width = widgets[i].width;
+            height = widgets[i].height;
+            widgets[i].callback(widgets[i].data);
+            SDL_UpdateWindowSurface(widgets[i].window);
+        }
+    }
+    pixels = tmp_pix;
+    width = tmp_w;
+    height = tmp_h;
 }
 
 SDL_Window* getMainWindow(){
@@ -527,7 +563,7 @@ void fullScreen(){
 }
 
 void background(int col){
-    SDL_FillSurfaceRect(front_surface, NULL, col);
+    SDL_FillSurfaceRect(back_surface, NULL, col);
     renderPixels();
 }
 
@@ -858,3 +894,41 @@ void setButtonTitle(buttonId button_id, const char* string){
     #endif
 }
 #endif
+
+void createWidget(const char* name, int w, int h, void (*callback)(void*), void* userdata){
+    // search for existing widget
+    for(int i = 0; i < MAX_WIDGETS; i++){
+        if(widgets[i].valid && !strcmp(widgets[i].name, name))
+            return;
+    }
+
+    widget_t* wid = NULL;
+    for(int i = 0; i < MAX_WIDGETS; i++){
+        if(!widgets[i].valid){
+            wid = &widgets[i];
+            wid->valid = true;
+            wid->name = name;
+            wid->width = w;
+            wid->height = h;
+            wid->callback = callback;
+            wid->data = userdata;
+            break;
+        }
+    }
+
+    if(!wid){
+        printf("Failed to create widget: %s\n", name);
+        return;
+    }
+
+    wid->window = SDL_CreateWindow(name, w, h, 0);
+}
+
+void destroyAllWidgets(){
+    for(int i = 0; i < MAX_WIDGETS; i++){
+        if(widgets[i].valid){
+            SDL_DestroyWindow(widgets[i].window);
+            widgets[i].valid = false;
+        }
+    }
+}

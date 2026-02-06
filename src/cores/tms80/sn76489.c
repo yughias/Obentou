@@ -27,10 +27,7 @@ static void sn76489_get_sample(void* ctx, void* data){
     sample_t sample = 0;
     for(int i = 0; i < 4; i++){
         u16 ch_sample = sn->sample[i]*sn->attenuation[i];
-        sample += sound_channel_muted[i] ? 0 : ch_sample;
-        if(sn->display_idx[i] != DISPLAY_BUFFER_SIZE){
-            sn->display_buffers[i][sn->display_idx[i]++] = ch_sample;
-        }
+        sample += sound_set_channel_sample(ch_sample, i);
     }
 
     *(sample_t*)data = sample;
@@ -108,99 +105,4 @@ void tms80_sn76489_write(sn76489_t* sn, u8 byte){
         sn->lfsr.white_noise = byte & 0b100;
         sn->lfsr.reg = (1 << sn->lfsr.feedback_bit);
     }
-}
-
-static void sn76489_draw_wave(int x0, int y0, u16* buffer, int buffer_len, SDL_Surface* s){
-    int* pixels = (int*)s->pixels;
-    const int white = color(255, 255, 255);
-
-    float avg = 0;
-    for(int i = 0; i < DISPLAY_BUFFER_SIZE; i++)
-        avg += buffer[i];
-    avg /= DISPLAY_BUFFER_SIZE;
-
-    int idx = 0;
-    int start = -1;
-    int end = -1;
-    int max_val = -(1 << 16);
-    int min_val = (1 << 16);
-    for(int i = s->w/4; i < DISPLAY_BUFFER_SIZE; i++){
-        u16 s0 = buffer[i-1];
-        u16 s1 = buffer[i];
-        if(s0 < min_val)
-            min_val = s0;
-        if(s0 > max_val)
-            max_val = s1;
-        if(s0 < avg && s1 >= avg){
-            start = i;
-        }
-        if(start != -1 && s1 < avg && s0 >= avg){
-            end = i;
-            break;
-        } 
-    }
-
-    y0 += (max_val - min_val) / 2 / 60;
-
-    if(start == -1)
-        start = 0;
-    if(end == -1)
-        end = start;
-    idx = (start + end) / 2;
-    idx -= s->w/4;
-    if(idx < 0)
-        idx = 0;
-    
-    int prev;
-    for(int i = 0; i < s->w/2; i++){
-        int sample_idx = idx;
-        if(sample_idx >= buffer_len)
-            sample_idx = buffer_len ? buffer_len-1 : 0;
-        int sample = y0 - (buffer[sample_idx] / 60);
-        if(!i)
-            prev = sample;
-        if(sample >= prev){
-            for(int j = prev; j <= sample; j++)
-                pixels[x0 + i + j * s->w] = white;
-        } else {
-            for(int j = sample; j <= prev; j++)
-                pixels[x0 + i + j * s->w] = white;
-        }
-        idx += 1;
-        prev = sample;
-    }
-}
-
-void tms80_sn76489_draw_waves(sn76489_t* sn, SDL_Window** win){
-    Uint32 id = SDL_GetWindowID(*win);
-    if(!id){
-        *win = NULL;
-        return;
-    }
-    SDL_Surface* s = SDL_GetWindowSurface(*win);
-    int* pixels = (int*)s->pixels;
-    SDL_FillSurfaceRect(s, NULL, 0);
-
-    for(int y = 0; y < 2; y++){
-        for(int x = 0; x < 2; x++){
-            int idx =  x + y*2;
-            int x0 = x*s->w/2;
-            int y0 = y*s->h/2 + s->h/4;
-            u16* buf = sn->display_buffers[idx];
-            int buf_len = sn->display_idx[idx];
-            sn76489_draw_wave(x0, y0, buf, buf_len, s);
-        }   
-    }
-
-    const int grey = color(100, 100, 100);
-    for(int i = 0; i < s->w; i++){
-        pixels[i + s->h / 2 * s->w] = grey;
-    }
-    for(int i = 0; i < s->h; i++)
-        pixels[s->w / 2 + i * s->w] = grey;
-    
-    memset(sn->display_buffers, 0, sizeof(sn->display_buffers));
-    memset(sn->display_idx, 0, sizeof(sn->display_idx));
-
-    SDL_UpdateWindowSurface(*win);
 }

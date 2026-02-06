@@ -106,5 +106,4 @@ void loop(){
         }
         core_ctx_run_frame(&emu_ctx);
     }
-
 }

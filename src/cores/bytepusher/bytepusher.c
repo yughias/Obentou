@@ -30,8 +30,10 @@ static void update_keys(bytepusher_t* bp){
 static void play_sound_data(const bytepusher_t* bp){
     const u8* memory = bp->memory;
     const u8* audio_ram = memory + ((memory[6] << 16) | (memory[7] << 8));
-    if(!sound_channel_muted[0])
-        sound_queue_samples(audio_ram, 256);
+    static u8 audio_buffer[256];
+    for(int i = 0; i < 256; i++)
+        audio_buffer[i] = sound_set_channel_sample((i8)audio_ram[i], 0);
+    sound_queue_samples(audio_buffer, 256);
 }
 
 static void render(const bytepusher_t* bp){

@@ -22,6 +22,9 @@ bool PV1000_loadstate(void* ctx, byte_vec_t* state);
     .freq = 44100, \
 } \
 
-#define PV1000_apu_channels "SQUARE0", "SQUARE1", "SQUARE2"
+#define PV1000_sound_channels \
+{ "SQUARE0", 0, 1 },  \
+{ "SQUARE1", 0, 1 }, \
+{ "SQUARE2", 0, 1 }
 
 #endif

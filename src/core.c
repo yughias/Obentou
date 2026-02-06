@@ -35,7 +35,7 @@
     .sound_callback = core##_sound_callback, \
     .control_begin = CONTROL_##core##_BEGIN, \
     .control_end = CONTROL_##core##_END, \
-    .apu_channels = { core##_apu_channels }, \
+    .sound_channels = { core##_sound_channels }, \
     .savestate = core##_savestate, \
     .loadstate = core##_loadstate, \
     .has_bios = core##_has_bios \
@@ -68,6 +68,7 @@ static void core_close_emu(core_ctx_t* ctx){
         if(ctx->core->close)
             save_sav(ctx);
         free(ctx->emu);
+        destroyAllWidgets();
     }
 }
 

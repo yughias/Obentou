@@ -19,6 +19,9 @@ void sound_pause(bool pause);
 void sound_set_push_rate_multiplier(int multiplier);
 float sound_get_push_rate();
 
+int sound_set_channel_sample(int sample, int channel);
+void sound_open_wave_viewer(const char* name, int min, int max, int idx);
+
 extern bool sound_channel_muted[MAX_AUDIO_CHANNELS];
 
 #endif

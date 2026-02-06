@@ -22,6 +22,11 @@ void NES_close(void* ctx, const char* sav_path);
     .freq = 44100, \
 } \
 
-#define NES_apu_channels "SQUARE 1", "SQUARE 2", "TRIANGLE", "NOISE", "DMC"
+#define NES_sound_channels \
+{ "SQUARE 1", 0, 15 }, \
+{ "SQUARE 2", 0, 15 }, \
+{ "TRIANGLE", 0, 15 }, \
+{ "NOISE", 0, 15 }, \
+{ "DMC", 0, 127 } \
 
 #endif

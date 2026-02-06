@@ -19,6 +19,12 @@ typedef byte_vec_t (*savestate_ptr)(void* ctx);
 typedef bool (*loadstate_ptr)(void* ctx, byte_vec_t* state);
 typedef void (*audio_callback_ptr)(void* userdata, Uint8* stream, int len);
 
+typedef struct sound_channel_t {
+    const char* name;
+    int min;
+    int max;
+} sound_channel_t;
+
 typedef struct core_t {
     const char name[32];
     detect_ptr detect;
@@ -35,7 +41,7 @@ typedef struct core_t {
     savestate_ptr savestate;
     loadstate_ptr loadstate;
     bool has_bios;
-    const char apu_channels[MAX_AUDIO_CHANNELS][16];
+    sound_channel_t sound_channels[MAX_AUDIO_CHANNELS];
 } core_t;
 
 typedef struct core_ctx_t {
