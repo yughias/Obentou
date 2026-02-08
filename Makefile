@@ -63,7 +63,7 @@ emcc:
 	-sASYNCIFY \
 	-lidbfs.js \
 	--preload-file base_config.ini@config.ini \
-	-sEXPORTED_FUNCTIONS="['_main', '_obentou_exit']" \
+	-sEXPORTED_FUNCTIONS="['_main', '_obentou_exit', '_notify_widget_closed']" \
 	-sEXPORTED_RUNTIME_METHODS="['FS', 'callMain']" \
 	-o website/obentou.js
 	cp logo.ico website/favicon.ico

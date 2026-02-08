@@ -81,7 +81,6 @@ void checkRadioButton(buttonId button_id);
 
 EMSCRIPTEN_KEEPALIVE
 void emscripten_handle_click(int buttonId) {
-    printf("C-Side: Received click for button ID %d\n", buttonId);
     last_element_clicked = buttonId;
 }
 
@@ -184,6 +183,107 @@ EM_JS(void, js_set_menu_bar_visibility, (bool visible), {
 EM_JS(void, js_destroy_menus, (), {
     var bar = document.getElementById('sdl-menu-bar');
     if(bar) bar.remove();
+});
+
+EM_JS(void, js_create_widget_canvas, (int id, const char* namePtr, int w, int h), {
+var name = UTF8ToString(namePtr);
+    var container = document.createElement('div');
+    container.className = 'widget-container';
+    container.id = 'widget-container-' + id;
+
+    var header = document.createElement('div');
+    header.className = 'widget-header';
+    
+    var label = document.createElement('div');
+    label.className = 'widget-label';
+    label.innerText = name;
+    
+    var closeBtn = document.createElement('div');
+    closeBtn.className = 'widget-close-btn';
+    closeBtn.innerText = '×';
+    closeBtn.onclick = function() {
+        container.remove();
+        _notify_widget_closed(id); 
+    };
+
+    header.appendChild(label);
+    header.appendChild(closeBtn);
+    
+    var canvas = document.createElement('canvas');
+    canvas.className = 'widget-canvas';
+    canvas.id = 'widget-' + id;
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    container.style.left = (20 + (id * 20)) + "px";
+    container.style.top = (60 + (id * 20)) + "px";
+
+    var resizer = document.createElement('div');
+    resizer.className = 'widget-resizer';
+    
+    container.appendChild(header);
+    container.appendChild(canvas);
+    container.appendChild(resizer);
+    document.body.appendChild(container);
+
+    var isDragging = false;
+    var offsetX, offsetY;
+    var isResizing = false;
+    
+    resizer.onmousedown = function(e) {
+        isResizing = true;
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    header.onmousedown = function(e) {
+        isDragging = true;
+        offsetX = e.clientX - container.offsetLeft;
+        offsetY = e.clientY - container.offsetTop;
+        var all = document.querySelectorAll('.widget-container');
+        all.forEach(w => w.style.zIndex = "1000");
+        container.style.zIndex = "1001";
+    };
+
+    window.addEventListener('mousemove', function(e) {
+        if (isResizing) {
+            container.style.width = (e.clientX - container.offsetLeft) + 'px';
+            container.style.height = (e.clientY - container.offsetTop) + 'px';
+        } else if (isDragging) {
+            container.style.left = (e.clientX - offsetX) + 'px';
+            container.style.top = (e.clientY - offsetY) + 'px';
+        }
+    });
+
+    window.addEventListener('mouseup', function() {
+        isResizing = false;
+        isDragging = false;
+    });
+});
+
+EM_JS(void, js_update_widget_canvas, (int id, int* buffer, int w, int h), {
+    var canvas = document.getElementById('widget-' + id);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var imgData = ctx.createImageData(w, h);
+    
+    var data = imgData.data;
+    var src = buffer >> 2;
+    for (var i = 0; i < w * h; i++) {
+        var pixel = HEAP32[src + i];
+        var idx = i * 4;
+        data[idx]     = (pixel >> 16) & 0xFF; // R
+        data[idx + 1] = (pixel >> 8)  & 0xFF; // G
+        data[idx + 2] =  pixel        & 0xFF; // B
+        data[idx + 3] = 255;                  // Alpha
+    }
+    ctx.putImageData(imgData, 0, 0);
+});
+
+EM_JS(void, js_destroy_widget_canvas, (int id), {
+    var el = document.getElementById('widget-container-' + id);
+    if (el) el.remove();
 });
 
 #endif
@@ -294,12 +394,31 @@ typedef struct widget_t {
     int width;
     int height;
     SDL_Window* window;
+    int* em_pixels;
     const char* name;
     void (*callback)(void*);
     void* data;
 } widget_t;
 
 widget_t widgets[MAX_WIDGETS];
+
+#ifdef __EMSCRIPTEN__
+
+EMSCRIPTEN_KEEPALIVE
+void notify_widget_closed(int id) {
+    if (id >= 0 && id < MAX_WIDGETS) {
+        if (widgets[id].valid) {
+            if (widgets[id].em_pixels) {
+                free(widgets[id].em_pixels);
+                widgets[id].em_pixels = NULL;
+            }
+            widgets[id].valid = false;
+            printf("Widget %d (%s) removed from C array.\n", id, widgets[id].name);
+        }
+    }
+}
+
+#endif
 
 int main(int argc, char** argv){
     main_argc = argc;
@@ -487,12 +606,18 @@ void mainloop(){
     int tmp_h = height;
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(widgets[i].valid){
-            SDL_Surface* surface = SDL_GetWindowSurface(widgets[i].window);
-            pixels = (int*)surface->pixels;
             width = widgets[i].width;
             height = widgets[i].height;
+            #ifdef __EMSCRIPTEN__
+            pixels = widgets[i].em_pixels;
+            widgets[i].callback(widgets[i].data);
+            js_update_widget_canvas(i, pixels, width, height);
+            #else
+            SDL_Surface* surface = SDL_GetWindowSurface(widgets[i].window);
+            pixels = (int*)surface->pixels;
             widgets[i].callback(widgets[i].data);
             SDL_UpdateWindowSurface(widgets[i].window);
+            #endif
         }
     }
     pixels = tmp_pix;
@@ -896,38 +1021,51 @@ void setButtonTitle(buttonId button_id, const char* string){
 #endif
 
 void createWidget(const char* name, int w, int h, void (*callback)(void*), void* userdata){
-    // search for existing widget
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(widgets[i].valid && !strcmp(widgets[i].name, name))
             return;
     }
 
-    widget_t* wid = NULL;
+    int idx = -1;
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(!widgets[i].valid){
-            wid = &widgets[i];
-            wid->valid = true;
-            wid->name = name;
-            wid->width = w;
-            wid->height = h;
-            wid->callback = callback;
-            wid->data = userdata;
+            idx = i;
             break;
         }
     }
 
-    if(!wid){
-        printf("Failed to create widget: %s\n", name);
+    if(idx == -1){
+        printf("No free widget slots for: %s\n", name);
         return;
     }
 
-    wid->window = SDL_CreateWindow(name, w, h, 0);
+    widget_t* wid = &widgets[idx];
+    wid->valid = true;
+    wid->name = name;
+    wid->width = w;
+    wid->height = h;
+    wid->callback = callback;
+    wid->data = userdata;
+
+    #ifdef __EMSCRIPTEN__
+        wid->window = NULL;
+        wid->em_pixels = (int*)malloc(w * h * sizeof(int));
+        js_create_widget_canvas(idx, name, w, h);
+    #else
+        wid->window = SDL_CreateWindow(name, w, h, 0);
+        wid->em_pixels = NULL;
+    #endif
 }
 
 void destroyAllWidgets(){
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(widgets[i].valid){
+            #ifdef __EMSCRIPTEN__
+            js_destroy_widget_canvas(i);
+            free(widgets[i].em_pixels);
+            #else
             SDL_DestroyWindow(widgets[i].window);
+            #endif
             widgets[i].valid = false;
         }
     }

@@ -60,7 +60,7 @@
             }
         };
 
-        window.addEventListener("beforeunload", function (e) {
+        window.addEventListener("pagehide", function (e) {
             Module._obentou_exit();
             Module.FS.syncfs(false, function (err) {
                 if (err) console.error('Error saving to DB:', err);
