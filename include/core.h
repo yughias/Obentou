@@ -25,6 +25,13 @@ typedef struct sound_channel_t {
     int max;
 } sound_channel_t;
 
+#define MAX_WIDGETS 8
+
+typedef struct widget_t {
+    const char* name;
+    bool (*draw)(void*);
+} widget_t;
+
 typedef struct core_t {
     const char name[32];
     detect_ptr detect;
@@ -42,6 +49,7 @@ typedef struct core_t {
     loadstate_ptr loadstate;
     bool has_bios;
     sound_channel_t sound_channels[MAX_AUDIO_CHANNELS];
+    widget_t widgets[MAX_WIDGETS];
 } core_t;
 
 typedef struct core_ctx_t {

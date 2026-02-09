@@ -28,4 +28,13 @@ void GBC_close(void* ctx, const char* sav_path);
 { "WAVE RAM", 0, 15}, \
 { "NOISE", 0, 15} \
 
+#include "cores/gbc/visualizers.h"
+
+#define GBC_widgets \
+{ "Tilemap", gb_draw_tilemap }, \
+{ "Tileset", gb_draw_tileset }, \
+{ "Sprites", gb_draw_sprites }, \
+{ "Palettes", gb_draw_palettes }, \
+{ "Window", gb_draw_window }
+
 #endif

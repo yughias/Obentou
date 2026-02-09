@@ -27,4 +27,9 @@ bool PV1000_loadstate(void* ctx, byte_vec_t* state);
 { "SQUARE1", 0, 1 }, \
 { "SQUARE2", 0, 1 }
 
+#include "cores/pv1000/visualizers.h"
+
+#define PV1000_widgets \
+{ "Tileset", pv1000_draw_tileset }
+
 #endif

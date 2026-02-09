@@ -19,6 +19,7 @@ typedef Uint32 button;
 
 extern int width;
 extern int height;
+extern int stride;
 extern int* pixels;
 
 extern float frameRate;
@@ -61,7 +62,7 @@ char** getArgvs();
 
 SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags);
 
-void createWidget(const char* name, int w, int h, void (*callback)(void*), void* userdata);
+void createWidget(const char* name, int w, int h, bool (*callback)(void*), void* userdata);
 void destroyAllWidgets();
 
 typedef size_t menuId;

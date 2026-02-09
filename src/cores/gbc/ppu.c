@@ -4,7 +4,6 @@
 
 #include <stdlib.h>
 
-static u8* getTileMap(gb_t*, bool);
 static u8* getTileData(gb_t*, u8);
 static int getSpriteRealX(gb_t*, u8);
 static int getSpriteRealY(gb_t*, u8);
@@ -14,10 +13,6 @@ static int getColorFromTileDataRGB(gb_t*, u8*, u8, u8, u8);
 static int convertDMG2RGB(gb_t*, u8, u8, u8*);
 static int convertCGB2RGB(gb_t*, u8, u8, u8*);
 static u8 getColorGb(u8* tilePtr, u8 tilePX, u8 tilePY);
-static int getTileMapPixelRGB(gb_t*, u8* tileMapPtr, u8 x, u8 y, bool* dmgPrio, bool* cgbPrio);
-static int getSpritePixelRGB(gb_t*, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palette, bool flipX, bool flipY, bool bigSprite, bool* transparent);
-static void getSpriteAttribute(gb_t*, u8* spriteData, bool* flipX, bool* flipY, bool* backgroundOver, bool* obp_n, u8* palette, u8** tilePtr);
-static int CgbToRgb(u8, u8);
 
 static u8 colorCorrection[32] = {
     0, 62, 64, 89, 90, 109, 111, 127, 128, 142, 143, 156, 156, 168, 169, 180, 181, 191, 192, 201, 202, 211, 212, 221, 221, 230, 230, 238, 239, 247, 247, 255
@@ -59,7 +54,7 @@ void gb_initLcdcMasks(gb_t* gb){
     SET_LCDC_MASKS(DMG);
 }
 
-static int CgbToRgb(u8 lo_byte, u8 hi_byte){
+int CgbToRgb(u8 lo_byte, u8 hi_byte){
     int out_r, out_g, out_b;
     u8 red = lo_byte & 0x1F;
     u8 green = (lo_byte >> 5) | ((hi_byte & 0b11) << 3);
@@ -124,56 +119,7 @@ void gb_copyDefaultCgbPalette(gb_t* gb){
     memcpy(gb->OBP_CRAM, default_obp_cram, CRAM_SIZE);
 }
 
-void gb_drawBgRamAt(gb_t* gb, int screenX, int screenY){
-    ppu_t* ppu = &gb->ppu;
-    u8* bgTileMap = getTileMap(gb, ppu->LCDC_REG & ppu->BG_TILE_MAP_AREA_MASK);
-
-    for(int y = 0; y < 256; y++){
-        for(int x = 0; x < 256; x++){
-            bool priority;
-            int col = getTileMapPixelRGB(gb, bgTileMap, x, y, &priority, &priority);
-            pixels[screenX+x + (screenY+y)*width] = col;
-        }
-    }
-
-    for(int y = 0; y < LCD_HEIGHT; y++){
-        int offX1 = screenX + (ppu->SCX_REG % 256);
-        int offX2 = screenX + ((ppu->SCX_REG + LCD_WIDTH) % 256);
-        int offY = screenY + ((ppu->SCY_REG + y) % 256);
-        pixels[offX1 + offY * width] = color(255, 0, 0);
-        pixels[offX2 + offY * width] = color(255, 0, 0);
-    }
-
-    for(int x = 0; x < LCD_WIDTH; x++){
-        int offX = screenX + ((ppu->SCX_REG + x) % 256);
-        int offY1 = screenY + (ppu->SCY_REG % 256);
-        int offY2 = screenY + ((ppu->SCY_REG + LCD_HEIGHT) % 256);
-        pixels[offX + offY1 * width] = color(255, 0, 0);
-        pixels[offX + offY2 * width] = color(255, 0, 0);
-    }
-}
-
-void gb_drawWinRamAt(gb_t* gb, int screenX, int screenY){
-    ppu_t* ppu = &gb->ppu;
-    u8* winTileMap = getTileMap(gb, ppu->LCDC_REG & ppu->WIN_TILE_MAP_AREA_MASK);
-
-    for(int y = 0; y < 256; y++){
-        for(int x = 0; x < 256; x++){
-            bool priority;
-            int col = getTileMapPixelRGB(gb, winTileMap, x, y, &priority, &priority);
-            pixels[screenX+x + (screenY+y)*width] = col;
-        }
-    }
-}
-
-void gb_drawColorAt(int x, int y, int palette, int pal_color, u8* cram){
-    u8 lo_byte = cram[palette*8 + pal_color*2];
-    u8 hi_byte = cram[palette*8 + pal_color*2 + 1];
-    int col = CgbToRgb(lo_byte, hi_byte);
-    rect(x, y, 8, 8, col);
-}
-
-static u8* getTileMap(gb_t* gb, bool addressMode){
+u8* gb_getTileMap(gb_t* gb, bool addressMode){
     return addressMode ? gb->VRAM + 0x1C00 : gb->VRAM + 0x1800;
 }
 
@@ -217,7 +163,7 @@ static int convertDMG2RGB(gb_t* gb, u8 colorGB, u8 colorREG, u8* cram_palette){
         return ppu->dmgColors[idx];
 }
 
-static int getTileMapPixelRGB(gb_t* gb, u8* tileMapPtr, u8 x, u8 y, bool* dmgPrio, bool* cgbPrio){
+int gb_getTileMapPixelRGB(gb_t* gb, u8* tileMapPtr, u8 x, u8 y, bool* dmgPrio, bool* cgbPrio){
     ppu_t* ppu = &gb->ppu;
     u8 byteX = x >> 3;
     u8 byteY = y >> 3;
@@ -250,8 +196,8 @@ static int getTileMapPixelRGB(gb_t* gb, u8* tileMapPtr, u8 x, u8 y, bool* dmgPri
 static void renderLine(gb_t* gb, u8 y){
     ppu_t* ppu = &gb->ppu;
     int col;
-    u8* bgTileMap = getTileMap(gb, ppu->LCDC_REG & ppu->BG_TILE_MAP_AREA_MASK);
-    u8* winTileMap = getTileMap(gb, ppu->LCDC_REG & ppu->WIN_TILE_MAP_AREA_MASK);
+    u8* bgTileMap = gb_getTileMap(gb, ppu->LCDC_REG & ppu->BG_TILE_MAP_AREA_MASK);
+    u8* winTileMap = gb_getTileMap(gb, ppu->LCDC_REG & ppu->WIN_TILE_MAP_AREA_MASK);
 
     bool bg_win_enabled = ppu->LCDC_REG & ppu->BG_WIN_ENABLE_MASK;
 
@@ -262,7 +208,7 @@ static void renderLine(gb_t* gb, u8 y){
         if(gb->console_type != CGB_TYPE && !bg_win_enabled)
             col = ppu->backgroundColor;
         else
-            col = getTileMapPixelRGB(gb, bgTileMap, (ppu->SCX_REG + x) % 256, (ppu->SCY_REG + y) % 256, &dmgPrio[x], &cgbPrio[x]);
+            col = gb_getTileMapPixelRGB(gb, bgTileMap, (ppu->SCX_REG + x) % 256, (ppu->SCY_REG + y) % 256, &dmgPrio[x], &cgbPrio[x]);
         
         pixels[x + y * LCD_WIDTH] = col;
     }
@@ -277,7 +223,7 @@ static void renderLine(gb_t* gb, u8 y){
             if(winX < LCD_WIDTH){
                 for(int offX = 0; winX < LCD_WIDTH; offX = (offX + 1) % 256){
                     if(winX >= 0)
-                        pixels[winX + y * LCD_WIDTH] = getTileMapPixelRGB(gb, winTileMap, offX % 256, ppu->windowY_counter % 256, &dmgPrio[winX], &cgbPrio[winX]);
+                        pixels[winX + y * LCD_WIDTH] = gb_getTileMapPixelRGB(gb, winTileMap, offX % 256, ppu->windowY_counter % 256, &dmgPrio[winX], &cgbPrio[winX]);
                     winX++;
                 }
                 ppu->windowY_counter++;
@@ -337,10 +283,10 @@ static void renderLine(gb_t* gb, u8 y){
                 u8 palette;
                 u8* tilePtr;
 
-                getSpriteAttribute(gb, spriteData, &flipX, &flipY, &backgroundOver, &obp_n, &palette, &tilePtr);
+                gb_getSpriteAttribute(gb, spriteData, &flipX, &flipY, &backgroundOver, &obp_n, &palette, &tilePtr);
 
                 bool transparent;
-                col = getSpritePixelRGB(gb, tilePtr, spriteX, spriteY, obp_n, palette, flipX, flipY, bigSprite, &transparent);
+                col = gb_getSpritePixelRGB(gb, tilePtr, spriteX, spriteY, obp_n, palette, flipX, flipY, bigSprite, &transparent);
                 if(!transparent)
                     if(
                         // basic dmg background priority condition
@@ -357,7 +303,7 @@ static void renderLine(gb_t* gb, u8 y){
     }
 }
 
-static void getSpriteAttribute(gb_t* gb, u8* spriteData, bool* flipX, bool* flipY, bool* backgroundOver, bool* obp_n, u8* palette, u8** tilePtr){
+void gb_getSpriteAttribute(gb_t* gb, u8* spriteData, bool* flipX, bool* flipY, bool* backgroundOver, bool* obp_n, u8* palette, u8** tilePtr){
     ppu_t* ppu = &gb->ppu;
     *flipX = spriteData[3] & 0b100000;
     *flipY = spriteData[3] & 0b1000000;
@@ -375,7 +321,7 @@ static void getSpriteAttribute(gb_t* gb, u8* spriteData, bool* flipX, bool* flip
         *tilePtr += 0x2000;
 }
 
-static int getSpritePixelRGB(gb_t* gb, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palette, bool flipX, bool flipY, bool bigSprite, bool* transparent){
+int gb_getSpritePixelRGB(gb_t* gb, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palette, bool flipX, bool flipY, bool bigSprite, bool* transparent){
     if(flipX)
         x = 7 - x;
     
@@ -401,26 +347,6 @@ static int getSpritePixelRGB(gb_t* gb, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 p
         return convertCGB2RGB(gb, colorGB, palette, gb->OBP_CRAM);
     else
         return convertDMG2RGB(gb, colorGB, palette, gb->OBP_CRAM);
-}
-
-void gb_drawOAMAt(gb_t* gb, int screenX, int screenY, u8 spriteIdx){
-    ppu_t* ppu = &gb->ppu;
-    u8* spriteData = &gb->OAM[spriteIdx * 4];
-    
-    bool flipX, flipY;
-    bool backgroundOver;
-    bool obp_n;
-    u8 palette;
-    u8* tilePtr;
-
-    getSpriteAttribute(gb, spriteData, &flipX, &flipY, &backgroundOver, &obp_n, &palette, &tilePtr);
-
-    u8 height = ppu->LCDC_REG & ppu->OBJ_SIZE_MASK ? 16 : 8;
-    for(u8 y = 0; y < height; y++)
-        for(u8 x = 0; x < 8; x++){
-            bool transparent;
-            pixels[(screenX + x) + (screenY + y)*width] = getSpritePixelRGB(gb, tilePtr, x, y, obp_n, palette, flipX, flipY, height, &transparent);
-        }
 }
 
 static int getSpriteRealX(gb_t* gb, u8 spriteIdx){

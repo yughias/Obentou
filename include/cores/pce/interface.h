@@ -30,4 +30,11 @@ bool PCE_loadstate(void* ctx, byte_vec_t* state);
 { "WAVE4 OR NOISE", 0, 31 }, \
 { "WAVE5 OR NOISE", 0, 31 }
 
+#include "cores/pce/visualizers.h"
+
+#define PCE_widgets \
+{ "Tilemap", pce_vdc_draw_tilemap }, \
+{ "Sprites", pce_vdc_draw_sprites }, \
+{ "Palette", pce_palette_ram }
+
 #endif

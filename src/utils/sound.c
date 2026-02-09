@@ -41,14 +41,12 @@ int sound_set_channel_sample(int sample, int channel){
     return out;
 }
 
-static void draw_wave(void* arg){
+static bool draw_wave(void* arg){
     wave_info_t* info = (wave_info_t*)arg;
     const int white = -1;
 
-    if(info->idx < DISPLAY_BUFFER_SAMPLES) return;
+    if(info->idx < DISPLAY_BUFFER_SAMPLES) return false;
     info->idx = 0;
-
-    memset(pixels, 0, width * height * sizeof(int));
 
     int range = info->max - info->min;
 
@@ -126,6 +124,8 @@ static void draw_wave(void* arg){
 
         prev_y = sample_y;
     }
+
+    return true;
 }
 
 void sound_open_wave_viewer(const char* name, int min, int max, int idx){

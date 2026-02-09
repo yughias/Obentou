@@ -10,5 +10,6 @@ typedef struct vdp_t {
 } vdp_t;
 
 void pv1000_vdp_render(vdp_t* vdp, u8* memory);
+void pv1000_vdp_render_tile(u8* tile, int x0, int y0);
 
 #endif

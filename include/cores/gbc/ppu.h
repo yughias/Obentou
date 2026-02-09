@@ -88,10 +88,11 @@ typedef struct ppu_t {
 
 void gb_initColorPalette(gb_t*);
 void gb_copyDefaultCgbPalette(gb_t*);
-void gb_drawBgRamAt(gb_t*, int, int);
-void gb_drawWinRamAt(gb_t*, int, int);
-void gb_drawOAMAt(gb_t*, int, int, u8);
-void gb_drawColorAt(int, int, int, int, u8*);
+u8* gb_getTileMap(gb_t*, bool);
+int gb_getTileMapPixelRGB(gb_t*, u8* tileMapPtr, u8 x, u8 y, bool* dmgPrio, bool* cgbPrio);
+int gb_getSpritePixelRGB(gb_t*, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palette, bool flipX, bool flipY, bool bigSprite, bool* transparent);
+void gb_getSpriteAttribute(gb_t*, u8* spriteData, bool* flipX, bool* flipY, bool* backgroundOver, bool* obp_n, u8* palette, u8** tilePtr);
+int CgbToRgb(u8, u8);
 
 void gb_renderLcdOff(ppu_t*);
 void gb_initLcdcMasks(gb_t*);

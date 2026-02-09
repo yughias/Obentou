@@ -36,6 +36,7 @@
     .control_begin = CONTROL_##core##_BEGIN, \
     .control_end = CONTROL_##core##_END, \
     .sound_channels = { core##_sound_channels }, \
+    .widgets = { core##_widgets }, \
     .savestate = core##_savestate, \
     .loadstate = core##_loadstate, \
     .has_bios = core##_has_bios \

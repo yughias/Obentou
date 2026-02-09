@@ -186,7 +186,7 @@ EM_JS(void, js_destroy_menus, (), {
 });
 
 EM_JS(void, js_create_widget_canvas, (int id, const char* namePtr, int w, int h), {
-var name = UTF8ToString(namePtr);
+    var name = UTF8ToString(namePtr);
     var container = document.createElement('div');
     container.className = 'widget-container';
     container.id = 'widget-container-' + id;
@@ -281,6 +281,14 @@ EM_JS(void, js_update_widget_canvas, (int id, int* buffer, int w, int h), {
     ctx.putImageData(imgData, 0, 0);
 });
 
+EM_JS(void, js_resize_widget_dom, (int id, int w, int h), {
+    var canvas = document.getElementById('widget-' + id);
+    if (canvas) {
+        canvas.width = w;
+        canvas.height = h;
+    }
+});
+
 EM_JS(void, js_destroy_widget_canvas, (int id), {
     var el = document.getElementById('widget-container-' + id);
     if (el) el.remove();
@@ -290,6 +298,7 @@ EM_JS(void, js_destroy_widget_canvas, (int id), {
 
 int width = 800;
 int height = 600;
+int stride = 4;
 int* pixels;
 
 float frameRate = 60;
@@ -393,14 +402,22 @@ typedef struct widget_t {
     bool valid;
     int width;
     int height;
+    #ifndef __EMSCRIPTEN__
     SDL_Window* window;
+    SDL_Texture* texture;
+    SDL_Renderer* renderer;
+    #else
     int* em_pixels;
+    #endif
     const char* name;
-    void (*callback)(void*);
+    bool (*callback)(void*);
     void* data;
 } widget_t;
 
-widget_t widgets[MAX_WIDGETS];
+static widget_t widgets[MAX_WIDGETS];
+static widget_t* current_widget;
+
+static void destroyWidget(int i);
 
 #ifdef __EMSCRIPTEN__
 
@@ -583,10 +600,12 @@ void mainloop(){
                     running = 0;
                 else
                     SDL_DestroyWindow(target_win);
+                #ifndef __EMSCRIPTEN__
                 for(int i = 0; i < MAX_WIDGETS; i++){
                     if(widgets[i].valid && widgets[i].window == target_win)
-                        widgets[i].valid = false;
+                        destroyWidget(i);
                 }
+                #endif
             }
             break;
 
@@ -604,25 +623,40 @@ void mainloop(){
     int* tmp_pix = pixels;
     int tmp_w = width;
     int tmp_h = height;
+    int tmp_stride = stride;
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(widgets[i].valid){
             width = widgets[i].width;
             height = widgets[i].height;
+            current_widget = &widgets[i];
             #ifdef __EMSCRIPTEN__
             pixels = widgets[i].em_pixels;
-            widgets[i].callback(widgets[i].data);
-            js_update_widget_canvas(i, pixels, width, height);
+            memset(pixels, 0, width*height*sizeof(int));
+            stride = width;
+            bool res = widgets[i].callback(widgets[i].data);
+            if(res)
+                js_update_widget_canvas(i, pixels, width, height);
             #else
-            SDL_Surface* surface = SDL_GetWindowSurface(widgets[i].window);
+            SDL_Surface* surface;
+            SDL_RenderClear(widgets[i].renderer);
+            SDL_LockTextureToSurface(widgets[i].texture, NULL, &surface);
+            SDL_FillSurfaceRect(surface, NULL, 0);
+            stride = surface->pitch / sizeof(Uint32);
             pixels = (int*)surface->pixels;
-            widgets[i].callback(widgets[i].data);
-            SDL_UpdateWindowSurface(widgets[i].window);
+            bool res = widgets[i].callback(widgets[i].data);
+            SDL_UnlockTexture(widgets[i].texture);
+            if(res){
+                SDL_RenderTexture(widgets[i].renderer, widgets[i].texture, NULL, NULL);
+                SDL_RenderPresent(widgets[i].renderer);
+            }
             #endif
+            current_widget = NULL;
         }
     }
     pixels = tmp_pix;
     width = tmp_w;
     height = tmp_h;
+    stride = tmp_stride;
 }
 
 SDL_Window* getMainWindow(){
@@ -637,8 +671,34 @@ SDL_Window* createWindowWithIcon(const char* title, int w, int h, Uint32 flags){
 }
 
 void size(int w, int h){
+    if(width == w && height == h)
+        return;
     width = w;
     height = h;
+
+    if(current_widget) {
+        #ifdef __EMSCRIPTEN__
+        current_widget->em_pixels = (int*)realloc(current_widget->em_pixels, w * h * sizeof(int));
+        int widget_id = (int)(current_widget - widgets);
+        js_resize_widget_dom(widget_id, w, h);
+        pixels = current_widget->em_pixels;
+        stride = w;
+        #else
+        current_widget->width = w;
+        current_widget->height = h;
+        SDL_UnlockTexture(current_widget->texture);
+        SDL_DestroyTexture(current_widget->texture);
+        current_widget->texture = SDL_CreateTexture(current_widget->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+        SDL_SetTextureScaleMode(current_widget->texture, SDL_SCALEMODE_NEAREST);
+        SDL_SetRenderLogicalPresentation(current_widget->renderer, w, h, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+        SDL_Surface* s;
+        SDL_LockTextureToSurface(current_widget->texture, NULL, &s);
+        stride = s->pitch / sizeof(Uint32);
+        pixels = (int*)s->pixels;
+        #endif
+        return;
+    }
+
     if(!window){
         width = w;
         height = h;
@@ -652,6 +712,7 @@ void size(int w, int h){
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
         back_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
         front_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
+        stride = back_surface->pitch / sizeof(Uint32);
         SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
     } else {
         SDL_DestroyTexture(drawBuffer);
@@ -1020,7 +1081,7 @@ void setButtonTitle(buttonId button_id, const char* string){
 }
 #endif
 
-void createWidget(const char* name, int w, int h, void (*callback)(void*), void* userdata){
+void createWidget(const char* name, int w, int h, bool (*callback)(void*), void* userdata){
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(widgets[i].valid && !strcmp(widgets[i].name, name))
             return;
@@ -1048,25 +1109,35 @@ void createWidget(const char* name, int w, int h, void (*callback)(void*), void*
     wid->data = userdata;
 
     #ifdef __EMSCRIPTEN__
-        wid->window = NULL;
         wid->em_pixels = (int*)malloc(w * h * sizeof(int));
         js_create_widget_canvas(idx, name, w, h);
     #else
-        wid->window = SDL_CreateWindow(name, w, h, 0);
-        wid->em_pixels = NULL;
+        wid->window = SDL_CreateWindow(name, w, h, SDL_WINDOW_RESIZABLE);
+        wid->renderer = SDL_CreateRenderer(wid->window, NULL);
+        wid->texture = SDL_CreateTexture(wid->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+        SDL_SetTextureScaleMode(wid->texture, SDL_SCALEMODE_NEAREST);
+        SDL_SetRenderLogicalPresentation(wid->renderer, w, h, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+        SDL_SetWindowMinimumSize(wid->window, SDL_max(w, 512), SDL_max(h, 512));
     #endif
+}
+
+static void destroyWidget(int i){
+    widget_t* w = &widgets[i];
+    if(w->valid){
+        #ifdef __EMSCRIPTEN__
+        js_destroy_widget_canvas(i);
+        free(w->em_pixels);
+        #else
+        SDL_DestroyWindow(w->window);
+        SDL_DestroyTexture(w->texture);
+        SDL_DestroyRenderer(w->renderer);
+        #endif
+        memset(w, 0, sizeof(widget_t));
+    }
 }
 
 void destroyAllWidgets(){
     for(int i = 0; i < MAX_WIDGETS; i++){
-        if(widgets[i].valid){
-            #ifdef __EMSCRIPTEN__
-            js_destroy_widget_canvas(i);
-            free(widgets[i].em_pixels);
-            #else
-            SDL_DestroyWindow(widgets[i].window);
-            #endif
-            widgets[i].valid = false;
-        }
+        destroyWidget(i);
     }
 }

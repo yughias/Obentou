@@ -20,6 +20,6 @@ u8 pce_vce_get_col_lo(vce_t* v);
 u8 pce_vce_get_col_hi(vce_t* v);
 int pce_vce_get_pal_col(const vce_t* v, u16 pal_idx, u8 col_idx);
 int pce_vce_get_overscan_col(const vce_t* v);
-void pce_vce_draw_palette(SDL_Window** win, vce_t* vce);
+int pce_vce_convert_color(u16 rgb333);
 
 #endif

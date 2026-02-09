@@ -30,4 +30,6 @@ bool WATARA_loadstate(void* ctx, byte_vec_t* state);
 { "NOISE", 0, 15 }, \
 { "ADMA", 0, 15 }
 
+#define WATARA_widgets
+
 #endif

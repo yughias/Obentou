@@ -1,0 +1,1 @@
+bool pv1000_draw_tileset(void* pv);

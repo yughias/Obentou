@@ -27,6 +27,14 @@ void NES_close(void* ctx, const char* sav_path);
 { "SQUARE 2", 0, 15 }, \
 { "TRIANGLE", 0, 15 }, \
 { "NOISE", 0, 15 }, \
-{ "DMC", 0, 127 } \
+{ "DMC", 0, 127 }
+
+#include "cores/nes/visualizers.h"
+
+#define NES_widgets \
+{ "Nametables", nes_ppu_draw_nametables }, \
+{ "Tileset", nes_ppu_draw_tileset }, \
+{ "OAM", nes_ppu_draw_oam }, \
+{ "Palettes", nes_ppu_draw_palettes }
 
 #endif

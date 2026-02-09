@@ -248,7 +248,7 @@ void pce_vdc_step(vdc_t* v, u32 cycles){
     } 
 }
 
-static u8 get_tile_col_idx(const vdc_t* vdc, u16 tile_idx, u8 x, u8 y){
+u8 pce_vdc_get_tile_col_idx(const vdc_t* vdc, u16 tile_idx, u8 x, u8 y){
     u16 base_addr = tile_idx << 5;
     u8 x_mask = 1 << (7-x);
     bool bp0 = vdc->vram[base_addr + y * 2] & x_mask;
@@ -277,7 +277,7 @@ void pce_vdc_render_background(vdc_t* vdc, const vce_t* vce){
         u16 tile_attr = vdc->vram[tile_attr_addr] | (vdc->vram[tile_attr_addr | 1] << 8);
         u16 tile_idx = tile_attr & ((1 << 12) - 1);
         u8 pal_idx = tile_attr >> 12;
-        u8 col_idx = get_tile_col_idx(vdc, tile_idx, x & 7, y & 7);
+        u8 col_idx = pce_vdc_get_tile_col_idx(vdc, tile_idx, x & 7, y & 7);
         int col = pce_vce_get_pal_col(vce, pal_idx, col_idx);
         pixels[i + screen_line * width] = col;
         vdc->bg_buffer[i] = col_idx | (pal_idx << 4);  
@@ -286,7 +286,7 @@ void pce_vdc_render_background(vdc_t* vdc, const vce_t* vce){
     vdc->yscroll = (vdc->yscroll + 1) % h;
 }
 
-static u8 vdc_get_sprite_col_idx(vdc_t* v, u16 addr, u8 xs, u8 ys, bool xf, bool yf, u8 x, u8 y){
+u8 pce_vdc_get_sprite_col_idx(vdc_t* v, u16 addr, u8 xs, u8 ys, bool xf, bool yf, u8 x, u8 y){
     u16* data = (u16*)(&v->vram[addr]);
     int real_x = xf ? xs - x - 1 : x;
     int real_y = yf ? ys - y - 1 : y;
@@ -341,7 +341,7 @@ void pce_vdc_render_sprites(vdc_t* vdc){
         if(xpos >= render_width) continue;
         sprite_count += 1;
         for(int i = xpos < 0 ? 0 : xpos; i < xpos + xs && i < render_width; i++){
-            u8 col_idx = vdc_get_sprite_col_idx(vdc, addr, xs, ys, xf, yf, i - xpos, display_line - ypos);
+            u8 col_idx = pce_vdc_get_sprite_col_idx(vdc, addr, xs, ys, xf, yf, i - xpos, display_line - ypos);
             if(!col_idx)
                 continue;
             int col;
@@ -390,93 +390,4 @@ void pce_vdc_render_line(vdc_t* vdc, const vce_t* vce){
         pixels[i + screen_line * width] = pce_vce_get_overscan_col(vce);
 
     pce_notify_line((pce_t*)vdc->ctx, vdc->frame_counter, &pixels[screen_line * width], width);
-}   
-
-
-static void vdc_get_tile_rgb(vdc_t* v, u16 tile_idx, u8 pal_idx, int* tile_rgb){
-    for(int y = 0; y < 8; y++){
-        for(int x = 0; x < 8; x++){
-            u8 col = get_tile_col_idx(v, tile_idx, x, y);
-            tile_rgb[y * 8 + x] = pce_vce_get_pal_col(v->vce, pal_idx, col);
-        }
-    }
-}
-
-void pce_vdc_draw_tilemap(SDL_Window** win, vdc_t* v){
-    Uint32 id = SDL_GetWindowID(*win);
-    if(!id){
-        *win = NULL;
-        return;
-    }
-    u8 w, h;
-    pce_vdc_get_tilemap_size(v, &w, &h);
-    char title[64];
-    sprintf(title, "VDC: %dx%d", w, h);
-    SDL_SetWindowTitle(*win, title);
-    SDL_SetWindowSize(*win, w*8, h*8);
-    SDL_Surface* s = SDL_GetWindowSurface(*win);
-    int black = color(0, 0, 0);
-    int* pixels = (int*)s->pixels;
-    SDL_FillSurfaceRect(s, NULL, black);
-
-    for(int ty = 0; ty < h; ty++){
-        for(int tx = 0; tx < w; tx++){
-            u16 tile_attr_addr = (tx + ty * w) << 1;
-            u16 tile_attr = v->vram[tile_attr_addr] | (v->vram[tile_attr_addr | 1] << 8);
-            u16 tile_idx = tile_attr & ((1 << 12) - 1);
-            u8 pal_idx = tile_attr >> 12;
-            int tile_rgb[64];
-            vdc_get_tile_rgb(v, tile_idx, pal_idx, tile_rgb);
-            for(int py = 0; py < 8; py++){
-                for(int px = 0; px < 8; px++){
-                    pixels[(tx*8+px) + (ty*8+py) * s->w] = tile_rgb[px + py * 8];
-                }
-            }
-        }
-    }
-
-    SDL_UpdateWindowSurface(*win);
-}
-
-void pce_vdc_get_sprite_rgb(vdc_t* v, u16 addr, u8 xs, u8 ys, bool xf, bool yf, u8 pal, int* sprite_rgb){
-    for(int y = 0; y < ys; y++){
-        for(int x = 0; x < xs; x++){
-            u8 col_idx = vdc_get_sprite_col_idx(v, addr, xs, ys, xf, yf, x, y);   
-            sprite_rgb[x + y * xs] = pce_vce_get_pal_col(v->vce, pal | 16, col_idx);
-        }
-    }
-}
-
-void pce_vdc_draw_sprites(SDL_Window** win, vdc_t* v){
-    Uint32 id = SDL_GetWindowID(*win);
-    if(!id){
-        *win = NULL;
-        return;
-    }
-    SDL_Surface* s = SDL_GetWindowSurface(*win);
-    int black = color(0, 0, 0);
-    int* pixels = (int*)s->pixels;
-    SDL_FillSurfaceRect(s, NULL, black);
-
-    u16* sat = (u16*)(&v->satb); 
-
-    for(int y = 0; y < 8; y++){
-        for(int x = 0; x < 8; x++){
-            int idx = x + y * 8;
-            u16 addr = sat[idx];
-            u8 xs, ys, pal;
-            bool xf, yf, f;
-            int xpos, ypos;
-            pce_vdc_get_sprite_info(v, idx, &addr, &xpos, &ypos, &xs, &ys, &xf, &yf, &f, &pal);
-            int sprite_rgb[32*64];
-            pce_vdc_get_sprite_rgb(v, addr, xs, ys, xf, yf, pal, sprite_rgb);
-            for(int py = 0; py < ys; py++){
-                for(int px = 0; px < xs; px++){
-                    pixels[(x*32+px) + (y*64+py) * s->w] = sprite_rgb[px + py * xs];
-                }
-            }
-        }
-    }
-
-    SDL_UpdateWindowSurface(*win);
 }

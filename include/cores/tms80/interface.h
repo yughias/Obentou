@@ -28,4 +28,6 @@ void TMS80_close(void* ctx, const char* sav_path);
 { "TONE2", 0, 8191 }, \
 { "NOISE", 0, 8191 }
 
+#define TMS80_widgets
+
 #endif

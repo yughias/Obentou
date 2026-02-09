@@ -73,9 +73,10 @@ DECLARE_SERIALIZABLE_STRUCT(vdc, VDC_STRUCT);
 void pce_vdc_write_reg(vdc_t* v, u8 idx, u8 value, bool hi);
 u8 pce_vdc_read_reg(vdc_t* v, u8 idx, bool hi);
 void pce_vdc_get_tilemap_size(const vdc_t* v, u8* w, u8* h);
+u8 pce_vdc_get_tile_col_idx(const vdc_t* vdc, u16 tile_idx, u8 x, u8 y);
+void pce_vdc_get_sprite_info(vdc_t* vdc, u8 idx, u16* addr, int* xpos, int* ypos, u8* xs, u8* ys, bool* xf, bool* yf, bool* f, u8* pal);
+u8 pce_vdc_get_sprite_col_idx(vdc_t* v, u16 addr, u8 xs, u8 ys, bool xf, bool yf, u8 x, u8 y);
 
-void pce_vdc_draw_tilemap(SDL_Window** win, vdc_t* v);
-void pce_vdc_draw_sprites(SDL_Window** win, vdc_t* v);
 bool pce_vdc_vblank_on(const vdc_t* v);
 bool pce_vdc_rcr_on(const vdc_t* v);
 void pce_vdc_render_line(vdc_t* v, const vce_t* vce);

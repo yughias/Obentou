@@ -24,4 +24,6 @@ bool BYTEPUSHER_loadstate(void* ctx, byte_vec_t* state);
 
 #define BYTEPUSHER_sound_channels { "BUZZER", -128, 127 }
 
+#define BYTEPUSHER_widgets
+
 #endif

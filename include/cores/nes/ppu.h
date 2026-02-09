@@ -65,11 +65,6 @@ void nes_ppu_inc_addr(ppu_t* ppu);
 u16 nes_ppu_get_vram_addr(VRAM_ALIGN align, u16 addr, u16 vram_size);
 
 void nes_ppu_get_grayscale_tile(ppu_t* ppu, u16 base, u8 idx, int tile[64]);
-void nes_ppu_get_tile(ppu_t* ppu, u16 base, u8 palette, u8 idx, int tile[64]);
-void nes_ppu_draw_chr(ppu_t* ppu, SDL_Window** win);
-void nes_ppu_draw_nametables(ppu_t* ppu, SDL_Window** win);
-void nes_ppu_draw_palettes(ppu_t* ppu, SDL_Window** win);
-void nes_ppu_draw_oam(ppu_t* ppu, SDL_Window** win);
 u8 nes_ppu_get_palette_color(ppu_t* ppu, u8 palette, u8 idx);
 
 int nes_ppu_convert_to_rgb(u8 nes_col);

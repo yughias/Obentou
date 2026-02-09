@@ -1,8 +1,6 @@
 #include "cores/pv1000/vdp.h"
 #include "SDL_MAINLOOP.h"
 
-static void render_tile(u8* tile, int x0, int y0);
-
 void pv1000_vdp_render(vdp_t* vdp, u8* memory){
     u8* tilemap = &memory[0xB800];
 
@@ -17,14 +15,14 @@ void pv1000_vdp_render(vdp_t* vdp, u8* memory){
                 tile = &memory[vdp->ram_tile_addr + tile_idx*32];
             }
 
-            render_tile(tile, x*8, y*8);
+            pv1000_vdp_render_tile(tile, x*8, y*8);
         }
     }
 
     renderPixels();
 }
 
-static void render_tile(u8* tile, int x0, int y0){
+void pv1000_vdp_render_tile(u8* tile, int x0, int y0){
     for(int y = 0; y < 8; y++) {
         u8 r_plane = tile[y +  8];
         u8 g_plane = tile[y + 16];

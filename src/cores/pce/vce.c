@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-static int vce_convert_color(u16 rgb333) {
+int pce_vce_convert_color(u16 rgb333) {
     u8 g = (rgb333 >> 6) & 0b111;
     u8 r = (rgb333 >> 3) & 0b111;
     u8 b = rgb333 & 0b111;
@@ -24,14 +24,14 @@ int pce_vce_get_pal_col(const vce_t* v, u16 pal_idx, u8 col_idx){
     u16 pal_addr = pal_idx << 5;
     u16 col_addr = pal_addr | (col_idx << 1);
     u16 col = v->cram[col_addr] | (v->cram[col_addr | 1] << 8);
-    return vce_convert_color(col);
+    return pce_vce_convert_color(col);
 }
 
 int pce_vce_get_overscan_col(const vce_t* v){
     u16 pal_addr = 0x10 << 5;
     u16 col_addr = pal_addr;
     u16 col = v->cram[col_addr] | (v->cram[col_addr | 1] << 8);
-    return vce_convert_color(col);    
+    return pce_vce_convert_color(col);    
 }
 
 static void inline vce_increment_pal(vce_t* v) {
@@ -62,23 +62,4 @@ u8 pce_vce_get_col_hi(vce_t* v) {
     u8 out = v->cram[pal_idx | 1];
     vce_increment_pal(v);
     return out | 0xFE;
-}
-
-void pce_vce_draw_palette(SDL_Window** win, vce_t* vce){
-    Uint32 id = SDL_GetWindowID(*win);
-    if(!id){
-        *win = NULL;
-        return;
-    }
-    SDL_Surface* s = SDL_GetWindowSurface(*win);
-    for(int y = 0; y < 16; y++){
-        for(int x = 0; x < 32; x++){
-            int pal_idx = y * 32 + x;
-            pal_idx <<= 1;
-            u16 rgb333 = vce->cram[pal_idx] | (vce->cram[pal_idx | 1] << 8);
-            SDL_Rect r = {x * 8, y * 8, 8, 8};
-            SDL_FillSurfaceRect(s, &r, vce_convert_color(rgb333));
-        }
-    }
-    SDL_UpdateWindowSurface(*win);
 }
