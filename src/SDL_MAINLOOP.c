@@ -677,6 +677,8 @@ void size(int w, int h){
     height = h;
 
     if(current_widget) {
+        current_widget->width = w;
+        current_widget->height = h;
         #ifdef __EMSCRIPTEN__
         current_widget->em_pixels = (int*)realloc(current_widget->em_pixels, w * h * sizeof(int));
         int widget_id = (int)(current_widget - widgets);
@@ -684,8 +686,6 @@ void size(int w, int h){
         pixels = current_widget->em_pixels;
         stride = w;
         #else
-        current_widget->width = w;
-        current_widget->height = h;
         SDL_UnlockTexture(current_widget->texture);
         SDL_DestroyTexture(current_widget->texture);
         current_widget->texture = SDL_CreateTexture(current_widget->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);

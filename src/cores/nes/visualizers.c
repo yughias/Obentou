@@ -72,7 +72,7 @@ static void nes_ppu_get_tile(ppu_t* ppu, u16 base, u8 palette, u8 idx, int tile[
 
 
 bool nes_ppu_draw_nametables(nes_t* nes){
-    size(32*8*2, 32*8*2);
+    size(32*8*2, 30*8*2);
 
     ppu_t* ppu = &nes->ppu;
     u16 pattern_base = ppu->ctrl & (1 << 4) ? 0x1000 : 0x0000; 
