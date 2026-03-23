@@ -1,1 +1,1 @@
-#define OBENTOU_VERSION "v0.1.4"
+#define OBENTOU_VERSION "v0.1.5"
