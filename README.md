@@ -21,6 +21,7 @@ At the moment the supported cores are:
 - [X] PV1000 (Casio PV-1000)
 - [X] TMS80 (TMS9918 + Z80 systems) (sms/gg/sg1000/sc3000)
 - [X] WATARA (Watara Super Vision)
+- [X] CHIP-8
 
 ## Features
 
@@ -38,6 +39,7 @@ At the moment the supported cores are:
 | ![](imgs/4.bmp) |![](imgs/5.bmp) | ![](imgs/6.bmp) |
 | ![](imgs/7.bmp) | ![](imgs/8.bmp) | ![](imgs/9.bmp) | 
 | ![](imgs/10.bmp) | ![](imgs/11.bmp) | ![](imgs/12.bmp) | 
+| ![](imgs/13.bmp) |                  |                  |
 
 ## Build Instructions
 
@@ -61,7 +63,6 @@ After a successful build, an executable named ``obentou.exe`` will be generated.
 ## Cores that will be supported on the future
 
 - [ ] ZX-Spectrum 48k
-- [ ] CHIP-8
 - [ ] Space Invaders Arcade
 - [ ] Pac-Man / Ms. Pac-Man Arcade
 - [ ] Gameboy Advance

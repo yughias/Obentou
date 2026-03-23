@@ -161,6 +161,23 @@
     XY(BYTEPUSHER, D) \
     XY(BYTEPUSHER, E) \
     XY(BYTEPUSHER, F, END) \
+    \
+    XY(CHIP8, 0, BEGIN) \
+    XY(CHIP8, 1) \
+    XY(CHIP8, 2) \
+    XY(CHIP8, 3) \
+    XY(CHIP8, 4) \
+    XY(CHIP8, 5) \
+    XY(CHIP8, 6) \
+    XY(CHIP8, 7) \
+    XY(CHIP8, 8) \
+    XY(CHIP8, 9) \
+    XY(CHIP8, A) \
+    XY(CHIP8, B) \
+    XY(CHIP8, C) \
+    XY(CHIP8, D) \
+    XY(CHIP8, E) \
+    XY(CHIP8, F, END) \
 
 #define GET_MACRO_ENUM(_1, _2, _3, NAME, ...) NAME
 

@@ -123,6 +123,23 @@ XYZ(BYTEPUSHER, 0, "x"); \
 XYZ(BYTEPUSHER, B, "c"); \
 XYZ(BYTEPUSHER, F, "v"); \
 \
+XYZ(CHIP8, 1, "1"); \
+XYZ(CHIP8, 2, "2"); \
+XYZ(CHIP8, 3, "3"); \
+XYZ(CHIP8, C, "4"); \
+XYZ(CHIP8, 4, "q"); \
+XYZ(CHIP8, 5, "w"); \
+XYZ(CHIP8, 6, "e"); \
+XYZ(CHIP8, D, "r"); \
+XYZ(CHIP8, 7, "a"); \
+XYZ(CHIP8, 8, "s"); \
+XYZ(CHIP8, 9, "d"); \
+XYZ(CHIP8, E, "f"); \
+XYZ(CHIP8, A, "z"); \
+XYZ(CHIP8, 0, "x"); \
+XYZ(CHIP8, B, "c"); \
+XYZ(CHIP8, F, "v"); \
+\
 XYZ(PCE, UP, "up"); \
 XYZ(PCE, DOWN, "down"); \
 XYZ(PCE, LEFT, "left"); \
