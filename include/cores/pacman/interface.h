@@ -1,0 +1,41 @@
+#ifndef __PACMAN_INTERFACE_H__
+#define __PACMAN_INTERFACE_H__
+
+void PACMAN_run_frame(void* ctx);
+void*PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive);
+bool PACMAN_detect(const archive_t* rom_archive, const archive_t* bios_archive);
+void PACMAN_close(void* ctx, const char* sav_path);
+void PACMAN_sound_callback(void* userdata, Uint8* stream, int len);
+byte_vec_t PACMAN_savestate(void* ctx);
+bool PACMAN_loadstate(void* ctx, byte_vec_t* state);
+
+#define PACMAN_WIDTH  224  /* 28 tiles × 8 px */
+#define PACMAN_HEIGHT 288  /* 36 tiles × 8 px */
+#define PACMAN_FPS    60.0f
+
+
+#define PACMAN_SOUND_PUSH_RATE -1
+
+#define PACMAN_sound_callback PACMAN_sound_callback
+#define PACMAN_has_bios       false
+
+#define PACMAN_AUDIO_SPEC \
+{ \
+    .channels = 1, \
+    .format = SDL_AUDIO_S16, \
+    .freq = 48000, \
+} \
+
+#define PACMAN_sound_channels \
+{ "VOICE1", 0, 225 }, \
+{ "VOICE2", 0, 225 }, \
+{ "VOICE3", 0, 225 }
+
+#include "cores/pacman/visualizers.h"
+
+#define PACMAN_widgets \
+{ "Tileset",   pacman_draw_tileset  }, \
+{ "Audio ROM", pacman_draw_audiorom }, \
+{ "Sprites",   pacman_draw_sprites  },
+
+#endif

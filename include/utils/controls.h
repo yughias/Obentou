@@ -178,6 +178,14 @@
     XY(CHIP8, D) \
     XY(CHIP8, E) \
     XY(CHIP8, F, END) \
+    \
+    XY(PACMAN, UP, BEGIN) \
+    XY(PACMAN, DOWN) \
+    XY(PACMAN, LEFT) \
+    XY(PACMAN, RIGHT) \
+    XY(PACMAN, COIN) \
+    XY(PACMAN, START1) \
+    XY(PACMAN, START2, END) \
 
 #define GET_MACRO_ENUM(_1, _2, _3, NAME, ...) NAME
 

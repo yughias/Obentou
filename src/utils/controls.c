@@ -140,6 +140,14 @@ XYZ(CHIP8, 0, "x"); \
 XYZ(CHIP8, B, "c"); \
 XYZ(CHIP8, F, "v"); \
 \
+XYZ(PACMAN, UP, "up"); \
+XYZ(PACMAN, DOWN, "down"); \
+XYZ(PACMAN, LEFT, "left"); \
+XYZ(PACMAN, RIGHT, "right"); \
+XYZ(PACMAN, COIN, "right shift"); \
+XYZ(PACMAN, START1, "1"); \
+XYZ(PACMAN, START2, "2"); \
+\
 XYZ(PCE, UP, "up"); \
 XYZ(PCE, DOWN, "down"); \
 XYZ(PCE, LEFT, "left"); \
@@ -285,7 +293,15 @@ XYZ(TMS80, RIGHT, "dpright"); \
 XYZ(TMS80, BTN_1, "a"); \
 XYZ(TMS80, BTN_2, "b"); \
 XYZ(TMS80, PAUSE, "none"); \
-XYZ(TMS80, GG_START, "start");
+XYZ(TMS80, GG_START, "start"); \
+\
+XYZ(PACMAN, UP, "dpup"); \
+XYZ(PACMAN, DOWN, "dpdown"); \
+XYZ(PACMAN, LEFT, "dpleft"); \
+XYZ(PACMAN, RIGHT, "dpright"); \
+XYZ(PACMAN, COIN, "back"); \
+XYZ(PACMAN, START1, "start"); \
+XYZ(PACMAN, START2, "none");
 
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \

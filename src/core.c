@@ -20,6 +20,7 @@
 #include "cores/nes/interface.h"
 #include "cores/gbc/interface.h"
 #include "cores/chip8/interface.h"
+#include "cores/pacman/interface.h"
 
 #define LOAD_CORE(core) \
 { \
@@ -51,7 +52,8 @@ const core_t cores[] = {
     LOAD_CORE(TMS80),
     LOAD_CORE(NES),
     LOAD_CORE(GBC),
-    LOAD_CORE(CHIP8)
+    LOAD_CORE(CHIP8),
+    LOAD_CORE(PACMAN)
 };
 
 #undef LOAD_CORE
