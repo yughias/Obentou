@@ -712,7 +712,6 @@ void size(int w, int h){
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
         back_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
         front_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
-        stride = back_surface->pitch / sizeof(Uint32);
         SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
     } else {
         SDL_DestroyTexture(drawBuffer);
@@ -722,6 +721,7 @@ void size(int w, int h){
         SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
     }
 
+    stride = back_surface->pitch / sizeof(Uint32);
     pixels = back_surface->pixels;
 
     setAspectRatio(aspectRatio);

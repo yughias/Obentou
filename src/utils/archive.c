@@ -82,3 +82,20 @@ file_t* archive_get_file_by_ext(const archive_t* archive, const char* ext) {
 const char* archive_get_path(const archive_t* archive) {
     return archive->path;
 }
+
+file_t* archive_get_file_by_name(const archive_t* archive, const char* name) {
+    if (!archive || !name)
+        return NULL;
+    for (int i = 0; i < archive->files.size; i++) {
+        file_t* file = &archive->files.data[i];
+        /* Determine the basename: last path component after '/' or '\' */
+        const char* basename = file->path;
+        for (const char* p = file->path; *p; p++) {
+            if (*p == '/' || *p == '\\')
+                basename = p + 1;
+        }
+        if (!strcasecmp(basename, name))
+            return file;
+    }
+    return NULL;
+}
