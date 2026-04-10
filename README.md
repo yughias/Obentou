@@ -43,8 +43,8 @@ At the moment the supported cores are:
 | PV-1000          | Watara Super Vision | SC-3000          |
 | ![](imgs/10.bmp) | ![](imgs/11.bmp)    | ![](imgs/12.bmp) |
 | Master System    | Famicom             | Game Gear        |
-| ![](imgs/13.bmp) |                     |                  |
-| Chip 8           |                     |                  |
+| ![](imgs/13.bmp) | ![](imgs/14.bmp)    |                  |
+| Chip 8           |  Pac-Man (Arcade)   |                  |
 
 ## Build Instructions
 
