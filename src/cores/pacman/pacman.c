@@ -337,7 +337,9 @@ void PACMAN_run_frame(pacman_t* p)
     pacman_update_input(p);
 
     while (p->z80.cycles < (u64)PACMAN_CYCLES_PER_FRAME) {
+        u64 old_cycles = p->z80.cycles;
         z80_step(&p->z80);
+        PACMAN_push_sample(p, (int)(p->z80.cycles - old_cycles));
     }
 
     p->z80.cycles -= PACMAN_CYCLES_PER_FRAME;

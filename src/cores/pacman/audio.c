@@ -1,5 +1,6 @@
 #include "cores/pacman/audio.h"
 #include "utils/sound.h"
+#include <string.h>
 
 static int pacman_generate_sample(pacman_t* p)
 {
@@ -46,14 +47,18 @@ static int pacman_generate_sample(pacman_t* p)
     return out;
 }
 
-void PACMAN_sound_callback(void* userdata, Uint8* stream, int len)
+static void pacman_get_sample(void* userdata, void* sample_data)
 {
     pacman_t* p = (pacman_t*)userdata;
-    int num_samples = len / (int)sizeof(i16);
-    i16* samples = (i16*)stream;
+    i16 sample;
 
-    for (int i = 0; i < num_samples; i++) {
-        pacman_generate_sample(p);          /* discard first WSG tick */
-        samples[i] = (i16)(pacman_generate_sample(p) * PACMAN_AUDIO_GAIN);
-    }
+    pacman_generate_sample(p); /* discard first WSG tick */
+    sample = (i16)(pacman_generate_sample(p) * PACMAN_AUDIO_GAIN);
+    memcpy(sample_data, &sample, sizeof(sample));
+}
+
+void PACMAN_push_sample(pacman_t* p, int cycles)
+{
+    i16 sample;
+    sound_push_sample(cycles, sizeof(sample), p, &sample, pacman_get_sample);
 }

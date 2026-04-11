@@ -5,7 +5,6 @@ void PACMAN_run_frame(void* ctx);
 void*PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool PACMAN_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 void PACMAN_close(void* ctx, const char* sav_path);
-void PACMAN_sound_callback(void* userdata, Uint8* stream, int len);
 byte_vec_t PACMAN_savestate(void* ctx);
 bool PACMAN_loadstate(void* ctx, byte_vec_t* state);
 
@@ -14,16 +13,16 @@ bool PACMAN_loadstate(void* ctx, byte_vec_t* state);
 #define PACMAN_FPS    60.0f
 
 
-#define PACMAN_SOUND_PUSH_RATE -1
+#define PACMAN_SOUND_PUSH_RATE (3072000.0f/44100.0f)
 
-#define PACMAN_sound_callback PACMAN_sound_callback
+#define PACMAN_sound_callback NULL
 #define PACMAN_has_bios       false
 
 #define PACMAN_AUDIO_SPEC \
 { \
     .channels = 1, \
     .format = SDL_AUDIO_S16, \
-    .freq = 48000, \
+    .freq = 44100, \
 } \
 
 #define PACMAN_sound_channels \

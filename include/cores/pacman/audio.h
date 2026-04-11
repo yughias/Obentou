@@ -6,6 +6,6 @@
 
 #define PACMAN_AUDIO_GAIN 48
 
-void PACMAN_sound_callback(void* userdata, Uint8* stream, int len);
+void PACMAN_push_sample(pacman_t* p, int cycles);
 
 #endif
