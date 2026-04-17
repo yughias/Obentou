@@ -12,9 +12,9 @@ void GBC_run_frame(gb_t* gb){
     sm83_t* cpu = &gb->cpu;
     while(cpu->cycles < CYCLES_PER_FRAME){
         #ifdef DEBUG
-        infoCPU(cpu);
+        sm83_infoCPU(cpu);
         #endif
-        stepCPU(cpu);
+        sm83_stepCPU(cpu);
     }
 
     gb->startFrame_clock += cpu->cycles;
@@ -55,7 +55,7 @@ void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive){
     cpu->writeByte = gb_writeByte;
     cpu->tickSystem = tickHardware;
     cpu->ctx = gb;
-    initCPU(cpu);
+    sm83_initCPU(cpu);
     gb_initMemory(gb, rom_archive, bios_archive);
     gb_initAudio(&gb->apu);
     gb_initHDMA(&gb->dma);

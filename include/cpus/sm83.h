@@ -82,9 +82,9 @@ typedef struct sm83_t {
     void* ctx;
 } sm83_t;
 
-void initCPU(sm83_t*);
-void infoCPU(sm83_t*);
-void stepCPU(sm83_t*);
+void sm83_initCPU(sm83_t*);
+void sm83_infoCPU(sm83_t*);
+void sm83_stepCPU(sm83_t*);
 
 typedef struct byte_vec_t byte_vec_t;
 void serialize_sm83_t(sm83_t* sm, byte_vec_t* vec);
