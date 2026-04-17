@@ -130,7 +130,7 @@ static inline u16 readShortAndTick(sm83_t*, u16);
 static inline void writeByteAndTick(sm83_t*, u16, u8);
 static inline void writeShortAndTick(sm83_t*, u16, u16);
 
-void initCPU(sm83_t* cpu){
+void sm83_initCPU(sm83_t* cpu){
     cpu->cycles = 0;
 
     cpu->AF = 0x0000;
@@ -148,7 +148,7 @@ void initCPU(sm83_t* cpu){
     cpu->IF = 0x00;
 }
 
-void infoCPU(sm83_t* cpu){
+void sm83_infoCPU(sm83_t* cpu){
     fprintf(stderr, "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X ",
             cpu->A, cpu->F, cpu->B, cpu->C, cpu->D, cpu->E, cpu->H, cpu->L);
 
@@ -183,7 +183,7 @@ static inline void dispatchInterrupt(sm83_t* cpu){
     JP(cpu, jmp_addr);
 }
 
-void stepCPU(sm83_t* cpu){
+void sm83_stepCPU(sm83_t* cpu){
     u8 opcode = readByteAndTick(cpu, cpu->PC);
 
     if(cpu->HALT_BUG)

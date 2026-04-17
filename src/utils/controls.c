@@ -148,6 +148,12 @@ XYZ(PACMAN, COIN, "right shift"); \
 XYZ(PACMAN, START1, "1"); \
 XYZ(PACMAN, START2, "2"); \
 \
+XYZ(SPACEINVADERS, FIRE, "z"); \
+XYZ(SPACEINVADERS, LEFT, "left"); \
+XYZ(SPACEINVADERS, RIGHT, "right"); \
+XYZ(SPACEINVADERS, COIN, "right shift"); \
+XYZ(SPACEINVADERS, START, "return"); \
+\
 XYZ(PCE, UP, "up"); \
 XYZ(PCE, DOWN, "down"); \
 XYZ(PCE, LEFT, "left"); \
@@ -301,7 +307,13 @@ XYZ(PACMAN, LEFT, "dpleft"); \
 XYZ(PACMAN, RIGHT, "dpright"); \
 XYZ(PACMAN, COIN, "back"); \
 XYZ(PACMAN, START1, "start"); \
-XYZ(PACMAN, START2, "none");
+XYZ(PACMAN, START2, "none"); \
+\
+XYZ(SPACEINVADERS, FIRE, "b"); \
+XYZ(SPACEINVADERS, LEFT, "dpleft"); \
+XYZ(SPACEINVADERS, RIGHT, "dpright"); \
+XYZ(SPACEINVADERS, COIN, "back"); \
+XYZ(SPACEINVADERS, START, "start"); \
 
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \
