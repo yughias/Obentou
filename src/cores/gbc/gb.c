@@ -116,8 +116,12 @@ bool GBC_loadstate(gb_t* gb, byte_vec_t* state){
     u8* data = deserialize_gb_t(gb, state->data, state->data + state->size);
     if(!data) return false;
 
-    if(gb->mbc.dataSize)
+    if(gb->mbc.dataSize){
+        if(end - data < gb->mbc.dataSize)
+            return false;
         memcpy(gb->mbc.data, data, gb->mbc.dataSize);
+        data += gb->mbc.dataSize;
+    }
     if(gb->BOOTROM_ENABLED){
         gb_fillReadTable(gb->readTable, 0x00, 0x00, gb_readBootrom);
         gb_fillReadTable(gb->readTable, 0x02, 0x09, gb_readBootrom);
