@@ -3,7 +3,7 @@
 #include "cores/pacman/video.h"
 #include "SDL_MAINLOOP.h"
 
-bool pacman_draw_tileset(void* ctx)
+bool pacman_draw_tile_rom(void* ctx)
 {
     pacman_t* p = (pacman_t*)ctx;
     size(16 * 8, 16 * 8);
@@ -111,6 +111,19 @@ static void draw_sprite(pacman_t* p, int ox, int oy, u8 spr_idx, u8 pal_idx, boo
     }
 }
 
+bool pacman_draw_sprite_rom(void* ctx)
+{
+    pacman_t* p = (pacman_t*)ctx;
+    size(8 * 16, 8 * 16);
+
+    for (int y = 0; y < 8; y++)
+        for (int x = 0; x < 8; x++) {
+            u8  spr_idx = x + y * 8;
+            draw_sprite(p, x * 16, y * 16, spr_idx, 1, false, false);
+        }
+
+    return true;
+}
 
 bool pacman_draw_sprites(void* ctx)
 {
@@ -121,10 +134,11 @@ bool pacman_draw_sprites(void* ctx)
     for (int i = 0; i < 8; i++) {
         u8  pal_idx = sprites_info[i * 2 + 1];
         u8  spr_idx = (sprites_info[i * 2] & 0xFC) >> 2;
-        bool flip_x = sprites_info[i * 2] & 0x2;
-        bool flip_y = sprites_info[i * 2] & 0x1;
+        bool flip_x = (bool)(sprites_info[i * 2] & 0x2) ^ p->is_270_degree;
+        bool flip_y = (bool)(sprites_info[i * 2] & 0x1) ^ p->is_270_degree;
         draw_sprite(p, (i % 4) * 16, (i / 4) * 16, spr_idx, pal_idx, flip_x, flip_y);
     }
 
     return true;
 }
+

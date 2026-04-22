@@ -33,8 +33,9 @@ bool PACMAN_loadstate(void* ctx, byte_vec_t* state);
 #include "cores/pacman/visualizers.h"
 
 #define PACMAN_widgets \
-{ "Tileset",   pacman_draw_tileset  }, \
-{ "Audio ROM", pacman_draw_audiorom }, \
-{ "Sprites",   pacman_draw_sprites  },
+{ "Tile ROM",   pacman_draw_tile_rom   }, \
+{ "Sprite ROM", pacman_draw_sprite_rom }, \
+{ "Audio ROM", pacman_draw_audiorom    }, \
+{ "Sprites",   pacman_draw_sprites     }
 
 #endif

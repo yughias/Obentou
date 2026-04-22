@@ -3,7 +3,8 @@
 
 #include "types.h"
 
-bool pacman_draw_tileset(void* ctx);
+bool pacman_draw_tile_rom(void* ctx);
+bool pacman_draw_sprite_rom(void* ctx);
 bool pacman_draw_audiorom(void* ctx);
 bool pacman_draw_sprites(void* ctx);
 

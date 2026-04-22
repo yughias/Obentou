@@ -144,6 +144,7 @@ XYZ(PACMAN, UP, "up"); \
 XYZ(PACMAN, DOWN, "down"); \
 XYZ(PACMAN, LEFT, "left"); \
 XYZ(PACMAN, RIGHT, "right"); \
+XYZ(PACMAN, BUTTON, "z"); \
 XYZ(PACMAN, COIN, "right shift"); \
 XYZ(PACMAN, START1, "1"); \
 XYZ(PACMAN, START2, "2"); \
@@ -305,9 +306,9 @@ XYZ(PACMAN, UP, "dpup"); \
 XYZ(PACMAN, DOWN, "dpdown"); \
 XYZ(PACMAN, LEFT, "dpleft"); \
 XYZ(PACMAN, RIGHT, "dpright"); \
+XYZ(PACMAN, BUTTON, "b"); \
 XYZ(PACMAN, COIN, "back"); \
 XYZ(PACMAN, START1, "start"); \
-XYZ(PACMAN, START2, "none"); \
 \
 XYZ(SPACEINVADERS, FIRE, "b"); \
 XYZ(SPACEINVADERS, LEFT, "dpleft"); \
@@ -528,15 +529,25 @@ void controls_update(){
 }
 
 bool controls_pressed(control_t control, int port){
+    if(control == CONTROL_ALWAYS)
+        return true;
     if(control == CONTROL_NONE)
         return false;
+
+    if(port == CONTROLS_BOTH)
+        return controls_pressed(control, 0) || controls_pressed(control, 1);
 
     return pressed[control - begin + ACTIVE_BUTTONS * port];
 }
 
 bool controls_released(control_t control, int port){
+    if(control == CONTROL_ALWAYS)
+        return true;
     if(control == CONTROL_NONE)
         return false;
+
+    if(port == CONTROLS_BOTH)
+        return controls_released(control, 0) || controls_released(control, 1);
 
     int idx = control - begin + ACTIVE_BUTTONS * port;
     return !pressed[idx] && prev_pressed[idx];

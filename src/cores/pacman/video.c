@@ -129,10 +129,11 @@ void pacman_draw_video(pacman_t* p)
     for (int i = 7; i >= 0; i--) {
         u8  pal_idx = sprites_info[i * 2 + 1];
         u8  spr_idx = (sprites_info[i * 2] & 0xFC) >> 2;
-        bool flip_x = sprites_info[i * 2] & 0x2;
-        bool flip_y = sprites_info[i * 2] & 0x1;
-        int cx = width  - p->SPRITE_COORDS[i * 2]     + 15;
-        int cy = height - p->SPRITE_COORDS[i * 2 + 1] - 16;
+        // TODO ROTATE 270 DEG DEPENDS ON GAME
+        bool flip_x = (bool)(sprites_info[i * 2] & 0x2) ^ p->is_270_degree;
+        bool flip_y = (bool)(sprites_info[i * 2] & 0x1) ^ p->is_270_degree;
+        int cx = p->is_270_degree ? p->SPRITE_COORDS[i * 2] - 15 - 16 : width - p->SPRITE_COORDS[i * 2] + 15;
+        int cy = p->is_270_degree ? p->SPRITE_COORDS[i * 2 + 1] : height - p->SPRITE_COORDS[i * 2 + 1] - 16;
         pacman_draw_sprite(p, cx, cy, spr_idx, pal_idx, flip_x, flip_y);
     }
 }
