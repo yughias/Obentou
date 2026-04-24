@@ -22,6 +22,7 @@ At the moment the supported cores are:
 - [X] TMS80 (TMS9918 + Z80 systems) (sms/gg/sg1000/sc3000)
 - [X] WATARA (Watara Super Vision)
 - [X] CHIP-8
+- [X] Pac-Man / Ms. Pac-Man Arcade
 
 ## Features
 
@@ -69,7 +70,6 @@ After a successful build, an executable named ``obentou.exe`` will be generated.
 
 - [ ] ZX-Spectrum 48k
 - [ ] Space Invaders Arcade
-- [ ] Pac-Man / Ms. Pac-Man Arcade
 - [ ] Gameboy Advance
 
 ## Next features
