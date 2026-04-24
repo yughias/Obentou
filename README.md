@@ -23,6 +23,7 @@ At the moment the supported cores are:
 - [X] WATARA (Watara Super Vision)
 - [X] CHIP-8
 - [X] Pac-Man / Ms. Pac-Man Arcade
+- [X] Space Invaders Arcade
 
 ## Features
 
@@ -35,17 +36,17 @@ At the moment the supported cores are:
 
 ## Screenshots
 
-| ![](imgs/1.bmp)  | ![](imgs/2.bmp)     | ![](imgs/3.bmp)  |
-|:--------------:  |:--------------:     |:--------------:  |
-| SG-1000          | Mega Duck           | PC Engine        |
-| ![](imgs/4.bmp)  | ![](imgs/5.bmp)     | ![](imgs/6.bmp)  |
-| Game Boy         | Byte Pusher         | Game Boy Color   |
-| ![](imgs/7.bmp)  | ![](imgs/8.bmp)     | ![](imgs/9.bmp)  |
-| PV-1000          | Watara Super Vision | SC-3000          |
-| ![](imgs/10.bmp) | ![](imgs/11.bmp)    | ![](imgs/12.bmp) |
-| Master System    | Famicom             | Game Gear        |
-| ![](imgs/13.bmp) | ![](imgs/14.bmp)    |                  |
-| Chip 8           |  Pac-Man (Arcade)   |                  |
+| ![](imgs/1.bmp)  | ![](imgs/2.bmp)     | ![](imgs/3.bmp)         |
+|:----------------:|:-------------------:|:-----------------------:|
+| SG-1000          | Mega Duck           | PC Engine               |
+| ![](imgs/4.bmp)  | ![](imgs/5.bmp)     | ![](imgs/6.bmp)         |
+| Game Boy         | Byte Pusher         | Game Boy Color          |
+| ![](imgs/7.bmp)  | ![](imgs/8.bmp)     | ![](imgs/9.bmp)         |
+| PV-1000          | Watara Super Vision | SC-3000                 |
+| ![](imgs/10.bmp) | ![](imgs/11.bmp)    | ![](imgs/12.bmp)        |
+| Master System    | Famicom             | Game Gear               |
+| ![](imgs/13.bmp) | ![](imgs/14.bmp)    | ![](imgs/15.bmp)        |
+| Chip 8           |  Pac-Man (Arcade)   | Space Invaders (Arcade) |
 
 ## Build Instructions
 
@@ -69,7 +70,6 @@ After a successful build, an executable named ``obentou.exe`` will be generated.
 ## Cores that will be supported on the future
 
 - [ ] ZX-Spectrum 48k
-- [ ] Space Invaders Arcade
 - [ ] Gameboy Advance
 
 ## Next features
