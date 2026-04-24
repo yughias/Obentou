@@ -31,6 +31,9 @@ typedef struct i8080_t {
 
     u64 cycles;
 
+    u8 mem_arg;
+    u16 mem_addr;
+
     readMemPtr readMem;
     writeMemPtr writeMem;
     readIOPtr readIO;

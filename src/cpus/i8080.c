@@ -46,33 +46,13 @@ typedef struct Opcode {
 #define PC cpu->PC
 #define cycles cpu->cycles
 
-static u8 mem_ref;
-static u16 mem_ref_addr;
-
-static inline u8 i8080_readMem(i8080_t* cpu, u16 addr){
-    return cpu->readMem(cpu->ctx, addr);
-}
-
-static inline void i8080_writeMem(i8080_t* cpu, u16 addr, u8 byte){
-    cpu->writeMem(cpu->ctx, addr, byte);
-}
-
-static inline u8 i8080_readIO(i8080_t* cpu, u8 addr){
-    return cpu->readIO(cpu->ctx, addr);
-}
-
-static inline void i8080_writeIO(i8080_t* cpu, u8 addr, u8 byte){
-    cpu->writeIO(cpu->ctx, addr, byte);
-}
-
-static inline bool i8080_is_mem_ref(const u8* reg){
-    return reg == &mem_ref;
+static inline bool i8080_is_mem_ref(const i8080_t* cpu, const u8* reg){
+    return reg == &cpu->mem_arg;
 }
 
 static inline void i8080_write_reg8(i8080_t* cpu, u8* reg, u8 val){
-    if(i8080_is_mem_ref(reg)){
-        mem_ref = val;
-        i8080_writeMem(cpu, mem_ref_addr, val);
+    if(i8080_is_mem_ref(cpu, reg)){
+        cpu->writeMem(cpu->ctx, cpu->mem_addr, val);
         return;
     }
     *reg = val;
@@ -214,7 +194,7 @@ void i8080_initCPU(i8080_t* cpu, void* ctx, readMemPtr readMem, writeMemPtr writ
 static void i8080_infoCPU(i8080_t* cpu){
     fprintf(stderr, "%llu ", cycles);
     fprintf(stderr, "$%04X\t", PC);
-    fprintf(stderr, "%-10s ", table[i8080_readMem(cpu, PC)].name);
+    fprintf(stderr, "%-10s ", table[cpu->readMem(cpu->ctx, PC)].name);
     fprintf(stderr, "A :0x%02X B: 0x%02X C: 0x%02X ", A_8, B_8, C_8);
     fprintf(stderr, "DE: 0x%04X HL: 0x%04X\t", D_16, H_16);
     fprintf(stderr, "S: %d ", (bool)(F_8 & SET_S));
@@ -223,7 +203,7 @@ static void i8080_infoCPU(i8080_t* cpu){
     fprintf(stderr, "P: %d ", (bool)(F_8 & SET_P));
     fprintf(stderr, "A: %d ", (bool)(F_8 & SET_A));
     fprintf(stderr, "SP: 0x%04X ", SP);
-    fprintf(stderr, "Stack: 0x%04X", (u16)(i8080_readMem(cpu, SP) | (i8080_readMem(cpu, SP + 1) << 8)));
+    fprintf(stderr, "Stack: 0x%04X", (u16)(cpu->readMem(cpu->ctx, SP) | (cpu->readMem(cpu->ctx, SP + 1) << 8)));
     fprintf(stderr, "\n");
 }
 
@@ -233,13 +213,13 @@ void i8080_stepCPU(i8080_t* ctx){
     #ifdef DEBUG
         i8080_infoCPU(ctx);
     #endif
-    uint8_t index = i8080_readMem(cpu, PC);
+    uint8_t index = cpu->readMem(cpu->ctx, PC);
     PC = PC + table[index].byteLength;
     i8080_execute(ctx, &tmp_ptr);
 }
 
 static void i8080_execute(i8080_t* cpu, uint16_t* ptr){
-    uint8_t index = i8080_readMem(cpu, *ptr);
+    uint8_t index = cpu->readMem(cpu->ctx, *ptr);
     getArgFunc arg1Getter = table[index].arg1;
     getArgFunc arg2Getter = table[index].arg2; 
 
@@ -358,12 +338,12 @@ static void HLT(i8080_t* cpu){
 }
 
 static void OP_IN(i8080_t* cpu, uint8_t d8){
-    A_8 = i8080_readIO(cpu, d8);
+    A_8 = cpu->readIO(cpu->ctx, d8);
     cycles += 10;
 }
 
 static void OP_OUT(i8080_t* cpu, uint8_t d8){
-    i8080_writeIO(cpu, d8, A_8);
+    cpu->writeIO(cpu->ctx, d8, A_8);
     cycles += 10;
 }
 
@@ -380,12 +360,12 @@ static void EI(i8080_t* cpu){
 
 // 8bit arithmetic/logical instructions
 static void STA(i8080_t* cpu, uint16_t a16){
-    i8080_writeMem(cpu, a16, A_8);
+    cpu->writeMem(cpu->ctx, a16, A_8);
     cycles += 3;
 }
 
 static void STAX(i8080_t* cpu, uint16_t* r16){
-    i8080_writeMem(cpu, *r16, A_8);
+    cpu->writeMem(cpu->ctx, *r16, A_8);
     cycles += 7;
 }
 
@@ -400,12 +380,12 @@ static void MVI(i8080_t* cpu, uint8_t* r8, uint8_t d8){
 }
 
 static void LDA(i8080_t* cpu, uint16_t a16){
-    A_8 = i8080_readMem(cpu, a16);
+    A_8 = cpu->readMem(cpu->ctx, a16);
     cycles += 13;
 }
 
 static void LDAX(i8080_t* cpu, uint16_t* r16){
-    A_8 = i8080_readMem(cpu, *r16);
+    A_8 = cpu->readMem(cpu->ctx, *r16);
     cycles += 7;
 }
 
@@ -609,15 +589,15 @@ static void CALL(i8080_t* cpu, uint16_t a16){
 
 // 16bit load/store/move instructions
 static void POP(i8080_t* cpu, uint16_t* r16){
-    *r16 = (u16)(i8080_readMem(cpu, SP) | (i8080_readMem(cpu, SP + 1) << 8));
+    *r16 = (u16)(cpu->readMem(cpu->ctx, SP) | (cpu->readMem(cpu->ctx, SP + 1) << 8));
     SP = SP + 2;
     cycles += 10;
 }
 
 static void PUSH(i8080_t* cpu, uint16_t* r16){
     SP = SP - 2;
-    i8080_writeMem(cpu, SP, (u8)(*r16));
-    i8080_writeMem(cpu, SP + 1, (u8)(*r16 >> 8));
+    cpu->writeMem(cpu->ctx, SP, (u8)(*r16));
+    cpu->writeMem(cpu->ctx, SP + 1, (u8)(*r16 >> 8));
     cycles += 11;
 }
 
@@ -627,22 +607,22 @@ static void LXI(i8080_t* cpu, uint16_t* r16, uint16_t d16){
 }
 
 static void SHLD(i8080_t* cpu, uint16_t a16){
-    i8080_writeMem(cpu, a16, L_8);
-    i8080_writeMem(cpu, a16 + 1, H_8);
+    cpu->writeMem(cpu->ctx, a16, L_8);
+    cpu->writeMem(cpu->ctx, a16 + 1, H_8);
     cycles += 16;
 }
 
 static void LHLD(i8080_t* cpu, uint16_t a16){
-    L_8 = i8080_readMem(cpu, a16);
-    H_8 = i8080_readMem(cpu, a16 + 1);
+    L_8 = cpu->readMem(cpu->ctx, a16);
+    H_8 = cpu->readMem(cpu->ctx, a16 + 1);
     cycles += 16;
 }
 
 static void XTHL(i8080_t* cpu){
-    uint8_t new_H = i8080_readMem(cpu, SP + 1);
-    uint8_t new_L = i8080_readMem(cpu, SP);
-    i8080_writeMem(cpu, SP + 1, H_8);
-    i8080_writeMem(cpu, SP, L_8);
+    uint8_t new_H = cpu->readMem(cpu->ctx, SP + 1);
+    uint8_t new_L = cpu->readMem(cpu->ctx, SP);
+    cpu->writeMem(cpu->ctx, SP + 1, H_8);
+    cpu->writeMem(cpu->ctx, SP, L_8);
     H_8 = new_H;
     L_8 = new_L;
     cycles += 18;
@@ -952,7 +932,7 @@ static void* getNULL(i8080_t* cpu, uint16_t* ptr){
 }
 
 static void* getSingleReg8(i8080_t* cpu, uint16_t* ptr){
-    uint8_t reg = (i8080_readMem(cpu, *ptr) & 0b111000) >> 3;
+    uint8_t reg = (cpu->readMem(cpu->ctx, *ptr) & 0b111000) >> 3;
     if(reg == 0b000)
         return (void*)&B_8;
     if(reg == 0b001)
@@ -966,9 +946,9 @@ static void* getSingleReg8(i8080_t* cpu, uint16_t* ptr){
     if(reg == 0b101)
         return (void*)&L_8;
     if(reg == 0b110){
-        mem_ref_addr = H_16;
-        mem_ref = i8080_readMem(cpu, mem_ref_addr);
-        return (void*)&mem_ref;
+        cpu->mem_addr = H_16;
+        cpu->mem_arg = cpu->readMem(cpu->ctx, cpu->mem_addr);
+        return (void*)&cpu->mem_arg;
     }
     if(reg == 0b111)
         return (void*)&A_8;
@@ -977,7 +957,7 @@ static void* getSingleReg8(i8080_t* cpu, uint16_t* ptr){
 }
 
 static void* getSrcReg8(i8080_t* cpu, uint16_t* ptr){
-    uint8_t reg = (i8080_readMem(cpu, *ptr) & 0b111);
+    uint8_t reg = (cpu->readMem(cpu->ctx, *ptr) & 0b111);
     if(reg == 0b000)
         return (void*)&B_8;
     if(reg == 0b001)
@@ -991,9 +971,9 @@ static void* getSrcReg8(i8080_t* cpu, uint16_t* ptr){
     if(reg == 0b101)
         return (void*)&L_8;
     if(reg == 0b110){
-        mem_ref_addr = H_16;
-        mem_ref = i8080_readMem(cpu, mem_ref_addr);
-        return (void*)&mem_ref;
+        cpu->mem_addr = H_16;
+        cpu->mem_arg = cpu->readMem(cpu->ctx, cpu->mem_addr);
+        return (void*)&cpu->mem_arg;
     }
     if(reg == 0b111)
         return (void*)&A_8;
@@ -1006,7 +986,7 @@ static void* getDstReg8(i8080_t* cpu, uint16_t* ptr){
 }
 
 static void* getSingleReg16(i8080_t* cpu, uint16_t* ptr){
-    uint8_t rp = i8080_readMem(cpu, *ptr) >> 4;
+    uint8_t rp = cpu->readMem(cpu->ctx, *ptr) >> 4;
     if((rp & 0b11) == 0b00)
         return (void*)&B_16;
     if((rp & 0b11) == 0b01)
@@ -1027,7 +1007,7 @@ static void* getImm16(i8080_t* cpu, uint16_t* ptr){
     // WARNING: IT IS VERY STRANGE BUT IT WORKS
     // UINPTR_T SIZE = 4 BYTE
     // UINT16_T SIZE = 2 BYTE
-    uintptr_t d16 = i8080_readMem(cpu, *ptr + 1) | (i8080_readMem(cpu, *ptr + 2) << 8);
+    uintptr_t d16 = cpu->readMem(cpu->ctx, *ptr + 1) | (cpu->readMem(cpu->ctx, *ptr + 2) << 8);
     return (void*)d16;
 }
 
@@ -1035,11 +1015,11 @@ static void* getImm8(i8080_t* cpu, uint16_t* ptr){
     // WARNING: IT IS VERY STRANGE BUT IT WORKS
     // UINPTR_T SIZE = 4 BYTE
     // UINT8_T SIZE = 1 BYTE
-    uintptr_t d8 = i8080_readMem(cpu, *ptr + 1);
+    uintptr_t d8 = cpu->readMem(cpu->ctx, *ptr + 1);
     return (void*)d8;
 }
 
 static void* getRST(i8080_t* cpu, uint16_t* ptr){
-    uintptr_t exp = i8080_readMem(cpu, *ptr) & 0b111000;
+    uintptr_t exp = cpu->readMem(cpu->ctx, *ptr) & 0b111000;
     return (void*)exp;
 }
