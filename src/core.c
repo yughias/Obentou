@@ -6,6 +6,7 @@
 #include "utils/argument.h"
 #include "utils/state.h"
 #include "utils/rewind.h"
+#include "utils/netplay.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -151,6 +152,8 @@ void core_ctx_close(core_ctx_t* ctx){
 
     archive_free(ctx->rom);
     archive_free(ctx->bios);
+
+    netplay_close_session();
 }
 
 void core_restart(core_ctx_t* ctx){
@@ -187,4 +190,5 @@ void core_restart(core_ctx_t* ctx){
     }
 
     rewind_init();
+    netplay_start_session();
 }

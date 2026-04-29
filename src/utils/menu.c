@@ -3,6 +3,7 @@
 #include "utils/argument.h"
 #include "utils/state.h"
 #include "utils/controls.h"
+#include "utils/netplay.h"
 
 #include "core.h"
 
@@ -24,6 +25,9 @@ static buttonId default_bios_button;
 static buttonId disable_illegal_input_button;
 static buttonId autosave_button;
 static buttonId keyboard_player_select_button[2];
+static buttonId netplay_mode_buttons[NETPLAY_MODE_COUNT];
+static buttonId netplay_port_button; 
+static buttonId netplay_ip_button;
 
 typedef struct {
     int gamepad_idx;
@@ -46,6 +50,8 @@ static int widget_idxs[MAX_WIDGETS];
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
 static SDL_RendererLogicalPresentation integer_mode = SDL_LOGICAL_PRESENTATION_INTEGER_SCALE;
+
+static NETPLAY_MODE netplay_modes[NETPLAY_MODE_COUNT] = {NETPLAY_NONE, NETPLAY_HOST, NETPLAY_CLIENT};
 
 void menu_save_screenshot(core_ctx_t* ctx)
 {
@@ -310,6 +316,31 @@ static void menu_open_widget(void* widget_idx){
     createWidget(w->name, 1, 1, w->draw, core_ctx_arg->emu);
 }
 
+static void netplay_set_mode(void* mode){
+    netplay_wanted_mode = *(int*)mode;
+}
+
+static void netplay_set_port(void* arg){
+    char text[64];
+    sprintf(text, "%d", netplay_port);
+    const char* port = tinyfd_inputBox("Set Port", "Enter Port", text);
+    if(!port || !atoi(port))
+        return;
+    netplay_port = atoi(port);
+    sprintf(text, "Port: %d", netplay_port);
+    setButtonTitle(netplay_port_button, text);
+}
+
+static void netplay_set_ip(void* arg){
+    char text[64];
+    const char* ip = tinyfd_inputBox("Set IP", "Enter IP", netplay_host_ip);
+    if(!ip)
+        return;
+    strcpy(netplay_host_ip, ip);
+    sprintf(text, "Connect to: %s", netplay_host_ip);
+    setButtonTitle(netplay_ip_button, text);
+}
+
 void menu_create(core_ctx_t* ctx){
     core_ctx_arg = ctx;
     destroyAllMenus();
@@ -452,8 +483,6 @@ void menu_create(core_ctx_t* ctx){
         create_input_button_menu(input_menu, cores[i].name, cores[i].control_begin, cores[i].control_end, true);
     }
 
-    addButtonTo(-1, "About", (void*)menu_info, NULL);
-
     if(ctx->core){
         menuId core_menu = addMenuTo(emu_menu, "Core", false);
 
@@ -478,6 +507,21 @@ void menu_create(core_ctx_t* ctx){
             }
         }
     }
+
+    #ifndef __EMSCRIPTEN__
+    menuId netplay_menu = addMenuTo(-1, "Netplay", false);
+    menuId netmode_menu = addMenuTo(netplay_menu, "Mode", true);
+    netplay_mode_buttons[0] = addButtonTo(netmode_menu, "None", netplay_set_mode, (void*)&netplay_modes[0]);
+    netplay_mode_buttons[1] = addButtonTo(netmode_menu, "Host", netplay_set_mode, (void*)&netplay_modes[1]);
+    netplay_mode_buttons[2] = addButtonTo(netmode_menu, "Client", netplay_set_mode, (void*)&netplay_modes[2]);
+    checkRadioButton(netplay_mode_buttons[netplay_wanted_mode]);
+    sprintf(label, "Port: %d", netplay_port);
+    netplay_port_button = addButtonTo(netplay_menu, label, netplay_set_port, NULL);
+    sprintf(label, "Connect to: %s", netplay_host_ip);
+    netplay_ip_button = addButtonTo(netplay_menu, label, netplay_set_ip, NULL);
+    #endif
+
+    addButtonTo(-1, "About", (void*)menu_info, NULL);
 
     free(label);
 }

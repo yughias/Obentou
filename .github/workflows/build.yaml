@@ -86,6 +86,15 @@ jobs:
           cmake --build . --parallel $(nproc)
           cmake --install .
 
+      - name: Build & Install SDL3_net (Static)
+        run: |
+          git clone --depth 1 https://github.com/libsdl-org/SDL_net.git
+          cd SDL_net
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
+          cmake --build . --parallel $(nproc)
+          cmake --install .
+
       - name: Build Project
         run: make -j$(nproc)
 
@@ -117,6 +126,16 @@ jobs:
           mkdir build && cd build
           # Build Static SDL3
           cmake -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=ON -DSDL_SHARED=OFF ..
+          cmake --build . --parallel $(sysctl -n hw.ncpu)
+          sudo cmake --install .
+
+      - name: Build & Install SDL3_net (Static)
+        run: |
+          git clone --depth 1 https://github.com/libsdl-org/SDL_net.git
+          cd SDL_net
+          mkdir build && cd build
+          # Build Static SDL3_net
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
           cmake --build . --parallel $(sysctl -n hw.ncpu)
           sudo cmake --install .
 

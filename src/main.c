@@ -6,6 +6,7 @@
 #include "utils/menu.h"
 #include "utils/state.h"
 #include "utils/rewind.h"
+#include "utils/netplay.h"
 
 #include "core.h"
 
@@ -18,9 +19,11 @@ void obentou_exit(){
     core_ctx_close(&emu_ctx);
     controls_save_maps();
     rewind_clear();
+    netplay_quit();
 }
 
 void setup(){
+    netplay_init();
     setTitle("Obentou");
     onExit = obentou_exit;
     controls_load_maps();
@@ -56,6 +59,11 @@ void loop(){
         menu_create(&emu_ctx);
     controls_update();
     camera_update();
+
+    if(netplay_is_connected()) {
+        netplay_send_inputs(emu_ctx.core);
+        netplay_recv_inputs(emu_ctx.core);
+    }
 
     if(hotkeys_released(CONTROL_HOTKEY_SAVESTATE)){
         state_save_slot(&emu_ctx);

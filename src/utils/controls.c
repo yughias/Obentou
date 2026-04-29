@@ -534,6 +534,11 @@ bool controls_pressed(control_t control, int port){
     return pressed[control - begin + ACTIVE_BUTTONS * port];
 }
 
+void controls_override(control_t control, bool value, int port){
+    int idx = control - begin + ACTIVE_BUTTONS * port;
+    pressed[idx] = value;
+}
+
 bool controls_released(control_t control, int port){
     if(control == CONTROL_NONE)
         return false;

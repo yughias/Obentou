@@ -230,4 +230,5 @@ void controls_set_gamepad_player(int gamepad_idx, int player);
 void controls_get_gamepad_info(int index, char* name, int len, int* id);
 int controls_get_gamepad_player(int gamepad_idx);
 bool controls_gamepad_search();
+void controls_override(control_t control, bool value, int port);
 #endif

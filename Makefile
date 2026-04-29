@@ -8,14 +8,14 @@ DEBUG_FLAGS := -pg -no-pie
 
 ifeq ($(OS),Windows_NT)
 EXE := obentou.exe
-LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
+LIBS := -Llib -lSDL3 -lSDL3_net -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
 PLATFORM_CFLAGS := -flto=8 -Wall -Wno-unused-function -Werror  -mwindows
 RES_OBJ := app.res
 
 else ifeq ($(shell uname -s),Darwin)
 EXE := obentou
-LIBS := $(shell pkg-config --static --libs sdl3) -lm -liconv -lobjc -framework Cocoa
-PLATFORM_CFLAGS := -flto=thin $(shell pkg-config --cflags sdl3) -arch arm64
+LIBS := $(shell pkg-config --static --libs sdl3 sdl3-net) -lm -liconv -lobjc -framework Cocoa
+PLATFORM_CFLAGS := -flto=thin $(shell pkg-config --cflags sdl3 sdl3-net) -arch arm64
 CFLAGS_COMMON := -Iinclude -Iext/include -O3
 RES_OBJ :=
 
@@ -27,8 +27,8 @@ $(MAINLOOP_OBJ): CFLAGS += -x objective-c
 
 else
 EXE := obentou
-LIBS := $(shell pkg-config --static --libs sdl3) -lGL -lm
-PLATFORM_CFLAGS := -flto=8 $(shell pkg-config --cflags sdl3)
+LIBS := $(shell pkg-config --static --libs sdl3 sdl3-net) -lGL -lm
+PLATFORM_CFLAGS := -flto=8 $(shell pkg-config --cflags sdl3 sdl3-net)
 RES_OBJ :=
 endif
 
