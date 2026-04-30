@@ -7,6 +7,7 @@ typedef enum NETPLAY_MODE { NETPLAY_NONE, NETPLAY_HOST, NETPLAY_CLIENT, NETPLAY_
 
 typedef struct core_t core_t;
 
+extern u8 netplay_input_delay;
 extern u16 netplay_port;
 extern char netplay_host_ip[32];
 extern NETPLAY_MODE netplay_wanted_mode;

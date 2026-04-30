@@ -28,6 +28,7 @@ static buttonId keyboard_player_select_button[2];
 static buttonId netplay_mode_buttons[NETPLAY_MODE_COUNT];
 static buttonId netplay_port_button; 
 static buttonId netplay_ip_button;
+static buttonId netplay_input_delay_button;
 
 typedef struct {
     int gamepad_idx;
@@ -341,6 +342,16 @@ static void netplay_set_ip(void* arg){
     setButtonTitle(netplay_ip_button, text);
 }
 
+static void netplay_set_input_delay(void* arg){
+    char text[64];
+    const char* ip = tinyfd_inputBox("Set Input Delay", "Enter Input Delay", "0");
+    if(!ip)
+        return;
+    netplay_input_delay = atoi(ip);
+    sprintf(text, "Input Delay: %d", netplay_input_delay);
+    setButtonTitle(netplay_ip_button, text);
+}
+
 void menu_create(core_ctx_t* ctx){
     core_ctx_arg = ctx;
     destroyAllMenus();
@@ -519,6 +530,8 @@ void menu_create(core_ctx_t* ctx){
     netplay_port_button = addButtonTo(netplay_menu, label, netplay_set_port, NULL);
     sprintf(label, "Connect to: %s", netplay_host_ip);
     netplay_ip_button = addButtonTo(netplay_menu, label, netplay_set_ip, NULL);
+    sprintf(label, "Input Delay: %d", netplay_input_delay);
+    netplay_input_delay_button = addButtonTo(netplay_menu, label, netplay_set_input_delay, NULL);
     #endif
 
     addButtonTo(-1, "About", (void*)menu_info, NULL);
