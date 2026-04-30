@@ -114,4 +114,10 @@ void loop(){
         }
         core_ctx_run_frame(&emu_ctx);
     }
+
+    if(emu_ctx.core) {
+        char title[256];
+        snprintf(title, sizeof(title), "Obentou (%.02f/%.02f)", 1000.0f / deltaTime, emu_ctx.core->fps);
+        setTitle(title);
+    }
 }

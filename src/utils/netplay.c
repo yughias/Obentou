@@ -137,7 +137,7 @@ void netplay_recv_inputs(const core_t* core) {
 
     int needed_remote_frames = (int)netplay_current_frame - netplay_input_delay + 1;
 
-    while (remote_frames_received < needed_remote_frames) {
+    while ((int)remote_frames_received < needed_remote_frames) {
         int wait_res = NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, -1);
         if (wait_res <= 0) return; // Handle disconnect
 
