@@ -79,25 +79,33 @@ bool netplay_is_connected() {
 
 void netplay_send_inputs(const core_t* core) {
     int n_inputs = core->control_end - core->control_begin + 1;
-    bool inputs[n_inputs];
+    int n_bytes = (n_inputs + 7) / 8;
+    uint8_t buffer[n_bytes];
+    memset(buffer, 0, n_bytes);
+
     int port = netplay_actual_mode == NETPLAY_HOST ? 0 : 1;
 
-    for(int i = 0; i < n_inputs; i++) {
-        inputs[i] = controls_pressed(core->control_begin + i, port);
+    for (int i = 0; i < n_inputs; i++) {
+        if (controls_pressed(core->control_begin + i, port)) {
+            buffer[i / 8] |= (1 << (i % 8));
+        }
     }
-    
-    for(int i = 0; i < n_inputs; i++) {
-        NET_WriteToStreamSocket(netplay_socket, &inputs[i], sizeof(bool));
-    }
+
+    NET_WriteToStreamSocket(netplay_socket, buffer, n_bytes);
 }
 
 void netplay_recv_inputs(const core_t* core) {
+    int n_inputs = core->control_end - core->control_begin + 1;
+    int n_bytes = (n_inputs + 7) / 8;
+    uint8_t buffer[n_bytes];
+
     int port = netplay_actual_mode == NETPLAY_HOST ? 1 : 0;
 
-    for(int i = 0; i < core->control_end - core->control_begin + 1; i++) {
-        bool input;
-        NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, -1);
-        NET_ReadFromStreamSocket(netplay_socket, &input, sizeof(bool));
+    NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, -1);
+    NET_ReadFromStreamSocket(netplay_socket, buffer, n_bytes);
+
+    for (int i = 0; i < n_inputs; i++) {
+        bool input = (buffer[i / 8] >> (i % 8)) & 1;
         controls_override(core->control_begin + i, input, port);
     }
 }

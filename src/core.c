@@ -130,7 +130,9 @@ void core_ctx_run_frame(core_ctx_t* ctx){
     }
 
     if(!ctx->pause){
-        int speed = 1 << (hotkeys_pressed(CONTROL_HOTKEY_TURBO) ? 3 : ctx->speed_level);
+        int speed = 1;
+        if(!netplay_is_connected())
+            speed = 1 << (hotkeys_pressed(CONTROL_HOTKEY_TURBO) ? 3 : ctx->speed_level);
         sound_set_push_rate_multiplier(speed);
         sound_pause(false);
         for(int i = 0; i < speed; i++){

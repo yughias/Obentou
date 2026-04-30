@@ -83,12 +83,12 @@ void loop(){
     if(hotkeys_released(CONTROL_HOTKEY_OPEN_BIOS))
         menu_open_bios(&emu_ctx);
 
-    if(hotkeys_released(CONTROL_HOTKEY_SPEEDUP) && emu_ctx.speed_level < 3){
+    if(!netplay_is_connected() && hotkeys_released(CONTROL_HOTKEY_SPEEDUP) && emu_ctx.speed_level < 3){
         ctx_args_t speed_args = {.ctx = &emu_ctx, .value = emu_ctx.speed_level + 1};
         core_ctx_set_speed(&speed_args);
     }
 
-    if(hotkeys_released(CONTROL_HOTKEY_SLOWDOWN) && emu_ctx.speed_level != 0){
+    if(!netplay_is_connected() && hotkeys_released(CONTROL_HOTKEY_SLOWDOWN) && emu_ctx.speed_level != 0){
         ctx_args_t speed_args = {.ctx = &emu_ctx, .value = emu_ctx.speed_level - 1};
         core_ctx_set_speed(&speed_args);
     }
@@ -96,10 +96,10 @@ void loop(){
     if(hotkeys_released(CONTROL_HOTKEY_RESET))
         core_restart(&emu_ctx);
 
-    if(hotkeys_released(CONTROL_HOTKEY_PAUSE))
+    if(!netplay_is_connected() && hotkeys_released(CONTROL_HOTKEY_PAUSE))
         core_switch_pause(&emu_ctx);
 
-     if(hotkeys_pressed(CONTROL_HOTKEY_REWIND)){
+     if(!netplay_is_connected() && hotkeys_pressed(CONTROL_HOTKEY_REWIND)){
         byte_vec_t* prev = rewind_recover_state();
         if(prev){
             emu_ctx.core->loadstate(emu_ctx.emu, prev); 
