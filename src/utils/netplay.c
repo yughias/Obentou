@@ -126,7 +126,7 @@ void netplay_recv_inputs(const core_t* core) {
         int bytes_read = 0;
         while (bytes_read < n_bytes) {
             int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
-            if (res <= 0) return; // Handle disconnect
+            if (res < 0) return; // Handle disconnect
             bytes_read += res;
         }
 
@@ -139,13 +139,13 @@ void netplay_recv_inputs(const core_t* core) {
 
     while ((int)remote_frames_received < needed_remote_frames) {
         int wait_res = NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, -1);
-        if (wait_res <= 0) return; // Handle disconnect
+        if (wait_res < 0) return; // Handle disconnect
 
         uint8_t buffer[n_bytes];
         int bytes_read = 0;
         while (bytes_read < n_bytes) {
             int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
-            if (res <= 0) return; // Handle disconnect
+            if (res < 0) return; // Handle disconnect
             bytes_read += res;
         }
 
