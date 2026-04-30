@@ -39,7 +39,7 @@ jobs:
         run: |
           mkdir release
           cp *.exe release/
-          cp SDL3.dll release/
+          cp *.dll release/
           cp config.ini release/
 
       - name: Upload Windows Artifact
