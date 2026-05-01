@@ -24,7 +24,24 @@ static uint8_t remote_input_ring[NETPLAY_RING_SIZE][32];
 static u64 netplay_current_frame;
 static u64 remote_frames_received;
 
-static void netplay_start_host() {
+static bool send_bytes(const u8* buffer, int n_bytes) {
+    return NET_WriteToStreamSocket(netplay_socket, buffer, n_bytes);
+}
+
+static bool recv_bytes(u8* buffer, int n_bytes) {
+    int bytes_read = 0;
+    while (bytes_read < n_bytes) {
+        NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, -1);
+        int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
+        if (res < 0)
+            return false;
+        bytes_read += res;
+    }
+
+    return true;
+}
+
+static void netplay_start_host(core_ctx_t* ctx) {
     NET_Server* server_socket = NET_CreateServer(NULL, netplay_port);
     while (NET_AcceptClient(server_socket, &netplay_socket) && !netplay_socket) {
         SDL_Delay(100);
@@ -33,16 +50,34 @@ static void netplay_start_host() {
 
     NET_DestroyServer(server_socket);
 
+    printf("sending state...\n");
+    byte_vec_t state = ctx->core->savestate(ctx);
+    printf("size: %llu\n", state.size);
+    send_bytes((u8*)&state.size, sizeof(u32));
+    send_bytes(state.data, state.size);
+    byte_vec_free(&state);
+
     netplay_actual_mode = NETPLAY_HOST;
 }
 
-static void netplay_start_client() {
+static void netplay_start_client(core_ctx_t* ctx) {
     NET_Address* net_address = NET_ResolveHostname(netplay_host_ip);
     NET_WaitUntilResolved(net_address, -1);
     netplay_socket = NET_CreateClient(net_address, netplay_port);
     NET_WaitUntilConnected(netplay_socket, -1);
-
     NET_UnrefAddress(net_address);
+
+    printf("receiving state...\n");
+    byte_vec_t state;
+    byte_vec_init(&state);
+    recv_bytes((u8*)&state.size, sizeof(u32));
+    printf("size: %llu\n", state.size);
+    state.allocated = state.size;
+    state.data = malloc(state.allocated);
+    recv_bytes(state.data, state.size);
+    ctx->core->loadstate(ctx, &state);
+    byte_vec_free(&state);
+
     netplay_actual_mode = NETPLAY_CLIENT;
 }
 
@@ -55,7 +90,7 @@ void netplay_quit() {
     NET_Quit();
 }
 
-void netplay_start_session() {
+void netplay_start_session(core_ctx_t* ctx) {
     netplay_close_session();
     netplay_current_frame = 0;
     remote_frames_received = 0;
@@ -67,11 +102,11 @@ void netplay_start_session() {
         break;
 
         case NETPLAY_HOST:
-        netplay_start_host();
+        netplay_start_host(ctx);
         break;
 
         case NETPLAY_CLIENT:
-        netplay_start_client();
+        netplay_start_client(ctx);
         break;
 
         default:
@@ -111,18 +146,6 @@ void netplay_send_inputs(const core_t* core) {
     NET_WriteToStreamSocket(netplay_socket, buffer, n_bytes);
 }
 
-static bool recv_bytes(int n_bytes, u8* buffer) {
-    int bytes_read = 0;
-    while (bytes_read < n_bytes) {
-        int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
-        if (res < 0)
-            return false;
-        bytes_read += res;
-    }
-
-    return true;
-}
-
 static bool drain_bytes(int n_bytes) {
     while (true) {
         int wait_res = NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, 0); 
@@ -130,7 +153,7 @@ static bool drain_bytes(int n_bytes) {
         if (wait_res == 0) break;
 
         uint8_t buffer[n_bytes];
-        if(!recv_bytes(n_bytes, buffer))
+        if(!recv_bytes(buffer, n_bytes))
             return false;
 
         uint32_t opponent_target = remote_frames_received + netplay_input_delay;
@@ -158,7 +181,7 @@ void netplay_recv_inputs(const core_t* core) {
         if (wait_res < 0) return; // Handle disconnect
 
         uint8_t buffer[n_bytes];
-        if(!recv_bytes(n_bytes, buffer))
+        if(!recv_bytes(buffer, n_bytes))
             return; // disconnected
 
         uint32_t opponent_target = remote_frames_received + netplay_input_delay;

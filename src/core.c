@@ -192,5 +192,5 @@ void core_restart(core_ctx_t* ctx){
     }
 
     rewind_init();
-    netplay_start_session();
+    netplay_start_session(ctx);
 }
