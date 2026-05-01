@@ -324,7 +324,6 @@ void pce_vdc_get_sprite_info(vdc_t* vdc, u8 idx, u16* addr, int* xpos, int* ypos
 }
 
 void pce_vdc_render_sprites(vdc_t* vdc){
-    int sprite_count = 0;
     int render_width = get_render_width(vdc);
     int display_line = vdc->display_counter;
     int screen_line = vdc->frame_counter - TOP_OVERSCAN;
@@ -339,7 +338,6 @@ void pce_vdc_render_sprites(vdc_t* vdc){
         if(ypos + ys <= display_line) continue;
         if(xpos + xs < 0) continue;
         if(xpos >= render_width) continue;
-        sprite_count += 1;
         for(int i = xpos < 0 ? 0 : xpos; i < xpos + xs && i < render_width; i++){
             u8 col_idx = pce_vdc_get_sprite_col_idx(vdc, addr, xs, ys, xf, yf, i - xpos, display_line - ypos);
             if(!col_idx)
