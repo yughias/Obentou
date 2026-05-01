@@ -344,12 +344,12 @@ static void netplay_set_ip(void* arg){
 
 static void netplay_set_input_delay(void* arg){
     char text[64];
-    const char* ip = tinyfd_inputBox("Set Input Delay", "Enter Input Delay", "0");
-    if(!ip)
+    const char* delay = tinyfd_inputBox("Set Input Delay", "Enter Input Delay", "0");
+    if(!delay)
         return;
-    netplay_input_delay = atoi(ip);
+    netplay_input_delay = atoi(delay);
     sprintf(text, "Input Delay: %d", netplay_input_delay);
-    setButtonTitle(netplay_ip_button, text);
+    setButtonTitle(netplay_input_delay_button, text);
 }
 
 void menu_create(core_ctx_t* ctx){
