@@ -50,11 +50,6 @@ static bool draw_wave(void* arg){
 
     int range = info->max - info->min;
 
-    float avg = 0;
-    for(int i = 0; i < DISPLAY_BUFFER_SAMPLES; i++)
-        avg += info->buffer[i];
-    avg /= DISPLAY_BUFFER_SAMPLES;
-
     int local_min = info->max;
     int local_max = info->min;
     for(int i = 0; i < DISPLAY_BUFFER_SAMPLES; i++){
