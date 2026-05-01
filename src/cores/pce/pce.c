@@ -9,7 +9,7 @@ static void pce_write_regs(void* ctx, u16 offset, u8 value);
 static u8 pce_read_regs(void* ctx, u16 offset);
 
 void* PCE_init(const archive_t* rom_archive, const archive_t* bios_archive) {
-    pce_t* p = malloc(sizeof(pce_t));
+    pce_t* p = calloc(1, sizeof(pce_t));
     file_t* rom = archive_get_file_by_ext(rom_archive, "pce");
     p->rom = rom->data;
     p->rom_size = rom->size;

@@ -6,7 +6,7 @@
 #include "SDL_MAINLOOP.h"
 
 void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archive){
-    bytepusher_t* bp = malloc(sizeof(bytepusher_t));
+    bytepusher_t* bp = calloc(1, sizeof(bytepusher_t));
     file_t* rom = archive_get_file_by_ext(rom_archive, "bytepusher");
     if(!rom)
         rom = archive_get_file_by_ext(rom_archive, "bp");

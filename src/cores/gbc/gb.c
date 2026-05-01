@@ -48,8 +48,7 @@ static void tickHardware(void* ctx, int ticks){
 }
 
 void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive){
-    gb_t* gb = malloc(sizeof(gb_t));
-    memset(gb, 0, sizeof(gb_t));
+    gb_t* gb = calloc(1, sizeof(gb_t));
     sm83_t* cpu = &gb->cpu;
     cpu->readByte = gb_readByte;
     cpu->writeByte = gb_writeByte;

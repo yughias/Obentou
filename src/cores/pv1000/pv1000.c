@@ -9,8 +9,7 @@
 #include "utils/vec.h"
 
 void* PV1000_init(const archive_t* rom_archive, const archive_t* bios_archive){
-    pv1000_t* pv1000 = malloc(sizeof(pv1000_t));
-    memset(pv1000, 0x00, sizeof(pv1000_t));
+    pv1000_t* pv1000 = calloc(1, sizeof(pv1000_t));
     
     z80_t* z80 = &pv1000->z80;
     z80->readMemory = pv1000_readMemory;

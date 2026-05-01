@@ -42,7 +42,7 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     mbc_t* mbc = &gb->mbc;
     gb_detectConsoleAndMbc(gb);
     
-    file_t* sav_file = malloc(sizeof(file_t));
+    file_t* sav_file = calloc(1, sizeof(file_t));
     char sav_path[FILENAME_MAX];
     path_set_ext(archive_get_path(rom_archive), sav_path, "sav");
 
@@ -118,7 +118,7 @@ void gb_loadRom(gb_t* gb, const archive_t* rom_archive){
         gb->ROM_SIZE = f->size;
     } else {
         gb->noCart = true;
-        gb->ROM = malloc(1 << 15);
+        gb->ROM = calloc(1, 1 << 15);
         gb->ROM_SIZE = 1 << 15;
     }
 }

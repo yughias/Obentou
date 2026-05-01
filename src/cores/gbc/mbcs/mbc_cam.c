@@ -26,8 +26,7 @@ void getCapturedFrame(gb_t *gb);
 
 void gb_mbc_cam_init(gb_t *gb)
 {
-    gb->mbc.data = malloc(sizeof(mbc_cam_t));
-    memset(gb->mbc.data, 0, sizeof(mbc_cam_t));
+    gb->mbc.data = calloc(1, sizeof(mbc_cam_t));
     camera_open(GBCAM_SENSOR_W, GBCAM_SENSOR_H);
 }
 

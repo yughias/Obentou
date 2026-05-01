@@ -11,12 +11,12 @@ typedef void (*mapper_init_func)(nes_t*);
 #define GET_IRQ(n) (n->cart_irq || n->apu.frame_irq || n->apu.dmc.irq)
 
 void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive){
-    nes_t* nes = malloc(sizeof(nes_t));
+    nes_t* nes = calloc(1, sizeof(nes_t));
     file_t* rom = archive_get_file_by_ext(rom_archive, "nes");
     memset(nes, 0, sizeof(nes_t));
     nes_ines_load(&nes->cart, rom->data, rom->size);
     nes->ppu.vram_size = nes->cart.vram_align == VRAM_4 ? EXTENDED_VRAM_SIZE : BASIC_VRAM_SIZE;
-    nes->ppu.vram = malloc(nes->ppu.vram_size);
+    nes->ppu.vram = calloc(1, nes->ppu.vram_size);
     m6502_t* cpu = &nes->cpu;
     m6502_init(cpu);
     cpu->ctx = (void*)nes;

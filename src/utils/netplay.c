@@ -111,6 +111,36 @@ void netplay_send_inputs(const core_t* core) {
     NET_WriteToStreamSocket(netplay_socket, buffer, n_bytes);
 }
 
+static bool recv_bytes(int n_bytes, u8* buffer) {
+    int bytes_read = 0;
+    while (bytes_read < n_bytes) {
+        int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
+        if (res < 0)
+            return false;
+        bytes_read += res;
+    }
+
+    return true;
+}
+
+static bool drain_bytes(int n_bytes) {
+    while (true) {
+        int wait_res = NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, 0); 
+        if (wait_res < 0) return false;
+        if (wait_res == 0) break;
+
+        uint8_t buffer[n_bytes];
+        if(!recv_bytes(n_bytes, buffer))
+            return false;
+
+        uint32_t opponent_target = remote_frames_received + netplay_input_delay;
+        memcpy(remote_input_ring[opponent_target % NETPLAY_RING_SIZE], buffer, n_bytes);
+        remote_frames_received++;
+    }
+
+    return true;
+}
+
 void netplay_recv_inputs(const core_t* core) {
     int n_inputs = core->control_end - core->control_begin + 1;
     int n_bytes = (n_inputs + 7) / 8;
@@ -118,22 +148,8 @@ void netplay_recv_inputs(const core_t* core) {
     int local_port = netplay_actual_mode == NETPLAY_HOST ? 0 : 1;
     int remote_port = netplay_actual_mode == NETPLAY_HOST ? 1 : 0;
 
-    while (true) {
-        int wait_res = NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, 0); 
-        if (wait_res <= 0) break; // Network buffer is empty, move on!
-
-        uint8_t buffer[n_bytes];
-        int bytes_read = 0;
-        while (bytes_read < n_bytes) {
-            int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
-            if (res < 0) return; // Handle disconnect
-            bytes_read += res;
-        }
-
-        uint32_t opponent_target = remote_frames_received + netplay_input_delay;
-        memcpy(remote_input_ring[opponent_target % NETPLAY_RING_SIZE], buffer, n_bytes);
-        remote_frames_received++;
-    }
+    if(!drain_bytes(n_bytes))
+        return; /// disconnected
 
     int needed_remote_frames = (int)netplay_current_frame - netplay_input_delay + 1;
 
@@ -142,12 +158,8 @@ void netplay_recv_inputs(const core_t* core) {
         if (wait_res < 0) return; // Handle disconnect
 
         uint8_t buffer[n_bytes];
-        int bytes_read = 0;
-        while (bytes_read < n_bytes) {
-            int res = NET_ReadFromStreamSocket(netplay_socket, buffer + bytes_read, n_bytes - bytes_read);
-            if (res < 0) return; // Handle disconnect
-            bytes_read += res;
-        }
+        if(!recv_bytes(n_bytes, buffer))
+            return; // disconnected
 
         uint32_t opponent_target = remote_frames_received + netplay_input_delay;
         memcpy(remote_input_ring[opponent_target % NETPLAY_RING_SIZE], buffer, n_bytes);

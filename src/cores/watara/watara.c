@@ -236,8 +236,7 @@ static void watara_write(void* ctx, u16 addr, u8 byte){
 }
 
 void* WATARA_init(const archive_t* rom_archive, const archive_t* bios_archive){
-    watara_t* w = (watara_t*)malloc(sizeof(watara_t));
-    memset(w, 0, sizeof(watara_t));
+    watara_t* w = (watara_t*)calloc(1, sizeof(watara_t));
 
     file_t* f = archive_get_file_by_ext(rom_archive, "watara");
     if(!f)

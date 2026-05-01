@@ -26,8 +26,7 @@ typedef struct mbc7_t {
 } mbc7_t;
 
 void* gb_mbc7_alloc(size_t* size){
-    void* out = malloc(sizeof(mbc7_t));
-    memset(out, 0, sizeof(mbc7_t));
+    void* out = calloc(1, sizeof(mbc7_t));
     *size = sizeof(mbc7_t);
     return out; 
 }

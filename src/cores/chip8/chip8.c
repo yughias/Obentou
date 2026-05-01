@@ -11,7 +11,7 @@
 #define popStack() (ch8->stack[ch8->stackIndex--])
 
 void* CHIP8_init(const archive_t* rom_archive, const archive_t* bios_archive) {
-    ch8_t* ch8 = malloc(sizeof(ch8_t));
+    ch8_t* ch8 = calloc(1, sizeof(ch8_t));
     memset(ch8, 0, sizeof(ch8_t));
     srand(time(NULL));
 
