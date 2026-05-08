@@ -63,13 +63,15 @@ void loop(){
     if(netplay_is_connected()) {
         netplay_send_inputs(emu_ctx.core);
         netplay_recv_inputs(emu_ctx.core);
+        if (!netplay_is_connected())
+            menu_create(&emu_ctx);
     }
 
     if(hotkeys_released(CONTROL_HOTKEY_SAVESTATE)){
         state_save_slot(&emu_ctx);
     }
 
-    if(hotkeys_released(CONTROL_HOTKEY_LOADSTATE)){
+    if(!netplay_is_connected() && hotkeys_released(CONTROL_HOTKEY_LOADSTATE)){
         state_load_slot(&emu_ctx);
     }
 
@@ -93,7 +95,7 @@ void loop(){
         core_ctx_set_speed(&speed_args);
     }
 
-    if(hotkeys_released(CONTROL_HOTKEY_RESET))
+    if(!netplay_is_connected() && hotkeys_released(CONTROL_HOTKEY_RESET))
         core_restart(&emu_ctx);
 
     if(!netplay_is_connected() && hotkeys_released(CONTROL_HOTKEY_PAUSE))

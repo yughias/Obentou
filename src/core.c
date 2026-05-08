@@ -76,6 +76,7 @@ static void core_close_emu(core_ctx_t* ctx){
         if(ctx->core->close)
             save_sav(ctx);
         free(ctx->emu);
+        ctx->emu = NULL;
         destroyAllWidgets();
     }
 }
@@ -149,18 +150,19 @@ void core_switch_pause(core_ctx_t* ctx){
 
 void core_ctx_close(core_ctx_t* ctx){
     sound_close();
-
+    netplay_close_session();
     core_close_emu(ctx);
-
+    
     archive_free(ctx->rom);
     archive_free(ctx->bios);
-
-    netplay_close_session();
+    ctx->rom = NULL;
+    ctx->bios = NULL;
+    ctx->core = NULL;
+    core_restart(ctx);
 }
 
 void core_restart(core_ctx_t* ctx){
     const core_t* core = ctx->core;
-
     menu_create(ctx);
 
     if(!core){
@@ -193,4 +195,8 @@ void core_restart(core_ctx_t* ctx){
 
     rewind_init();
     netplay_start_session(ctx);
+
+    // disable some options that can case desync
+    if (netplay_is_connected())
+        menu_create(ctx);
 }

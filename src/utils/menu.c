@@ -338,7 +338,7 @@ static void netplay_set_ip(void* arg){
     if(!ip)
         return;
     strcpy(netplay_host_ip, ip);
-    sprintf(text, "Connect to: %s", netplay_host_ip);
+    sprintf(text, "(Client) Connect to: %s", netplay_host_ip);
     setButtonTitle(netplay_ip_button, text);
 }
 
@@ -348,7 +348,7 @@ static void netplay_set_input_delay(void* arg){
     if(!delay)
         return;
     netplay_input_delay = atoi(delay);
-    sprintf(text, "Input Delay: %d", netplay_input_delay);
+    sprintf(text, "(Host) Input Delay: %d", netplay_input_delay);
     setButtonTitle(netplay_input_delay_button, text);
 }
 
@@ -391,26 +391,28 @@ void menu_create(core_ctx_t* ctx){
             get_bios_path_button_text(label, 1024, ctx->core->name);
             default_bios_button = addButtonTo(bios_menu, label, (void*)menu_select_default_bios, ctx);
         }
-
-        if(ctx->core->savestate && ctx->core->loadstate){
-            menuId state_menu = addMenuTo(-1, "State", false);
-            menuId slot_menu = addMenuTo(state_menu, "Select Slot", true);
-            autosave_button = addButtonTo(state_menu, "Auto Load on Open", (void*)menu_switch_autosave, NULL);
-            buttonId slot_btns[5];
-            tickButton(autosave_button, state_get_autosave());
-            addButtonTo(state_menu, "Save State", (void*)state_save_slot, ctx);
-            addButtonTo(state_menu, "Load State", (void*)state_load_slot, ctx);
-            for(int i = 0; i < sizeof(slot_btns) / sizeof(slot_btns[0]); i++){
-                if(!i){
-                    slot_btns[i] = addButtonTo(slot_menu, "0 (autosave)", (void*)state_set_active_slot, &slot_args[i].value);
-                } else {
-                    char name[2] = {'0' + i, 0};
-                    slot_btns[i] = addButtonTo(slot_menu, name, (void*)state_set_active_slot, &slot_args[i].value);
-                }        
-            }
-            checkRadioButton(slot_btns[state_get_active_slot()]);
-        }
     }
+
+    menuId state_menu = addMenuTo(-1, "State", false);
+    menuId slot_menu = addMenuTo(state_menu, "Select Slot", true);
+    autosave_button = addButtonTo(state_menu, "Auto Load on Open", (void*)menu_switch_autosave, NULL);
+    buttonId slot_btns[5];
+    tickButton(autosave_button, state_get_autosave());
+    if (!netplay_is_connected() && ctx->core) {
+        if (ctx->core->savestate)
+            addButtonTo(state_menu, "Save State", (void*)state_save_slot, ctx);
+        if (ctx->core->loadstate)
+            addButtonTo(state_menu, "Load State", (void*)state_load_slot, ctx);
+    }
+    for(int i = 0; i < sizeof(slot_btns) / sizeof(slot_btns[0]); i++){
+        if(!i){
+            slot_btns[i] = addButtonTo(slot_menu, "0 (autosave)", (void*)state_set_active_slot, &slot_args[i].value);
+        } else {
+            char name[2] = {'0' + i, 0};
+            slot_btns[i] = addButtonTo(slot_menu, name, (void*)state_set_active_slot, &slot_args[i].value);
+        }        
+    }
+    checkRadioButton(slot_btns[state_get_active_slot()]);
 
     menuId emu_menu = addMenuTo(-1, "Emu", false);
     menuId speed_menu = addMenuTo(emu_menu, "Speed", true);
@@ -429,9 +431,13 @@ void menu_create(core_ctx_t* ctx){
         addButtonTo(video_menu, "Screenshot", (void*)menu_save_screenshot, ctx);
 
     pause_button = addButtonTo(emu_menu, "Pause", (void*)core_switch_pause, ctx);
-    addButtonTo(emu_menu, "Restart", (void*)core_restart, ctx);
+    if (!netplay_is_connected())
+        addButtonTo(emu_menu, "Restart", (void*)core_restart, ctx);
 
-    for(int i = 0; i < 4; i++){
+    if (ctx->core)
+        addButtonTo(emu_menu, "Close", (void*)core_ctx_close, ctx);
+
+    for(int i = 0; i < (netplay_is_connected() ? 1 : 4); i++){
         char speed_str[3] = {'0' + (1 << i), 'x', 0};
         speed_buttons[i] = addButtonTo(speed_menu, speed_str, (void*)core_ctx_set_speed, &speed_args[i]);
         if(i == 0)    
@@ -520,18 +526,20 @@ void menu_create(core_ctx_t* ctx){
     }
 
     #ifndef __EMSCRIPTEN__
-    menuId netplay_menu = addMenuTo(-1, "Netplay", false);
-    menuId netmode_menu = addMenuTo(netplay_menu, "Mode", true);
-    netplay_mode_buttons[0] = addButtonTo(netmode_menu, "None", netplay_set_mode, (void*)&netplay_modes[0]);
-    netplay_mode_buttons[1] = addButtonTo(netmode_menu, "Host", netplay_set_mode, (void*)&netplay_modes[1]);
-    netplay_mode_buttons[2] = addButtonTo(netmode_menu, "Client", netplay_set_mode, (void*)&netplay_modes[2]);
-    checkRadioButton(netplay_mode_buttons[netplay_wanted_mode]);
-    sprintf(label, "Port: %d", netplay_port);
-    netplay_port_button = addButtonTo(netplay_menu, label, netplay_set_port, NULL);
-    sprintf(label, "Connect to: %s", netplay_host_ip);
-    netplay_ip_button = addButtonTo(netplay_menu, label, netplay_set_ip, NULL);
-    sprintf(label, "Input Delay: %d", netplay_input_delay);
-    netplay_input_delay_button = addButtonTo(netplay_menu, label, netplay_set_input_delay, NULL);
+    if (!netplay_is_connected()) {
+        menuId netplay_menu = addMenuTo(-1, "Netplay", false);
+        menuId netmode_menu = addMenuTo(netplay_menu, "Mode", true);
+        netplay_mode_buttons[0] = addButtonTo(netmode_menu, "None", netplay_set_mode, (void*)&netplay_modes[0]);
+        netplay_mode_buttons[1] = addButtonTo(netmode_menu, "Host", netplay_set_mode, (void*)&netplay_modes[1]);
+        netplay_mode_buttons[2] = addButtonTo(netmode_menu, "Client", netplay_set_mode, (void*)&netplay_modes[2]);
+        checkRadioButton(netplay_mode_buttons[netplay_wanted_mode]);
+        sprintf(label, "Port: %d", netplay_port);
+        netplay_port_button = addButtonTo(netplay_menu, label, netplay_set_port, NULL);
+        sprintf(label, "(Client) Connect to: %s", netplay_host_ip);
+        netplay_ip_button = addButtonTo(netplay_menu, label, netplay_set_ip, NULL);
+        sprintf(label, "(Host) Input Delay: %d", netplay_input_delay);
+        netplay_input_delay_button = addButtonTo(netplay_menu, label, netplay_set_input_delay, NULL);
+    }
     #endif
 
     addButtonTo(-1, "About", (void*)menu_info, NULL);

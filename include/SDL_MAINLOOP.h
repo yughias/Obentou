@@ -52,6 +52,7 @@ void rect(int, int, int, int, int);
 void loadWindowIcon(const char*);
 void setScalingMode(SDL_RendererLogicalPresentation mode);
 bool hasRendered();
+bool updateUi();
 
 void renderPixels();
 

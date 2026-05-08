@@ -520,11 +520,7 @@ int main(int argc, char** argv){
 
     return 0;
 }
-
-void mainloop(){
-    frameCount++;
-    has_rendered = false;
-
+bool updateUi() {
     #ifdef _WIN32
     MSG msg;
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -615,7 +611,14 @@ void mainloop(){
             break;
         }
     }
+    return running;
+}
 
+void mainloop(){
+    frameCount++;
+    has_rendered = false;
+
+    updateUi();
     loop();
     renderBufferToWindow();
 

@@ -1,7 +1,10 @@
 #include "utils/netplay.h"
 #include "utils/controls.h"
+#include "utils/menu.h"
 
 #include "core.h"
+
+#include "SDL_MAINLOOP.h"
 
 #ifndef __EMSCRIPTEN__
 
@@ -41,17 +44,34 @@ static bool recv_bytes(u8* buffer, int n_bytes) {
     return true;
 }
 
+static void close_hosting(void* dummy) {
+    netplay_wanted_mode = NETPLAY_NONE;
+}
+
 static void netplay_start_host(core_ctx_t* ctx) {
     NET_Server* server_socket = NET_CreateServer(NULL, netplay_port);
+
+    destroyAllMenus();
+    addButtonTo(-1, "Close", (void*)close_hosting, NULL);
+
     while (NET_AcceptClient(server_socket, &netplay_socket) && !netplay_socket) {
         SDL_Delay(100);
+        bool running = updateUi();
+        if (!running || netplay_wanted_mode != NETPLAY_HOST) {
+            NET_DestroyServer(server_socket);
+            return;
+        }
+
         printf("Waiting for client...\n");
     }
 
     NET_DestroyServer(server_socket);
 
+    printf("sending delay...\n");
+    send_bytes(&netplay_input_delay, sizeof(u8));
+
     printf("sending state...\n");
-    byte_vec_t state = ctx->core->savestate(ctx);
+    byte_vec_t state = ctx->core->savestate(ctx->emu);
     printf("size: %llu\n", state.size);
     send_bytes((u8*)&state.size, sizeof(u32));
     send_bytes(state.data, state.size);
@@ -64,8 +84,17 @@ static void netplay_start_client(core_ctx_t* ctx) {
     NET_Address* net_address = NET_ResolveHostname(netplay_host_ip);
     NET_WaitUntilResolved(net_address, -1);
     netplay_socket = NET_CreateClient(net_address, netplay_port);
-    NET_WaitUntilConnected(netplay_socket, -1);
+    NET_Status status = NET_WaitUntilConnected(netplay_socket, -1);
     NET_UnrefAddress(net_address);
+
+    if (status != NET_SUCCESS) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Netplay Error", "Failed to connect to server", getMainWindow());
+        printf("Failed to connect to %s:%d\n", netplay_host_ip, netplay_port);
+        return;
+    }
+
+    printf("receving delay...\n");
+    recv_bytes(&netplay_input_delay, sizeof(u8));
 
     printf("receiving state...\n");
     byte_vec_t state;
@@ -75,7 +104,7 @@ static void netplay_start_client(core_ctx_t* ctx) {
     state.allocated = state.size;
     state.data = malloc(state.allocated);
     recv_bytes(state.data, state.size);
-    ctx->core->loadstate(ctx, &state);
+    ctx->core->loadstate(ctx->emu, &state);
     byte_vec_free(&state);
 
     netplay_actual_mode = NETPLAY_CLIENT;
@@ -88,6 +117,11 @@ void netplay_init() {
 void netplay_quit() {
     netplay_close_session();
     NET_Quit();
+}
+
+static void disconnect_and_notify() {
+    netplay_close_session();
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Netplay Error", "Peer disconnected", getMainWindow());
 }
 
 void netplay_start_session(core_ctx_t* ctx) {
@@ -116,10 +150,10 @@ void netplay_start_session(core_ctx_t* ctx) {
 }
 
 void netplay_close_session() {
+    netplay_actual_mode = NETPLAY_NONE;
     if (netplay_socket)
         NET_DestroyStreamSocket(netplay_socket);
     netplay_socket = NULL;
-    netplay_actual_mode = NETPLAY_NONE;
 }
 
 bool netplay_is_connected() {
@@ -143,7 +177,9 @@ void netplay_send_inputs(const core_t* core) {
     uint32_t target_frame = netplay_current_frame + netplay_input_delay;
     memcpy(local_input_ring[target_frame % NETPLAY_RING_SIZE], buffer, n_bytes);
 
-    NET_WriteToStreamSocket(netplay_socket, buffer, n_bytes);
+    if(!NET_WriteToStreamSocket(netplay_socket, buffer, n_bytes)) {
+        disconnect_and_notify();
+    }
 }
 
 static bool drain_bytes(int n_bytes) {
@@ -171,18 +207,25 @@ void netplay_recv_inputs(const core_t* core) {
     int local_port = netplay_actual_mode == NETPLAY_HOST ? 0 : 1;
     int remote_port = netplay_actual_mode == NETPLAY_HOST ? 1 : 0;
 
-    if(!drain_bytes(n_bytes))
-        return; /// disconnected
+    if(!drain_bytes(n_bytes)) {
+        disconnect_and_notify();
+        return;
+    }
 
     int needed_remote_frames = (int)netplay_current_frame - netplay_input_delay + 1;
 
     while ((int)remote_frames_received < needed_remote_frames) {
         int wait_res = NET_WaitUntilInputAvailable((void**)&netplay_socket, 1, -1);
-        if (wait_res < 0) return; // Handle disconnect
+        if (wait_res < 0)  {
+            disconnect_and_notify();
+            return;
+        }
 
         uint8_t buffer[n_bytes];
-        if(!recv_bytes(buffer, n_bytes))
-            return; // disconnected
+        if(!recv_bytes(buffer, n_bytes)) {
+            disconnect_and_notify();
+            return;
+        }
 
         uint32_t opponent_target = remote_frames_received + netplay_input_delay;
         memcpy(remote_input_ring[opponent_target % NETPLAY_RING_SIZE], buffer, n_bytes);
