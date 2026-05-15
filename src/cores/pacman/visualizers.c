@@ -142,3 +142,36 @@ bool pacman_draw_sprites(void* ctx)
     return true;
 }
 
+bool pacman_draw_palettes(void* ctx)
+{
+    pacman_t* p = (pacman_t*)ctx;
+    size(8*4, 8);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width / 4; x++) {
+            int idx = x + y * width / 4;
+            int pal[4];
+            pacman_get_palette(p, idx, pal);
+            for (int i = 0; i < 4; i++)
+                pixels[x*4+i + y * stride] = pal[i];
+        }
+    }
+
+    return true;
+}
+
+bool pacman_draw_colors(void* ctx)
+{
+    pacman_t* p = (pacman_t*)ctx;
+    size(8, 4);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int idx = x + y * width;
+            int col = pacman_color_from_rom(p, idx);
+            pixels[x + y * stride] = col;
+        }
+    }
+
+    return true;
+}

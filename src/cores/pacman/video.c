@@ -9,7 +9,7 @@ static const u8 color_table[8] = {
     0x51, 0xAE
 };
 
-static int pacman_color_from_rom(pacman_t* p, u8 idx)
+int pacman_color_from_rom(pacman_t* p, u8 idx)
 {
     u8 c = p->colorROM[idx];
     u8 r = 0, g = 0, b = 0;
