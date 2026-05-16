@@ -26,6 +26,22 @@ typedef struct maketrax_regs_t {
     u8 counter;   
 } maketrax_regs_t;
 
+typedef struct jrpacman_regs_t {
+    bool bgpriority;
+    bool tilebank;
+    bool spritebank;
+    bool palettebank;
+    bool colorbank;
+    u8 scroll;
+} jrpacman_regs_t;
+
+typedef enum PACMAN_TYPE {
+    PACMAN_TYPE_NORMAL,
+    PACMAN_TYPE_MSPACMAN,
+    PACMAN_TYPE_MAKETRAX,
+    PACMAN_TYPE_JRPACMAN,
+} PACMAN_TYPE;
+
 #define PACMAN_STRUCT(X) \
     X(z80_t,            z80,                  1, 1) \
     X(u8*,              ROM,                  0, 0) \
@@ -60,8 +76,10 @@ typedef struct maketrax_regs_t {
     X(u8*,              audioROM,             0, 0) \
     X(u32,              voiceAccumulator,     3, 1, 0) \
     X(bool,             is_270_degree,        0, 0) \
-    X(bool,             is_maketrax,          0, 0) \
+    X(PACMAN_TYPE,      type,                 0, 0) \
     X(maketrax_regs_t,  maketrax,             1, 0) \
+    X(jrpacman_regs_t,  jrpacman,             1, 0) \
+    X(bool,             bg_priority_map,      PACMAN_VIDEO_COLS * PACMAN_VIDEO_ROWS * 8 * 8, 0, 0) \
     X(const control_t*, input_map,            0, 0)
 
 

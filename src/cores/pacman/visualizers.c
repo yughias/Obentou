@@ -3,17 +3,40 @@
 #include "cores/pacman/video.h"
 #include "SDL_MAINLOOP.h"
 
+static void get_tile(pacman_t* p, u16 tile_idx, u8 pal_idx, int* out)
+{
+    int pal[4];
+    pacman_get_palette(p, pal_idx, pal);
+    for (int i = 0; i < 16; i++) {
+        u8 byte = p->tileROM[tile_idx * 16 + i];
+        for (int j = 0; j < 4; j++) {
+            u8 mask = 1 << j;
+            u8 pc   = (bool)(byte & mask) | ((bool)(byte & (mask << 4)) << 1);
+            u8 ox   = 7 - (i % 8);
+            u8 oy   = i < 8 ? 4 + (3 - j) : 3 - j;
+            out[ox + oy * 8] = pal[pc];
+        }
+    }
+}
+
+static void draw_tile(int ox, int oy, int* tile)
+{
+    ox *= 8; oy *= 8;
+    for (int y = 0; y < 8; y++)
+        for (int x = 0; x < 8; x++)
+            pixels[(ox + x) + (oy + y) * width] = tile[x + y * 8];
+}
+
 bool pacman_draw_tile_rom(void* ctx)
 {
     pacman_t* p = (pacman_t*)ctx;
-    size(16 * 8, 16 * 8);
+    size((p->type == PACMAN_TYPE_JRPACMAN ? 32 : 16) * 8, 16 * 8);
 
     int tile[64];
-    for (int ty = 0; ty < 16; ty++) {
-        for (int tx = 0; tx < 16; tx++) {
-            u8 tile_idx = (u8)(ty * 16 + tx);
-            pacman_get_tile(p, tile_idx, 1, tile);
-            pacman_draw_tile(tx, ty, tile);
+    for (int ty = 0; ty < height / 8; ty++) {
+        for (int tx = 0; tx < width / 8; tx++) {
+            get_tile(p, tx + ty * width / 8, 1, tile);
+            draw_tile(tx, ty, tile);
         }
     }
 
@@ -71,7 +94,7 @@ bool pacman_draw_audiorom(void* ctx)
 }
 
 
-static void draw_sprite(pacman_t* p, int ox, int oy, u8 spr_idx, u8 pal_idx, bool flip_x, bool flip_y)
+static void draw_sprite(pacman_t* p, int ox, int oy, u16 spr_idx, u8 pal_idx, bool flip_x, bool flip_y)
 {
     int spr[256], pal[4];
     pacman_get_palette(p, pal_idx, pal);
@@ -114,11 +137,11 @@ static void draw_sprite(pacman_t* p, int ox, int oy, u8 spr_idx, u8 pal_idx, boo
 bool pacman_draw_sprite_rom(void* ctx)
 {
     pacman_t* p = (pacman_t*)ctx;
-    size(8 * 16, 8 * 16);
+    size((p->type == PACMAN_TYPE_JRPACMAN ? 16 : 8) * 16, 8 * 16);
 
-    for (int y = 0; y < 8; y++)
-        for (int x = 0; x < 8; x++) {
-            u8  spr_idx = x + y * 8;
+    for (int y = 0; y < height / 16; y++)
+        for (int x = 0; x < width / 16; x++) {
+            u16 spr_idx = x + y * (width / 16);
             draw_sprite(p, x * 16, y * 16, spr_idx, 1, false, false);
         }
 
@@ -136,7 +159,7 @@ bool pacman_draw_sprites(void* ctx)
         u8  spr_idx = (sprites_info[i * 2] & 0xFC) >> 2;
         bool flip_x = (bool)(sprites_info[i * 2] & 0x2) ^ p->is_270_degree;
         bool flip_y = (bool)(sprites_info[i * 2] & 0x1) ^ p->is_270_degree;
-        draw_sprite(p, (i % 4) * 16, (i / 4) * 16, spr_idx, pal_idx, flip_x, flip_y);
+        draw_sprite(p, (i % 4) * 16, (i / 4) * 16, spr_idx + p->jrpacman.spritebank * 64, pal_idx, flip_x, flip_y);
     }
 
     return true;

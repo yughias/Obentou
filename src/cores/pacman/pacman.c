@@ -209,10 +209,6 @@ static void eyes_decrypt_system(pacman_t* p) {
     }
 }
 
-static void maketrax_init(pacman_t* p) {
-    p->is_maketrax = true;
-}
-
 typedef struct {
     const char*  name;
     const char*  rom_6e;        /* program ROM banks */
@@ -224,11 +220,11 @@ typedef struct {
     const char*  tile_rom;      /* tile gfx ROM (4096 bytes) */
     const char*  sprite_rom;    /* sprite gfx ROM (4096 bytes) */
     const char*  audio_rom[2];     /* audio ROM (4096 bytes) */
-    bool         mspacman_aux;  /* load Ms Pac-Man auxiliary board */
+    PACMAN_TYPE  type;             /* arcade hardware type */
     void         (*decrypt) (pacman_t* p); /* decryption function */ 
-    bool         is_270_degree; /* is the screen rotated 270 degrees instead of 90 */
+    bool         is_270_degree;
     u8           default_dip_switch; /* 1C_C, 2 Lives, Lowest Bonus, Normal Difficulty, Cabinet */
-    control_t input_map[16]; /* bit map for IN0 and IN1 */
+    control_t    input_map[16]; /* bit map for IN0 and IN1 */
 } pacman_romset_t;
 
 #define PACMAN_INPUT_MAP { \
@@ -297,7 +293,7 @@ static const pacman_romset_t romsets[] = {
         "pacplus.6e", "pacplus.6f", "pacplus.6h", "pacplus.6j",
         "pacplus.7f", "pacplus.4a", "pacplus.5e", "pacplus.5f",
         { "82s126.1m", "82s126.3m" },
-        false, decrypt_pacplus_system, false,
+        PACMAN_TYPE_NORMAL, decrypt_pacplus_system, false,
         0x1 | 0x08 | 0x00 | 0x40 | 0x80,
         PACMAN_INPUT_MAP
     },
@@ -306,7 +302,7 @@ static const pacman_romset_t romsets[] = {
         "pacmanh.6e", "pacman.6f", "pacmanh.6h", "pacmanh.6j",
         "82s123.7f", "82s126.4a", "pacmanh.5e", "pacman.5f",
         { "82s126.1m", "82s126.3m" },
-        false, NULL, false,
+        PACMAN_TYPE_NORMAL, NULL, false,
         0x1 | 0x08 | 0x00 | 0x40 | 0x80,
         PACMAN_INPUT_MAP
     },
@@ -315,7 +311,7 @@ static const pacman_romset_t romsets[] = {
         "pacman.6e", "pacfast.6f", "pacman.6h", "pacman.6j",
         "82s123.7f", "82s126.4a", "5e", "5f",
         { "82s126.1m", "82s126.3m" },
-        true, NULL, false,
+        PACMAN_TYPE_MSPACMAN, NULL, false,
         0x01 | 0x08 | 0x00 | 0x40,
         PACMAN_INPUT_MAP
     },
@@ -324,7 +320,7 @@ static const pacman_romset_t romsets[] = {
         "pacman.6e", "pacman.6f", "pacman.6h", "pacman.6j",
         "82s123.7f", "82s126.4a", "5e", "5f",
         { "82s126.1m", "82s126.3m" },
-        true, NULL, false,
+        PACMAN_TYPE_MSPACMAN, NULL, false,
         0x01 | 0x08 | 0x00 | 0x40,
         PACMAN_INPUT_MAP
     },
@@ -333,7 +329,7 @@ static const pacman_romset_t romsets[] = {
         "pacman.6e", "pacfast.6f", "pacman.6h", "pacman.6j",
         "82s123.7f", "82s126.4a", "pacman.5e", "pacman.5f",
         { "82s126.1m", "82s126.3m" },
-        false, NULL, false,
+        PACMAN_TYPE_NORMAL, NULL, false,
         0x1 | 0x08 | 0x00 | 0x40 | 0x80,
         PACMAN_INPUT_MAP
     },
@@ -342,7 +338,7 @@ static const pacman_romset_t romsets[] = {
         "pacman.6e", "pacman.6f", "pacman.6h", "pacman.6j",
         "82s123.7f", "82s126.4a", "pacman.5e", "pacman.5f",
         { "82s126.1m", "82s126.3m" },
-        false, NULL, false,
+        PACMAN_TYPE_NORMAL, NULL, false,
         0x1 | 0x08 | 0x00 | 0x40 | 0x80,
         PACMAN_INPUT_MAP
     },
@@ -351,7 +347,7 @@ static const pacman_romset_t romsets[] = {
         "maketrax.6e", "maketrax.6f", "maketrax.6h", "maketrax.6j",
         "82s123.7f", "2s140.4a", "maketrax.5e", "maketrax.5f",
         { "82s126.1m", "82s126.3m" },
-        false, maketrax_init, true,
+        PACMAN_TYPE_MAKETRAX, NULL, true,
         0x01 | 0x00 | 0x10 | 0x00,
         PACMAN_INPUT_MAP
     },
@@ -360,7 +356,7 @@ static const pacman_romset_t romsets[] = {
         "kr.6e", "kr.6f", "kr.6h", "kr.6j",
         "82s123.7f", "2s140.4a", "kr.5e", "kr.5f",
         { "82s126.1m", "82s126.3m" },
-        false, maketrax_init, false,
+        PACMAN_TYPE_MAKETRAX, NULL, false,
         0x01 | 0x00 | 0x10 | 0x00,
         KOROSUKE_INPUT_MAP
     },
@@ -369,7 +365,7 @@ static const pacman_romset_t romsets[] = {
         "pain1.6e", "pain2.6f", "pain3.6h", "pain4-pennello2.6j",
         "mb7051.7f", "n82s129n.4a", "pain5.5e", "pain6.5f",
         { "mb7052.1m", "mb7052.3m" },
-        false, maketrax_init, false,
+        PACMAN_TYPE_MAKETRAX, NULL, false,
         0x01 | 0x00 | 0x10 | 0x00,
         PACMAN_INPUT_MAP
     },
@@ -378,7 +374,7 @@ static const pacman_romset_t romsets[] = {
         "crushkrl.6e", "crushkrl.6f", "crushkrl.6h", "crushkrl.6j",
         "82s123.7f", "2s140.4a", "maketrax.5e", "maketrax.5f",
         { "82s126.1m", "82s126.3m" },
-        false, maketrax_init, false,
+        PACMAN_TYPE_MAKETRAX, NULL, false,
         0x01 | 0x00 | 0x10 | 0x00,
         PACMAN_INPUT_MAP
     },
@@ -387,7 +383,7 @@ static const pacman_romset_t romsets[] = {
         "d7", "e7", "f7", "h7",
         "82s123.7f", "82s129.4a", "d5", "e5",
         { "82s126.1m", "82s126.3m" },
-        false, eyes_decrypt_system, false,
+        PACMAN_TYPE_NORMAL, eyes_decrypt_system, false,
         0x03 | 0x08 | 0x30 | 0x40,
         EYES_MRTNT_INPUT_MAP
     },
@@ -396,10 +392,10 @@ static const pacman_romset_t romsets[] = {
         "tnt.1", "tnt.2", "tnt.3", "tnt.4",
         "82s123.7f", "82s126.4a", "tnt.5", "tnt.6",
         { "82s126.1m", "82s126.3m" },
-        false, eyes_decrypt_system, false,
+        PACMAN_TYPE_NORMAL, eyes_decrypt_system, false,
         0x03 | 0x08 | 0x30 | 0x40,
         EYES_MRTNT_INPUT_MAP
-    },
+    }
 };
 
 #define N_ROMSETS ((int)(sizeof(romsets) / sizeof(romsets[0])))
@@ -424,7 +420,7 @@ static const pacman_romset_t* find_romset(const archive_t* archive)
         if (!rom_exists(archive, rs->tile_rom)) continue;
         if (!rom_exists(archive, rs->sprite_rom)) continue;
 
-        if (rs->mspacman_aux) {
+        if (rs->type == PACMAN_TYPE_MSPACMAN) {
             if (!rom_exists(archive, "u6") || !rom_exists(archive, "u5"))
                 continue;
         }
@@ -449,20 +445,171 @@ void PACMAN_close(pacman_t* p, const char* sav_path)
     free(p->ROM_HIGH);
 }
 
+static bool find_jrpacman(const archive_t* archive) {
+    // ROM
+    if (!rom_exists(archive, "jrp8d.8d")) return false;
+    if (!rom_exists(archive, "jrp8e.8e")) return false;
+    if (!rom_exists(archive, "jrp8h.8h")) return false;
+    if (!rom_exists(archive, "jrp8j.8j")) return false;
+    if (!rom_exists(archive, "jrp8k.8k")) return false;
+    
+    // GFX
+    if (!rom_exists(archive, "jrp2c.2c")) return false;
+    if (!rom_exists(archive, "jrp2e.2e")) return false;
+    
+    // PALETTE
+    if (!rom_exists(archive, "a290-27axv-bxhd.9e")) return false;
+    if (!rom_exists(archive, "a290-27axv-cxhd.9f")) return false;
+
+    // COLOR
+    if (!rom_exists(archive, "a290-27axv-axhd.9p")) return false;
+
+    
+    // WSG
+    if (!rom_exists(archive, "a290-27axv-dxhd.7p")) return false;
+    if (!rom_exists(archive, "a290-27axv-exhd.5s")) return false;
+
+    return true;
+}
+
+static void decrypt_jrpacman(pacman_t* p) {
+    // taken from: https://github.com/mamedev/mame/blob/4d4da6bcd6d4537849893fd8bdd675f9ad5f166c/src/mame/pacman/jrpacman.cpp#L367
+	static const struct {
+		int count;
+		int value;
+	} table[] =
+	{
+		{ 0x00C1, 0x00 },{ 0x0002, 0x80 },{ 0x0004, 0x00 },{ 0x0006, 0x80 },
+		{ 0x0003, 0x00 },{ 0x0002, 0x80 },{ 0x0009, 0x00 },{ 0x0004, 0x80 },
+		{ 0x9968, 0x00 },{ 0x0001, 0x80 },{ 0x0002, 0x00 },{ 0x0001, 0x80 },
+		{ 0x0009, 0x00 },{ 0x0002, 0x80 },{ 0x0009, 0x00 },{ 0x0001, 0x80 },
+		{ 0x00AF, 0x00 },{ 0x000E, 0x04 },{ 0x0002, 0x00 },{ 0x0004, 0x04 },
+		{ 0x001E, 0x00 },{ 0x0001, 0x80 },{ 0x0002, 0x00 },{ 0x0001, 0x80 },
+		{ 0x0002, 0x00 },{ 0x0002, 0x80 },{ 0x0009, 0x00 },{ 0x0002, 0x80 },
+		{ 0x0009, 0x00 },{ 0x0002, 0x80 },{ 0x0083, 0x00 },{ 0x0001, 0x04 },
+		{ 0x0001, 0x01 },{ 0x0001, 0x00 },{ 0x0002, 0x05 },{ 0x0001, 0x00 },
+		{ 0x0003, 0x04 },{ 0x0003, 0x01 },{ 0x0002, 0x00 },{ 0x0001, 0x04 },
+		{ 0x0003, 0x01 },{ 0x0003, 0x00 },{ 0x0003, 0x04 },{ 0x0001, 0x01 },
+		{ 0x002E, 0x00 },{ 0x0078, 0x01 },{ 0x0001, 0x04 },{ 0x0001, 0x05 },
+		{ 0x0001, 0x00 },{ 0x0001, 0x01 },{ 0x0001, 0x04 },{ 0x0002, 0x00 },
+		{ 0x0001, 0x01 },{ 0x0001, 0x04 },{ 0x0002, 0x00 },{ 0x0001, 0x01 },
+		{ 0x0001, 0x04 },{ 0x0002, 0x00 },{ 0x0001, 0x01 },{ 0x0001, 0x04 },
+		{ 0x0001, 0x05 },{ 0x0001, 0x00 },{ 0x0001, 0x01 },{ 0x0001, 0x04 },
+		{ 0x0002, 0x00 },{ 0x0001, 0x01 },{ 0x0001, 0x04 },{ 0x0002, 0x00 },
+		{ 0x0001, 0x01 },{ 0x0001, 0x04 },{ 0x0001, 0x05 },{ 0x0001, 0x00 },
+		{ 0x01B0, 0x01 },{ 0x0001, 0x00 },{ 0x0002, 0x01 },{ 0x00AD, 0x00 },
+		{ 0x0031, 0x01 },{ 0x005C, 0x00 },{ 0x0005, 0x01 },{ 0x604E, 0x00 },
+		{ 0,0 }
+	};
+
+	for (int i = 0, A = 0; table[i].count; i++) {
+		for (int j = 0; j < table[i].count; j++) {
+            if (A < PACMAN_ROM_SIZE)
+			    p->ROM[A] ^= table[i].value;
+            if (A > 0x8000 && A < 0xE000)
+                p->ROM_HIGH[A - 0x8000] ^= table[i].value;
+            A += 1;
+        }
+    }
+
+    printf("JRPAMCAN DECRYPTED\n");
+}
+
+static void init_jrpacman(pacman_t* p, const archive_t* rom_archive) {
+    p->type = PACMAN_TYPE_JRPACMAN;
+    p->ROM      =  calloc(1, PACMAN_ROM_SIZE);
+    p->colorROM   = calloc(1, 32);
+    p->paletteROM = calloc(1, 256); 
+    p->tileROM    = calloc(1, 4096 * 2);
+    p->spriteROM  = calloc(1, 4096 * 2);
+    p->audioROM   = calloc(1, PACMAN_AUDIO_ROM_SIZE);
+    p->ROM_HIGH = calloc(1, 0x2000 * 3);
+
+    static const control_t jrpacman_input_map[] = {
+        CONTROL_PACMAN_UP,
+        CONTROL_PACMAN_LEFT,
+        CONTROL_PACMAN_RIGHT,
+        CONTROL_PACMAN_DOWN,
+        CONTROL_NONE,
+        CONTROL_PACMAN_COIN,
+        CONTROL_NONE,
+        CONTROL_NONE,
+
+        CONTROL_PACMAN_UP,
+        CONTROL_PACMAN_LEFT,
+        CONTROL_PACMAN_RIGHT,
+        CONTROL_PACMAN_DOWN,
+        CONTROL_NONE,
+        CONTROL_PACMAN_START1,
+        CONTROL_PACMAN_START2,
+        CONTROL_NONE
+    };
+
+    static const u8 jrpacman_default_dip_switch = 0x1 | 0x08 | 0x00 | 0x40 | 0x80;
+
+    load_rom(rom_archive, "jrp8d.8d", p->ROM,          0x2000);
+    load_rom(rom_archive, "jrp8e.8e", p->ROM + 0x2000, 0x2000);
+
+    load_rom(rom_archive, "jrp8h.8h", p->ROM_HIGH, 0x2000);
+    load_rom(rom_archive, "jrp8j.8j", p->ROM_HIGH + 0x2000, 0x2000);
+    load_rom(rom_archive, "jrp8k.8k", p->ROM_HIGH + 0x4000, 0x2000);
+
+
+    load_rom(rom_archive, "a290-27axv-axhd.9p",   p->paletteROM, 256);
+
+    u8 low_color_nibbles[256];
+    u8 high_color_nibbles[256];
+    load_rom(rom_archive, "a290-27axv-bxhd.9e", low_color_nibbles, 256);
+    load_rom(rom_archive, "a290-27axv-cxhd.9f", high_color_nibbles, 256);
+
+    for (u16 i = 0; i < 32; i++) {
+        p->colorROM[i] = low_color_nibbles[i] | (high_color_nibbles[i] << 4);
+    }
+    
+    load_rom(rom_archive, "jrp2c.2c",  p->tileROM,   4096 * 2);
+    load_rom(rom_archive, "jrp2e.2e",  p->spriteROM, 4096 * 2);
+
+    load_rom(rom_archive, "a290-27axv-dxhd.7p", p->audioROM,       256);
+    load_rom(rom_archive, "a290-27axv-exhd.5s", p->audioROM + 256, 256);
+
+    p->input_map = jrpacman_input_map;
+    p->DIP_SWITCH_SETTINGS = jrpacman_default_dip_switch;
+
+    decrypt_jrpacman(p);
+}
+
 bool PACMAN_detect(const archive_t* rom_archive, const archive_t* bios_archive)
 {
+    if(find_jrpacman(rom_archive))
+        return true;
+
     return find_romset(rom_archive) != NULL;
 }
 
 void* PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive)
 {
+    pacman_t* p = calloc(1, sizeof(pacman_t));
+    if (!p) return NULL;
+
+    z80_init(&p->z80);
+    p->z80.ctx         = p;
+    p->z80.readMemory  = pacman_read_memory;
+    p->z80.writeMemory = pacman_write_memory;
+    p->z80.readIO      = pacman_read_io;
+    p->z80.writeIO     = pacman_write_io;
+
+    if (find_jrpacman(rom_archive)) {
+        init_jrpacman(p, rom_archive);
+        printf("PACMAN: JRPACMAN\n");
+        return p;
+    }
+
     const pacman_romset_t* rs = find_romset(rom_archive);
     if (!rs) return NULL;
 
     printf("PACMAN: loading romset '%s'\n", rs->name);
 
-    pacman_t* p = calloc(1, sizeof(pacman_t));
-    if (!p) return NULL;
+    p->type = rs->type;
 
     p->ROM      = calloc(1, PACMAN_ROM_SIZE);
     p->colorROM   = calloc(1, 32);
@@ -490,7 +637,7 @@ void* PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive)
     load_rom(rom_archive, rs->audio_rom[0], p->audioROM,       256);
     load_rom(rom_archive, rs->audio_rom[1], p->audioROM + 256, 256);
 
-    if (rs->mspacman_aux)
+    if (rs->type == PACMAN_TYPE_MSPACMAN)
         init_aux_board_mspacman(p, rom_archive);
 
     if (rs->decrypt)
@@ -500,13 +647,6 @@ void* PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive)
     p->IN1               = 0xFF;
     p->DIP_SWITCH_SETTINGS = rs->default_dip_switch;
     p->input_map = rs->input_map;
-
-    z80_init(&p->z80);
-    p->z80.ctx         = p;
-    p->z80.readMemory  = pacman_read_memory;
-    p->z80.writeMemory = pacman_write_memory;
-    p->z80.readIO      = pacman_read_io;
-    p->z80.writeIO     = pacman_write_io;
 
     p->is_270_degree = rs->is_270_degree;
     return p;

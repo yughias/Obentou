@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+// TODO FIX PALETTES AND COLOR BANKS
+
 static const u8 color_table[8] = {
     0x21, 0x47, 0x97,
     0x21, 0x47, 0x97,
@@ -22,32 +24,9 @@ int pacman_color_from_rom(pacman_t* p, u8 idx)
 void pacman_get_palette(pacman_t* p, u8 idx, int* pal)
 {
     idx &= 0x1F;
+    idx |= p->jrpacman.palettebank << 5;
     for (int i = 0; i < 4; i++)
-        pal[i] = pacman_color_from_rom(p, p->paletteROM[idx * 4 + i]);
-}
-
-void pacman_get_tile(pacman_t* p, u8 tile_idx, u8 pal_idx, int* out)
-{
-    int pal[4];
-    pacman_get_palette(p, pal_idx, pal);
-    for (int i = 0; i < 16; i++) {
-        u8 byte = p->tileROM[tile_idx * 16 + i];
-        for (int j = 0; j < 4; j++) {
-            u8 mask = 1 << j;
-            u8 pc   = (bool)(byte & mask) | ((bool)(byte & (mask << 4)) << 1);
-            u8 ox   = 7 - (i % 8);
-            u8 oy   = i < 8 ? 4 + (3 - j) : 3 - j;
-            out[ox + oy * 8] = pal[pc];
-        }
-    }
-}
-
-void pacman_draw_tile(int ox, int oy, int* tile)
-{
-    ox *= 8; oy *= 8;
-    for (int y = 0; y < 8; y++)
-        for (int x = 0; x < 8; x++)
-            pixels[(ox + x) + (oy + y) * width] = tile[x + y * 8];
+        pal[i] = pacman_color_from_rom(p, p->paletteROM[idx * 4 + i] | (p->jrpacman.colorbank << 4));
 }
 
 static void pacman_draw_sprite(pacman_t* p, int ox, int oy,
@@ -56,8 +35,10 @@ static void pacman_draw_sprite(pacman_t* p, int ox, int oy,
     int spr[256], pal[4];
     pacman_get_palette(p, pal_idx, pal);
 
+    const u8* spriteROM = p->jrpacman.spritebank ? p->spriteROM + 0x1000 : p->spriteROM;
+
     for (int i = 0; i < 64; i++) {
-        u8 byte = p->spriteROM[spr_idx * 64 + i];
+        u8 byte = spriteROM[spr_idx * 64 + i];
         for (int j = 0; j < 4; j++) {
             u8 mask = 1 << j;
             u8 pc   = (bool)(byte & mask) | ((bool)(byte & (mask << 4)) << 1);
@@ -83,9 +64,11 @@ static void pacman_draw_sprite(pacman_t* p, int ox, int oy,
             if (pix != pal[0]) {
                 int screen_x = ox + x;
                 int screen_y = (oy + y) % height;
-                if (screen_x > 0 && screen_x < width &&
-                    screen_y >= 16 && screen_y < height - 16)
-                    pixels[screen_x + screen_y * width] = pix;
+                int screen_idx = screen_x + screen_y * width;
+                if (screen_x > 0 && screen_x < width && screen_y >= 16 && screen_y < height - 16) {
+                    if (!p->jrpacman.bgpriority || !p->bg_priority_map[screen_idx])
+                        pixels[screen_idx] = pix;
+                }
             }
             sx += step_x;
         }
@@ -93,37 +76,93 @@ static void pacman_draw_sprite(pacman_t* p, int ox, int oy,
     }
 }
 
+static u16 pacman_get_idx(const pacman_t* p, int screen_x, int y) {
+    int x = screen_x >> 3;
+    if (y < 2)
+        return 0x3C2 + x + y * 0x20;
+    if (y >= PACMAN_VIDEO_ROWS - 2)
+        return 0x02 + x + (y - PACMAN_VIDEO_ROWS + 2) * 0x20;
+    return 0x40 + (y-2) + x * 0x20;
+}
+
+static u8 pacman_get_tile_idx(const pacman_t* p, int screen_x, int y) {
+    return p->RAM[pacman_get_idx(p, screen_x, y)];
+}
+
+static u8 pacman_get_palette_idx(const pacman_t* p, int screen_x, int y) {
+    return p->RAM[pacman_get_idx(p, screen_x, y) + PACMAN_PAL_RAM_OFF];
+}
+
+static u8 jrpacman_get_tile_idx(const pacman_t* p, int screen_x, int y) {
+    int x = screen_x >> 3;
+    if (y == 0)
+        return p->RAM[1858 + x];
+    if (y == 1)
+        return p->RAM[1890 + x];
+   
+    if (y == 34)
+        return p->RAM[1794 + x];
+    if (y == 35)
+        return p->RAM[1826 + x];
+
+    return p->RAM[64 + (y-2) + x * 32];
+}
+
+static u8 jrpacman_get_palette_idx(const pacman_t* p, int screen_x, int y) {
+    int x = screen_x >> 3;
+    if (y == 0)
+        return p->RAM[1986 + x];
+    if (y == 1)
+        return p->RAM[2018 + x];
+    if (y == 34)
+        return p->RAM[1922 + x];
+    if (y == 35)
+        return p->RAM[1954 + x];
+
+    return p->RAM[y-2];
+}
+
+static int pacman_get_tile_pix(pacman_t* p, u8 tile_idx, u8 pal_idx, int px, int py, bool* bg_priority)
+{
+    int pal[4];
+    u16 tile_bank = p->jrpacman.tilebank ? 0x1000 : 0;
+
+    // rotate coordinates
+    int tmp = 7 - px;
+    px = py;
+    py = tmp;
+
+    pacman_get_palette(p, pal_idx, pal);
+
+    u8 byte = p->tileROM[tile_bank + (tile_idx << 4) + ((px >= 4) ? (7 - py) : (15 - py))];
+
+    u8 mask = 1 << (3 - (px & 3));
+    u8 pc   = (bool)(byte & mask) |
+              (((bool)(byte & (mask << 4))) << 1);
+
+    *bg_priority = pc;
+
+    return pal[pc];
+}
+
 void pacman_draw_video(pacman_t* p)
 {
-    u8* tiles_info    = p->RAM + PACMAN_TILE_RAM_OFF;
-    u8* palettes_info = p->RAM + PACMAN_PAL_RAM_OFF;
     u8* sprites_info  = p->RAM + PACMAN_SPR_RAM_OFF;
+    bool is_jrpacman = p->type == PACMAN_TYPE_JRPACMAN;
 
-    int tile[64];
-
-    /* Bottom two score/status rows */
-    for (int y = 0; y < 2; y++)
-        for (int x = 0; x < PACMAN_VIDEO_COLS; x++) {
-            int d = 0x02 + x + y * 0x20;
-            pacman_get_tile(p, tiles_info[d], palettes_info[d], tile);
-            pacman_draw_tile(PACMAN_VIDEO_COLS - 1 - x, PACMAN_VIDEO_ROWS - 2 + y, tile);
+    for (int y = 0; y < PACMAN_VIDEO_ROWS*8; y++) {
+        for (int x = 0; x < PACMAN_VIDEO_COLS*8; x++) {
+            int ty = y >> 3;
+            int screen_x = x;
+            if( ty >= 2 && ty < PACMAN_VIDEO_ROWS - 2)
+                screen_x = (x + p->jrpacman.scroll) % (8*54);
+            int screen_idx = width - 1 - x + y * width;
+            u8 tile_idx = is_jrpacman ? jrpacman_get_tile_idx(p, screen_x, ty) : pacman_get_tile_idx(p, screen_x, ty);
+            u8 pal_idx  = is_jrpacman ? jrpacman_get_palette_idx(p, screen_x, ty) : pacman_get_palette_idx(p, screen_x, ty);
+            int pix = pacman_get_tile_pix(p, tile_idx, pal_idx, screen_x & 7, y & 7, &p->bg_priority_map[screen_idx]);
+            pixels[screen_idx] = pix;
         }
-
-    /* Top two score/status rows */
-    for (int y = 0; y < 2; y++)
-        for (int x = 0; x < PACMAN_VIDEO_COLS; x++) {
-            int d = 0x3C2 + x + y * 0x20;
-            pacman_get_tile(p, tiles_info[d], palettes_info[d], tile);
-            pacman_draw_tile(PACMAN_VIDEO_COLS - 1 - x, y, tile);
-        }
-
-    /* Central 32 gameplay rows */
-    for (int y = 0; y < 32; y++)
-        for (int x = 0; x < PACMAN_VIDEO_COLS; x++) {
-            int d = 0x40 + y + x * 0x20;
-            pacman_get_tile(p, tiles_info[d], palettes_info[d], tile);
-            pacman_draw_tile(PACMAN_VIDEO_COLS - 1 - x, 2 + y, tile);
-        }
+    }
 
     /* 8 hardware sprites, drawn back-to-front */
     for (int i = 7; i >= 0; i--) {

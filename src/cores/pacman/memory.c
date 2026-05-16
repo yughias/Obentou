@@ -91,11 +91,11 @@ u8 pacman_read_memory(void* ctx, u16 addr)
 {
     const pacman_t* p = (pacman_t*)ctx;
 
-    if(p->is_maketrax && addr >= 0x5080 && addr < 0x50C0) {
+    if(p->type == PACMAN_TYPE_MAKETRAX && addr >= 0x5080 && addr < 0x50C0) {
         return maketrax_read_port_2(p, addr);
     }
 
-    if(p->is_maketrax && addr >= 0x50C0 && addr < 0x5100) {
+    if(p->type == PACMAN_TYPE_MAKETRAX && addr >= 0x50C0 && addr < 0x5100) {
         return maketrax_read_port_3(p, addr);
     }
 
@@ -126,9 +126,41 @@ void pacman_write_memory(void* ctx, u16 addr, u8 val)
     pacman_t* p = (pacman_t*)ctx;
     addr &= 0x7FFF;
 
-    if (p->is_maketrax && addr == 0x5004) {
+    if (p->type == PACMAN_TYPE_MAKETRAX && addr == 0x5004) {
         maketrax_protection_write(&p->maketrax, val);
         return;
+    }
+
+    if (p->type == PACMAN_TYPE_JRPACMAN) {
+        if (addr == 0x5070) {
+            p->jrpacman.palettebank = val & 0x1;
+            return;
+        }
+
+        if (addr == 0x5071) {
+            p->jrpacman.colorbank = val & 0x1;
+            return;
+        }
+
+        if (addr == 0x5073) {
+            p->jrpacman.bgpriority = val & 0x1;
+            return;
+        }
+
+        if (addr == 0x5074) {
+            p->jrpacman.tilebank = val & 0x1;
+            return;
+        }
+
+        if (addr == 0x5075) {
+            p->jrpacman.spritebank = val & 0x1;
+            return;
+        }
+
+        if (addr == 0x5080) {
+            p->jrpacman.scroll = val;
+            return;
+        }       
     }
 
     if (addr < PACMAN_ROM_SIZE)
