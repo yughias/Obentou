@@ -6,40 +6,65 @@ CC := gcc
 CFLAGS_COMMON := -Iinclude -Iext/include -O3
 DEBUG_FLAGS := -pg -no-pie
 
+OBJ_LIB := $(filter-out obj/src/SDL_MAINLOOP.o, $(OBJ))
+OBJ_MAINLOOP_TEST := obj/test_build/SDL_MAINLOOP.o
+
+TEST_SRC      := $(shell find test/src -name 'test_*.c')
+TEST_UTIL_SRC := $(filter-out $(TEST_SRC), $(shell find test/src test/ext -name '*.c'))
+OBJ_TEST      := $(patsubst %.c, obj/%.o, $(TEST_SRC))
+OBJ_TEST_UTIL := $(patsubst %.c, obj/%.o, $(TEST_UTIL_SRC))
+DEP_TEST      := $(OBJ_TEST:.o=.d) $(OBJ_TEST_UTIL:.o=.d)
+
 ifeq ($(OS),Windows_NT)
-EXE := obentou.exe
-LIBS := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
-PLATFORM_CFLAGS := -flto=$(shell nproc) -Wall -Wno-unused-function -Werror  -mwindows
-RES_OBJ := app.res
-
-else ifeq ($(shell uname -s),Darwin)
-EXE := obentou
-LIBS := $(shell pkg-config --static --libs sdl3) -lm -liconv -lobjc -framework Cocoa
-PLATFORM_CFLAGS := -flto=thin $(shell pkg-config --cflags sdl3) -arch arm64
-RES_OBJ :=
-
-MAINLOOP_SRC := $(filter %/SDL_MAINLOOP.c, $(SRC))
-MAINLOOP_OBJ := $(patsubst %.c, obj/%.o, $(MAINLOOP_SRC))
-
-# Force Objective-C compilation for this file only
-$(MAINLOOP_OBJ): CFLAGS += -x objective-c
-
+    EXE_EXT         := .exe
+    LIBS            := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
+    PLATFORM_CFLAGS := -flto=$(shell nproc) -Wall -Wno-unused-function -Werror -mwindows
+    TEST_LDFLAGS    := -mconsole
+    RES_OBJ         := app.res
 else
-EXE := obentou
-LIBS := $(shell pkg-config --static --libs sdl3) -lGL -lm
-PLATFORM_CFLAGS := -flto=$(shell nproc) $(shell pkg-config --cflags sdl3)
-RES_OBJ :=
+    EXE_EXT         :=
+    TEST_LDFLAGS    := 
+
+    ifeq ($(shell uname -s),Darwin)
+        LIBS            := $(shell pkg-config --static --libs sdl3) -lm -liconv -lobjc -framework Cocoa
+        PLATFORM_CFLAGS := -flto=thin $(shell pkg-config --cflags sdl3) -arch arm64
+        RES_OBJ         :=
+
+        MAINLOOP_SRC := $(filter %/SDL_MAINLOOP.c, $(SRC))
+        MAINLOOP_OBJ := $(patsubst %.c, obj/%.o, $(MAINLOOP_SRC))
+        $(MAINLOOP_OBJ): CFLAGS += -x objective-c
+    else
+        LIBS            := $(shell pkg-config --static --libs sdl3) -lGL -lm
+        PLATFORM_CFLAGS := -flto=$(shell nproc) $(shell pkg-config --cflags sdl3)
+        RES_OBJ         :=
+    endif
 endif
 
-CFLAGS := $(CFLAGS_COMMON) $(PLATFORM_CFLAGS)
+EXE      := obentou$(EXE_EXT)
+TEST_EXE := $(patsubst test/src/test_%.c, ./test_%$(EXE_EXT), $(TEST_SRC))
+CFLAGS   := $(CFLAGS_COMMON) $(PLATFORM_CFLAGS)
 
 all: $(EXE) config.ini
+
+test: $(TEST_EXE)
 
 config.ini: base_config.ini
 	cp base_config.ini config.ini
 
 $(EXE): $(OBJ) $(RES_OBJ)
 	$(CC) $(OBJ) $(RES_OBJ) $(CFLAGS) $(LIBS) -o $(EXE)
+
+obj/test_build/SDL_MAINLOOP.o: src/SDL_MAINLOOP.c
+	@mkdir -p $(dir $@)
+	$(CC) -c -MMD -MP -DTEST $(CFLAGS) $< -o $@
+
+obj/test/%.o: test/%.c
+	@mkdir -p $(dir $@)
+	$(CC) -c -MMD -MP -DTEST -Itest/ext/include $(CFLAGS) $< -o $@
+
+./test_%$(EXE_EXT): obj/test/src/test_%.o $(OBJ_TEST_UTIL) $(OBJ_LIB) $(OBJ_MAINLOOP_TEST)
+	@mkdir -p $(dir $@)
+	$(CC) -DTEST $(CFLAGS) $(TEST_LDFLAGS) $< $(OBJ_TEST_UTIL) $(OBJ_LIB) $(OBJ_MAINLOOP_TEST) $(LIBS) -o $@
 
 obj/%.o: %.c
 	@mkdir -p $(dir $@)
@@ -68,11 +93,14 @@ emcc:
 	cp logo.ico website/favicon.ico
 
 clean:
-	rm -rf obj obentou obentou.exe app.res config.ini
+	rm -rf obj obentou obentou.exe app.res config.ini ./test_*$(EXE_EXT)
 
 loc:
 	find src -name \*.c | xargs wc -l
 
-.PHONY: all clean loc emcc
+.PHONY: all clean loc emcc test
+.PRECIOUS: obj/test/%.o
 
 -include $(DEP)
+-include $(DEP_TEST)
+-include obj/test_build/SDL_MAINLOOP.d

@@ -149,8 +149,8 @@ void sm83_initCPU(sm83_t* cpu){
 }
 
 void sm83_infoCPU(sm83_t* cpu){
-    fprintf(stderr, "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X ",
-            cpu->A, cpu->F, cpu->B, cpu->C, cpu->D, cpu->E, cpu->H, cpu->L);
+    fprintf(stderr, "A: %02X F: %02X B: %02X C: %02X D: %02X E: %02X H: %02X L: %02X cycles: %llu\n",
+            cpu->A, cpu->F, cpu->B, cpu->C, cpu->D, cpu->E, cpu->H, cpu->L, cpu->cycles);
 
     fprintf(stderr, "SP: %04X PC: 00:%04X (%02X %02X %02X %02X)\n",
             cpu->SP, cpu->PC, cpu->readByte(cpu->ctx, cpu->PC), cpu->readByte(cpu->ctx, cpu->PC+1), cpu->readByte(cpu->ctx, cpu->PC+2), cpu->readByte(cpu->ctx, cpu->PC+3));

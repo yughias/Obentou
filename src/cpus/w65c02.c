@@ -78,27 +78,27 @@ static void inline w65c02_dummy_read(w65c02_t* w, u16 addr){
 
 #define GEN_BBR(x) static void BBR ## x (w65c02_t* w){ \
     u8 zp = read_byte(w->op_arg); \
-    write_byte(w->op_arg, zp); \
+    dummy_read(w->op_arg); \
     u8 off = fetch; \
     u16 new_pc = (i16)w->pc + (i16)(i8)off; \
     if(!(zp & (1 << x))){ \
-        dummy_read((new_pc & 0xFF) | (w->pc & 0xFF00)); \
+        if ((w->pc >> 8) !=  (new_pc >> 8)) \
+            dummy_read(w->pc); \
+        dummy_read(w->pc); \
         w->pc = new_pc; \
-    } else { \
-        dummy_read((new_pc & 0xFF) | (w->pc & 0xFF00)); \
     } \
 } \
 
 #define GEN_BBS(x) static void BBS ## x (w65c02_t* w){ \
     u8 zp = read_byte(w->op_arg); \
-    write_byte(w->op_arg, zp); \
+    dummy_read(w->op_arg); \
     u8 off = fetch; \
     u16 new_pc = (i16)w->pc + (i16)(i8)off; \
     if((zp & (1 << x))){ \
-        dummy_read((new_pc & 0xFF) | (w->pc & 0xFF00)); \
+        if ((w->pc >> 8) !=  (new_pc >> 8)) \
+            dummy_read(w->pc); \
+        dummy_read(w->pc); \
         w->pc = new_pc; \
-    } else { \
-        dummy_read((new_pc & 0xFF) | (w->pc & 0xFF00)); \
     } \
 } \
 

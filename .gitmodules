@@ -1,0 +1,9 @@
+[submodule "test/assets/sst_z80"]
+	path = test/assets/sst_z80
+	url = https://github.com/SingleStepTests/z80.git
+[submodule "test/assets/sst_65X02"]
+	path = test/assets/sst_65X02
+	url = https://github.com/SingleStepTests/65x02.git
+[submodule "test/assets/sst_sm83"]
+	path = test/assets/sst_sm83
+	url = https://github.com/SingleStepTests/sm83.git

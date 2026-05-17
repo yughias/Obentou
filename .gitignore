@@ -16,6 +16,9 @@
 !imgs/
 !README.md
 
+!test/
+test/*.exe
+
 !website/
 website/*.ico
 website/*.data

@@ -5,9 +5,6 @@
 
 #include "utils/serializer.h"
 
-/* we don't need hi acc for this system */
-#define W65C02_LO_ACC
-
 typedef struct w65c02_t w65c02_t;
 typedef u8 (*w65c02_read_func)(void*, u16);
 typedef void (*w65c02_write_func)(void*, u16, u8);

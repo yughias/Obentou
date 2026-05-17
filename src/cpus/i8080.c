@@ -175,7 +175,7 @@ static Opcode table[256] = {
 
 void i8080_initCPU(i8080_t* cpu, void* ctx, readMemPtr readMem, writeMemPtr writeMem, readIOPtr readIO, writeIOPtr writeIO){
     cycles = 0;
-    PSW_16 = 0;
+    PSW_16 = 0b10;
     B_16 = 0;
     D_16 = 0;
     H_16 = 0;
@@ -596,6 +596,9 @@ static void POP(i8080_t* cpu, uint16_t* r16){
 
 static void PUSH(i8080_t* cpu, uint16_t* r16){
     SP = SP - 2;
+    PSW_16 |= 0b10;
+    PSW_16 &= ~(0b1 << 3);
+    PSW_16 &= ~(0b1 << 5);
     cpu->writeMem(cpu->ctx, SP, (u8)(*r16));
     cpu->writeMem(cpu->ctx, SP + 1, (u8)(*r16 >> 8));
     cycles += 11;
@@ -652,10 +655,9 @@ static void INX(i8080_t* cpu, uint16_t* r16){
 }
 
 static void DAD(i8080_t* cpu, uint16_t* r16){
-    bool carry;
+    bool carry = (H_16 + *r16) > 0xFFFF;
 
     H_16 += *r16;
-    carry = H_16 < *r16;
 
     if(carry)
         F_8 |= SET_C;
@@ -673,6 +675,11 @@ static void DCX(i8080_t* cpu, uint16_t* r16){
 static void INR(i8080_t* cpu, uint8_t* m8){
     u8 val = *m8 + 1;
     i8080_write_reg8(cpu, m8, val);
+
+    if (!(val & 0xF))
+        F_8 |= SET_A;
+    else
+        F_8 &= CLEAR_A;
     
     setSign8Bit(cpu, val);
     setZero(cpu, val);
@@ -683,6 +690,11 @@ static void INR(i8080_t* cpu, uint8_t* m8){
 static void DCR(i8080_t* cpu, uint8_t* m8){
     u8 val = *m8 - 1;
     i8080_write_reg8(cpu, m8, val);
+
+    if ((val & 0xF) == 0xF)
+        F_8 &= CLEAR_A;
+    else
+        F_8 |= SET_A;
     
     setSign8Bit(cpu, val);
     setZero(cpu, val);
@@ -742,26 +754,22 @@ static void RAR(i8080_t* cpu){
 static void DAA(i8080_t* cpu){
     uint8_t old_lower = A_8 & 0x0F;
     uint8_t old_higher = (A_8 & 0xF0) >> 4;
+    uint8_t correction = 0;
+    bool carry = F_8 & SET_C;
 
-    if( ((A_8 & 0xF) > 9) || (F_8 & SET_A))
-        A_8 += 0x6;
+    if((old_lower > 9) || (F_8 & SET_A))
+        correction += 0x6;
+        
+    if((old_higher > 9) || (F_8 & SET_C) || (old_lower > 9 && old_higher >= 9)) {
+        correction += 0x60;
+        carry = true;
+    }
 
-    if(old_lower > (A_8 & 0xF))
-        F_8 |= SET_A;
-    else
-        F_8 &= CLEAR_A;
-
-    if( (((A_8 & 0xF0) >> 4) > 9) || (F_8 & SET_C))
-        A_8 += 0x60;
-
-    if(old_higher > ((A_8 & 0xF0) >> 4))
+    ADD(cpu, &correction);
+    if (carry)
         F_8 |= SET_C;
-
-    setSign8Bit(cpu, A_8);
-    setParity(cpu, A_8);
-    setSign8Bit(cpu, A_8);
-    setZero(cpu, A_8);
-    cycles += 4;
+    else
+        F_8 &= CLEAR_C;
 }
 
 static void STC(i8080_t* cpu){
@@ -845,13 +853,12 @@ static void SBB(i8080_t* cpu, uint8_t* m8){
 }
 
 static void ANA(i8080_t* cpu, uint8_t* m8){
-    A_8 &= *m8;
-
     F_8 &= CLEAR_C;
-    if((A_8 & 0x8) | (*m8 & 0x08))
+    if((A_8 | *m8) & 0x08)
         F_8 |= SET_A;
     else
         F_8 &= CLEAR_A;
+    A_8 &= *m8;
     setSign8Bit(cpu, A_8);
     setZero(cpu, A_8);
     setParity(cpu, A_8);
@@ -881,9 +888,20 @@ static void XRA(i8080_t* cpu, uint8_t* m8){
 }
 
 static void CMP(i8080_t* cpu, uint8_t* m8){
-    uint8_t tmp = A_8;
-    SUB(cpu, m8);
-    A_8 = tmp;
+    uint16_t res = A_8 - *m8;
+    if (res >> 8)
+        F_8 |= SET_C;
+    else
+        F_8 &= CLEAR_C;
+    bool half_carry = ~(A_8 ^ res ^ *m8) & 0x10;
+    if(half_carry)
+        F_8 |= SET_A;
+    else
+        F_8 &= CLEAR_A;
+    setSign8Bit(cpu, res);
+    setZero(cpu, res);
+    setParity(cpu, res);
+    cycles += 4;
 }
 
 static void ADI(i8080_t* cpu, uint8_t d8){

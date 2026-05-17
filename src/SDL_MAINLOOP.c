@@ -4,6 +4,10 @@
 #include <emscripten.h>
 #endif
 
+#ifdef TEST
+#define main disable_main
+#endif
+
 static int last_element_clicked = -1;
 
 #ifdef __APPLE__
