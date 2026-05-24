@@ -21,7 +21,7 @@
 
 #define RAM_SIZE 0x10000
 
-typedef enum TMS80_TYPE {TMS80_UNKNOWN, SG1000, SC3000, SMS, GG} TMS80_TYPE;
+typedef enum TMS80_TYPE {TMS80_UNKNOWN, SG1000, SC3000, SMS, GG, COLECO} TMS80_TYPE;
 
 #define TMS80_STRUCT(X) \
     X(TMS80_TYPE, type, 0, 0) \
@@ -50,6 +50,7 @@ bool tms80_detect_ram_adapter(u8* cartridge, size_t cartridge_size);
 
 u8 tms80_get_keypad_a(tms80_t* tms80);
 u8 tms80_get_keypad_b(tms80_t* tms80);
+u8 tms80_get_coleco_pad(tms80_t* tms80, u8 port);
 u8 tms80_gg_get_start_button();
 
 

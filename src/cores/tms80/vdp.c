@@ -514,8 +514,8 @@ void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank){
     if(!is_vblank && !(vdp->regs[0] & (1 << 4)))
         return;
 
-
-    z80->INTERRUPT_PENDING = true;
+    // TODO: switch between irq and nmi depending on the console
+    z80_nmi(z80);
 }
 
 u8 tms80_vdp_read_status_register(vdp_t* vdp, z80_t* z80){

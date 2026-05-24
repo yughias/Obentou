@@ -59,6 +59,10 @@ static TMS80_TYPE detect_type(const archive_t* rom_archive){
     if(archive_get_file_by_ext(rom_archive, "gg"))
         return GG;
 
+    if(archive_get_file_by_ext(rom_archive, "col")) {
+        return COLECO;
+    }
+
     return TMS80_UNKNOWN;
 }
 
@@ -95,8 +99,12 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
         rom_file = archive_get_file_by_ext(rom_archive, "sms");
     if(!rom_file)
         rom_file = archive_get_file_by_ext(rom_archive, "gg");
+    if(!rom_file)
+        rom_file = archive_get_file_by_ext(rom_archive, "col");
 
     file_t* bios_file = archive_get_file_by_ext(bios_archive, "sms");
+    if(!bios_file)
+        bios_file = archive_get_file_by_ext(bios_archive, "col");
 
     if(
         (
@@ -144,12 +152,6 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
     
     tms80->has_keyboard = tms80->type == SC3000;
     tms80->vdp.cram_size = tms80->type == GG ? CRAM_SIZE_GG : CRAM_SIZE_SMS;
-    
-
-    if(tms80->type == TMS80_UNKNOWN){
-        printf("can't detect tms80!\n");
-        exit(EXIT_FAILURE);
-    }
 
     tms80->bios_masked = true;
 
@@ -171,6 +173,13 @@ void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
             tms80->z80.readMemory = tms80_sms_readMemory;
             tms80->z80.writeMemory = tms80_sms_writeMemory;
         }
+        break;
+
+        case COLECO:
+        tms80->z80.readMemory = tms80_coleco_readMemory;
+        tms80->z80.writeMemory = tms80_coleco_writeMemory;
+        tms80->z80.readIO = tms80_coleco_readIO;
+        tms80->z80.writeIO = tms80_coleco_writeIO;
         break;
 
         default:
@@ -255,6 +264,39 @@ u8 tms80_get_keypad_b(tms80_t* tms80){
     return out;
 }
 
+u8 tms80_get_coleco_pad(tms80_t* tms80, u8 port){
+    if (tms80->keypad_reg == 0) {
+        // keypad
+        u8 data = 0x0F;
+        // TODO proper control_tms80 for keypad
+        if (controls_pressed(CONTROL_TMS80_0, port)) data &= 0x0a; /* 0 */
+		if (controls_pressed(CONTROL_TMS80_1, port)) data &= 0x0d; /* 1 */
+		if (controls_pressed(CONTROL_TMS80_2, port)) data &= 0x07; /* 2 */
+		if (controls_pressed(CONTROL_TMS80_3, port)) data &= 0x0c; /* 3 */
+		if (controls_pressed(CONTROL_TMS80_4, port)) data &= 0x02; /* 4 */
+		if (controls_pressed(CONTROL_TMS80_5, port)) data &= 0x03; /* 5 */
+		if (controls_pressed(CONTROL_TMS80_6, port)) data &= 0x0e; /* 6 */
+		if (controls_pressed(CONTROL_TMS80_7, port)) data &= 0x05; /* 7 */
+		if (controls_pressed(CONTROL_TMS80_8, port)) data &= 0x01; /* 8 */
+		if (controls_pressed(CONTROL_TMS80_9, port)) data &= 0x0b; /* 9 */
+        if (controls_pressed(CONTROL_TMS80_Q, port)) data &= 0x06; /* # */
+		if (controls_pressed(CONTROL_TMS80_W, port)) data &= 0x09; /* * */
+		if (controls_pressed(CONTROL_TMS80_A, port)) data &= 0x04; /* Blue Action Button */
+		if (controls_pressed(CONTROL_TMS80_S, port)) data &= 0x08; /* Purple Action Button */
+        if (!controls_pressed(CONTROL_TMS80_BTN_2, port)) data |= (1 << 6);
+        return (data | 0x30);
+    } else {
+        // joystick
+        u8 data = 0x7F;
+        if (controls_pressed(CONTROL_TMS80_UP, port)) data &= ~(1 << 0); /* up */
+        if (controls_pressed(CONTROL_TMS80_RIGHT, port)) data &= ~(1 << 1); /* right */
+        if (controls_pressed(CONTROL_TMS80_DOWN, port)) data &= ~(1 << 2); /* down */
+        if (controls_pressed(CONTROL_TMS80_LEFT, port)) data &= ~(1 << 3); /* left */
+        if (controls_pressed(CONTROL_TMS80_BTN_1, port)) data &= ~(1 << 6); /* button 1 */
+        return data;
+	}
+}
+
 u8 tms80_gg_get_start_button(){
     if(controls_pressed(CONTROL_TMS80_GG_START, 0))
         return 0x40;
@@ -275,6 +317,7 @@ void TMS80_run_frame(tms80_t* tms80){
         int old_line = old_cycles / CYCLES_PER_LINE;
         
         z80_step(z80);
+        //printf("PC: %X OP: %X %X %X\n", z80->PC, z80->readMemory(z80->ctx, z80->PC), z80->readMemory(z80->ctx, z80->PC+1), z80->readMemory(z80->ctx, z80->PC+2));
 
         u32 elapsed = z80->cycles - old_cycles;
         tms80_sn76489_update(apu, elapsed);

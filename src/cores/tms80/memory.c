@@ -163,3 +163,77 @@ void tms80_writeIO(void* ctx, u16 addr, u8 byte){
             tms80_vdp_write_to_data_port(vdp, byte);
     }
 }
+
+u8 tms80_coleco_readMemory(void* ctx, u16 addr) {
+    tms80_t* col = (tms80_t*)ctx;
+
+    if (addr < 0x2000)
+        return col->bios[addr];
+    
+    if (addr >= 0x6000 && addr < 0x8000)
+        return col->RAM[addr & 0x3FF];
+
+    if (addr >= 0x8000) {
+        return col->cartridge[(addr - 0x8000) % col->cartridge_size];
+    }
+
+    return 0xFF;
+}
+
+void tms80_coleco_writeMemory(void* ctx, u16 addr, u8 byte) {
+    tms80_t* col = (tms80_t*)ctx;
+
+    if (addr >= 0x6000 && addr < 0x8000) {
+        col->RAM[addr & 0x3FF] = byte;
+        return;
+    }
+}
+
+u8 tms80_coleco_readIO(void* ctx, u16 addr) {
+    tms80_t* col = (tms80_t*)ctx;
+    vdp_t* vdp = &col->vdp;
+    addr &= 0xFF;
+
+    if (addr >= 0xE0 && addr <= 0xFF) {
+        return tms80_get_coleco_pad(col, addr & 1);
+    }
+
+    if(addr >= 0x80 && addr <= 0xBF){
+        if(addr & 1){
+            return tms80_vdp_read_status_register(vdp, &col->z80);
+        } else
+            return tms80_vdp_read_from_data_port(vdp);
+    }
+
+    return 0xFF;
+}
+
+void tms80_coleco_writeIO(void* ctx, u16 addr, u8 byte) {
+    tms80_t* col = (tms80_t*)ctx;
+    vdp_t* vdp = &col->vdp;
+    sn76489_t* apu = &col->apu;
+    addr &= 0xFF;
+
+    if (addr >= 0x80 && addr <= 0x9F) {
+        col->keypad_reg = 0;
+        return;
+    }
+
+    if (addr >= 0xC0 && addr <= 0xDF) {
+        col->keypad_reg = 1;
+        return;
+    }
+
+    if (addr >= 0xE0 && addr <= 0xFF) {
+        tms80_sn76489_write(apu, byte);
+        return;
+    }
+
+    if(addr >= 0xA0 && addr <= 0xBF){
+        if(addr & 1){
+            tms80_vdp_write_to_control_port(vdp, byte);
+        } else
+            tms80_vdp_write_to_data_port(vdp, byte);
+        return;
+    }
+}

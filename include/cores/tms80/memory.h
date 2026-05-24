@@ -16,4 +16,9 @@ void tms80_sms_writeMemory(void* ctx, u16 addr, u8 byte);
 u8 tms80_readIO(void* ctx, u16 addr);
 void tms80_writeIO(void* ctx, u16 addr, u8 byte);
 
+u8 tms80_coleco_readMemory(void* ctx, u16 addr);
+void tms80_coleco_writeMemory(void* ctx, u16 addr, u8 byte);
+u8 tms80_coleco_readIO(void* ctx, u16 addr);
+void tms80_coleco_writeIO(void* ctx, u16 addr, u8 byte);
+
 #endif

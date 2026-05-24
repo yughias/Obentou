@@ -353,6 +353,7 @@ static void processInterrupt(z80_t* z80){
 
 void z80_nmi(z80_t* z80){
     CALL(z80, 0x66);
+    z80->HALTED = false;
     z80->cycles += 11;
     z80->IFF1 = false;
 }
@@ -363,7 +364,6 @@ void z80_step(z80_t* z80){
         return;
     }
 
-    
     z80->INTERRUPT_DELAY = false;
 
     if(z80->HALTED){
