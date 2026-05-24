@@ -16,7 +16,9 @@
 #include "cores/pv1000/interface.h"
 #include "cores/pce/interface.h"
 #include "cores/bytepusher/interface.h"
-#include "cores/tms80/interface.h"
+#include "cores/tms80/tms80_interface.h"
+#include "cores/tms80/sega_interface.h"
+#include "cores/tms80/coleco_interface.h"
 #include "cores/nes/interface.h"
 #include "cores/gbc/interface.h"
 #include "cores/chip8/interface.h"
@@ -50,7 +52,8 @@ const core_t cores[] = {
     LOAD_CORE(PV1000),
     LOAD_CORE(PCE),
     LOAD_CORE(BYTEPUSHER),
-    LOAD_CORE(TMS80),
+    LOAD_CORE(SEGA),
+    LOAD_CORE(COLECO),
     LOAD_CORE(NES),
     LOAD_CORE(GBC),
     LOAD_CORE(CHIP8),
@@ -87,30 +90,56 @@ const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_ar
     }
 
     for(int i = 0; i < n_cores; i++){
-        if(cores[i].detect(rom_archive, bios_archive)){
+        const archive_t* active_bios = bios_archive;
+        archive_t* temporary_bios = NULL;
+
+        if(rom_archive && archive_get_path(rom_archive)[0] && !active_bios){
+            char default_bios_path[FILENAME_MAX] = {0};
+            argument_get_default_bios(default_bios_path, cores[i].name);
+
+            if(default_bios_path[0]){
+                temporary_bios = archive_load(default_bios_path);
+                active_bios = temporary_bios;
+            }
+        }
+
+        if(cores[i].detect(rom_archive, active_bios)){
             printf("Detected core: %s\n", cores[i].name);
+            if(temporary_bios)
+                archive_free(temporary_bios);
             return &cores[i];
         }
+
+        if(temporary_bios)
+            archive_free(temporary_bios);
     }
 
-    printf("(ROM): %s \n(BIOS): %s\nUnknown core!\n", archive_get_path(rom_archive), archive_get_path(bios_archive));
+    printf("(ROM): %s \nUnknown core!\n", archive_get_path(rom_archive));
     return NULL;
 }
 
 void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path, const char* force_core){
     ctx->emu = NULL;
     ctx->rom = archive_load(rom_path);
-    ctx->bios = archive_load(bios_path);
+    
+    if(bios_path && bios_path[0]){
+        ctx->bios = archive_load(bios_path);
+    } else {
+        ctx->bios = NULL; 
+    }
+
     ctx->core = core_detect(ctx->rom, ctx->bios, force_core);
 
-    if(ctx->core){
-        if(!bios_path || !bios_path[0]){
-            char default_bios_path[FILENAME_MAX];
-            argument_get_default_bios(default_bios_path, ctx->core->name);
-            archive_free(ctx->bios);
+    if(ctx->core && !ctx->bios){
+        char default_bios_path[FILENAME_MAX] = {0};
+        argument_get_default_bios(default_bios_path, ctx->core->name);
+        if(default_bios_path[0]){
             ctx->bios = archive_load(default_bios_path);
         }
-        argument_update_recents(archive_get_path(ctx->rom), archive_get_path(ctx->bios));
+    }
+
+    if(ctx->core){
+        argument_update_recents(archive_get_path(ctx->rom), ctx->bios ? archive_get_path(ctx->bios) : "");
     }
 }
 

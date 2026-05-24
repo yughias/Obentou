@@ -175,11 +175,12 @@ static void get_bios_path_button_text(char* out, size_t len, const char* core_na
 
     out[0] = 0;
 
+    strcat(out, core_name);
+    strcat(out, ": ");
     if(bios_length <= MAX_SHOW_PATH_LENGTH){
-        strcat(out, "Bios Path: ");
         strcat(out, default_bios_path[0] ? default_bios_path : "None");
     } else {
-        strcat(out, "Bios Path: ...");
+        strcat(out, "...");
         strcat(out, default_bios_path + bios_length - MAX_SHOW_PATH_LENGTH);
     }
 }
@@ -267,7 +268,7 @@ void menu_open_bios(core_ctx_t* ctx){
     menu_open(ctx, false);
 }
 
-void menu_select_default_bios(core_ctx_t* ctx){
+void menu_select_default_bios(const char* core_name){
     sound_pause(true);
 
     char* selected_default_bios = tinyfd_openFileDialog(
@@ -278,8 +279,6 @@ void menu_select_default_bios(core_ctx_t* ctx){
         NULL,
         0
     );
-
-    const char* core_name = ctx->core->name;
 
     argument_set_default_bios(selected_default_bios, core_name);
 
@@ -336,38 +335,33 @@ void menu_create(core_ctx_t* ctx){
     menuId file_menu = addMenuTo(-1, "File", false);
     menuId recent_menu = addMenuTo(file_menu, "Recent", false);
     addButtonTo(file_menu, "Open Rom", (void*)menu_open_rom, ctx);
-    if(!ctx->core){
-        addButtonTo(file_menu, "Open Bios", (void*)menu_open_bios, ctx);
-    } else {
-        bool has_bios = ctx->core->has_bios;
-        menuId bios_menu = file_menu;
-        if(has_bios){
-            bios_menu = addMenuTo(file_menu, "Bios", false);
+    addButtonTo(file_menu, "Open Bios", (void*)menu_open_bios, ctx);
+    
+    menuId default_bios_menu = addMenuTo(file_menu, "Default Bios", false);
+    for(int i = 0; i < n_cores; i++){
+        if(cores[i].has_bios){
+            get_bios_path_button_text(label, 1024, cores[i].name);
+            default_bios_button = addButtonTo(default_bios_menu, label, (void*)menu_select_default_bios, (void*)(cores[i].name));
+        }    
+    }
+    
+    if(ctx->core && ctx->core->savestate && ctx->core->loadstate){
+        menuId state_menu = addMenuTo(-1, "State", false);
+        menuId slot_menu = addMenuTo(state_menu, "Select Slot", true);
+        autosave_button = addButtonTo(state_menu, "Auto Load on Open", (void*)menu_switch_autosave, NULL);
+        buttonId slot_btns[5];
+        tickButton(autosave_button, state_get_autosave());
+        addButtonTo(state_menu, "Save State", (void*)state_save_slot, ctx);
+        addButtonTo(state_menu, "Load State", (void*)state_load_slot, ctx);
+        for(int i = 0; i < sizeof(slot_btns) / sizeof(slot_btns[0]); i++){
+            if(!i){
+                slot_btns[i] = addButtonTo(slot_menu, "0 (autosave)", (void*)state_set_active_slot, &slot_args[i].value);
+            } else {
+                char name[2] = {'0' + i, 0};
+                slot_btns[i] = addButtonTo(slot_menu, name, (void*)state_set_active_slot, &slot_args[i].value);
+            }        
         }
-        addButtonTo(bios_menu, has_bios ? "Open" : "Open Bios", (void*)menu_open_bios, ctx);
-        if(has_bios){
-            get_bios_path_button_text(label, 1024, ctx->core->name);
-            default_bios_button = addButtonTo(bios_menu, label, (void*)menu_select_default_bios, ctx);
-        }
-
-        if(ctx->core->savestate && ctx->core->loadstate){
-            menuId state_menu = addMenuTo(-1, "State", false);
-            menuId slot_menu = addMenuTo(state_menu, "Select Slot", true);
-            autosave_button = addButtonTo(state_menu, "Auto Load on Open", (void*)menu_switch_autosave, NULL);
-            buttonId slot_btns[5];
-            tickButton(autosave_button, state_get_autosave());
-            addButtonTo(state_menu, "Save State", (void*)state_save_slot, ctx);
-            addButtonTo(state_menu, "Load State", (void*)state_load_slot, ctx);
-            for(int i = 0; i < sizeof(slot_btns) / sizeof(slot_btns[0]); i++){
-                if(!i){
-                    slot_btns[i] = addButtonTo(slot_menu, "0 (autosave)", (void*)state_set_active_slot, &slot_args[i].value);
-                } else {
-                    char name[2] = {'0' + i, 0};
-                    slot_btns[i] = addButtonTo(slot_menu, name, (void*)state_set_active_slot, &slot_args[i].value);
-                }        
-            }
-            checkRadioButton(slot_btns[state_get_active_slot()]);
-        }
+        checkRadioButton(slot_btns[state_get_active_slot()]);
     }
 
     menuId emu_menu = addMenuTo(-1, "Emu", false);

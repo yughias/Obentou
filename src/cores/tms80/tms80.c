@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define KEY(x, y) {CONTROL_TMS80_ ## x, y}
+#define KEY(x, y) {CONTROL_SEGA_ ## x, y}
 #define NO_KEY {CONTROL_NONE, 0}
 
 #define tms80_SET_REGION(tms80, zone) \
@@ -269,36 +269,36 @@ u8 tms80_get_coleco_pad(tms80_t* tms80, u8 port){
         // keypad
         u8 data = 0x0F;
         // TODO proper control_tms80 for keypad
-        if (controls_pressed(CONTROL_TMS80_0, port)) data &= 0x0a; /* 0 */
-		if (controls_pressed(CONTROL_TMS80_1, port)) data &= 0x0d; /* 1 */
-		if (controls_pressed(CONTROL_TMS80_2, port)) data &= 0x07; /* 2 */
-		if (controls_pressed(CONTROL_TMS80_3, port)) data &= 0x0c; /* 3 */
-		if (controls_pressed(CONTROL_TMS80_4, port)) data &= 0x02; /* 4 */
-		if (controls_pressed(CONTROL_TMS80_5, port)) data &= 0x03; /* 5 */
-		if (controls_pressed(CONTROL_TMS80_6, port)) data &= 0x0e; /* 6 */
-		if (controls_pressed(CONTROL_TMS80_7, port)) data &= 0x05; /* 7 */
-		if (controls_pressed(CONTROL_TMS80_8, port)) data &= 0x01; /* 8 */
-		if (controls_pressed(CONTROL_TMS80_9, port)) data &= 0x0b; /* 9 */
-        if (controls_pressed(CONTROL_TMS80_Q, port)) data &= 0x06; /* # */
-		if (controls_pressed(CONTROL_TMS80_W, port)) data &= 0x09; /* * */
-		if (controls_pressed(CONTROL_TMS80_A, port)) data &= 0x04; /* Blue Action Button */
-		if (controls_pressed(CONTROL_TMS80_S, port)) data &= 0x08; /* Purple Action Button */
-        if (!controls_pressed(CONTROL_TMS80_BTN_2, port)) data |= (1 << 6);
+        if (controls_pressed(CONTROL_COLECO_0, port)) data &= 0x0a; /* 0 */
+		if (controls_pressed(CONTROL_COLECO_1, port)) data &= 0x0d; /* 1 */
+		if (controls_pressed(CONTROL_COLECO_2, port)) data &= 0x07; /* 2 */
+		if (controls_pressed(CONTROL_COLECO_3, port)) data &= 0x0c; /* 3 */
+		if (controls_pressed(CONTROL_COLECO_4, port)) data &= 0x02; /* 4 */
+		if (controls_pressed(CONTROL_COLECO_5, port)) data &= 0x03; /* 5 */
+		if (controls_pressed(CONTROL_COLECO_6, port)) data &= 0x0e; /* 6 */
+		if (controls_pressed(CONTROL_COLECO_7, port)) data &= 0x05; /* 7 */
+		if (controls_pressed(CONTROL_COLECO_8, port)) data &= 0x01; /* 8 */
+		if (controls_pressed(CONTROL_COLECO_9, port)) data &= 0x0b; /* 9 */
+        if (controls_pressed(CONTROL_COLECO_HASHTAG, port)) data &= 0x06; /* # */
+		if (controls_pressed(CONTROL_COLECO_ASTERISK, port)) data &= 0x09; /* * */
+		if (controls_pressed(CONTROL_COLECO_BLUE, port)) data &= 0x04; /* Blue Action Button */
+		if (controls_pressed(CONTROL_COLECO_PURPLE, port)) data &= 0x08; /* Purple Action Button */
+        if (!controls_pressed(CONTROL_COLECO_BTN_2, port)) data |= (1 << 6);
         return (data | 0x30);
     } else {
         // joystick
         u8 data = 0x7F;
-        if (controls_pressed(CONTROL_TMS80_UP, port)) data &= ~(1 << 0); /* up */
-        if (controls_pressed(CONTROL_TMS80_RIGHT, port)) data &= ~(1 << 1); /* right */
-        if (controls_pressed(CONTROL_TMS80_DOWN, port)) data &= ~(1 << 2); /* down */
-        if (controls_pressed(CONTROL_TMS80_LEFT, port)) data &= ~(1 << 3); /* left */
-        if (controls_pressed(CONTROL_TMS80_BTN_1, port)) data &= ~(1 << 6); /* button 1 */
+        if (controls_pressed(CONTROL_COLECO_UP, port)) data &= ~(1 << 0); /* up */
+        if (controls_pressed(CONTROL_COLECO_RIGHT, port)) data &= ~(1 << 1); /* right */
+        if (controls_pressed(CONTROL_COLECO_DOWN, port)) data &= ~(1 << 2); /* down */
+        if (controls_pressed(CONTROL_COLECO_LEFT, port)) data &= ~(1 << 3); /* left */
+        if (controls_pressed(CONTROL_COLECO_BTN_1, port)) data &= ~(1 << 6); /* button 1 */
         return data;
 	}
 }
 
 u8 tms80_gg_get_start_button(){
-    if(controls_pressed(CONTROL_TMS80_GG_START, 0))
+    if(controls_pressed(CONTROL_SEGA_GG_START, 0))
         return 0x40;
 
     return 0xC0;
@@ -309,7 +309,7 @@ void TMS80_run_frame(tms80_t* tms80){
     vdp_t* vdp = &tms80->vdp;
     sn76489_t* apu = &tms80->apu;
 
-    if(tms80->type != GG && controls_released(CONTROL_TMS80_PAUSE, 0))
+    if(tms80->type != GG && controls_released(CONTROL_SEGA_PAUSE, 0))
         z80_nmi(z80);
 
     while(z80->cycles < tms80->cycles_per_frame){
@@ -331,7 +331,7 @@ void TMS80_run_frame(tms80_t* tms80){
                 if(old_line <= SCREEN_HEIGHT_SMS){
                     vdp->line_reg -= 1;
                     if(vdp->line_reg == 0xFF){
-                        tms80_vdp_fire_interrupt(vdp, z80, false);
+                        tms80_vdp_fire_interrupt(vdp, z80, false, false);
                         vdp->line_reg = vdp->regs[0xA];
                     }
                 } else {
@@ -346,7 +346,7 @@ void TMS80_run_frame(tms80_t* tms80){
             }
 
             if(old_line == SCREEN_HEIGHT_SMS){
-                tms80_vdp_fire_interrupt(vdp, z80, true);
+                tms80_vdp_fire_interrupt(vdp, z80, true, tms80->type == COLECO);
             }
         }
     }
@@ -356,7 +356,19 @@ void TMS80_run_frame(tms80_t* tms80){
     tms80_vdp_show_frame(vdp);
 }
 
-bool TMS80_detect(const archive_t* rom_archive, const archive_t* bios_archive){
+bool COLECO_detect(const archive_t* rom_archive, const archive_t* bios_archive){
+    TMS80_TYPE rom_type = detect_type(rom_archive);
+    TMS80_TYPE bios_type = detect_type(bios_archive);
+    if (rom_type == COLECO && bios_type != COLECO) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Bios needed", "Coleco BIOS is required", getMainWindow());
+        return false;
+    }
+    return (detect_type(rom_archive) == COLECO) && (detect_type(bios_archive) == COLECO);
+}
+
+bool SEGA_detect(const archive_t* rom_archive, const archive_t* bios_archive){
+    if (detect_type(rom_archive) == COLECO || detect_type(bios_archive) == COLECO)
+        return false;
     return (detect_type(rom_archive) != TMS80_UNKNOWN) || (detect_type(bios_archive) != TMS80_UNKNOWN);
 }
 

@@ -123,6 +123,27 @@ XYZ(BYTEPUSHER, 0, "x"); \
 XYZ(BYTEPUSHER, B, "c"); \
 XYZ(BYTEPUSHER, F, "v"); \
 \
+XYZ(COLECO, UP, "up") \
+XYZ(COLECO, DOWN, "down") \
+XYZ(COLECO, LEFT, "left") \
+XYZ(COLECO, RIGHT, "right") \
+XYZ(COLECO, 0, "0") \
+XYZ(COLECO, 1, "1") \
+XYZ(COLECO, 2, "2") \
+XYZ(COLECO, 3, "3") \
+XYZ(COLECO, 4, "4") \
+XYZ(COLECO, 5, "5") \
+XYZ(COLECO, 6, "6") \
+XYZ(COLECO, 7, "7") \
+XYZ(COLECO, 8, "8") \
+XYZ(COLECO, 9, "9") \
+XYZ(COLECO, HASHTAG, "q") \
+XYZ(COLECO, ASTERISK, "w") \
+XYZ(COLECO, BLUE, "a") \
+XYZ(COLECO, PURPLE, "s") \
+XYZ(COLECO, BTN_1, "z") \
+XYZ(COLECO, BTN_2, "x") \
+\
 XYZ(CHIP8, 1, "1"); \
 XYZ(CHIP8, 2, "2"); \
 XYZ(CHIP8, 3, "3"); \
@@ -164,77 +185,77 @@ XYZ(PCE, BTN_1, "x"); \
 XYZ(PCE, SELECT, "right shift"); \
 XYZ(PCE, START, "return"); \
 \
-XYZ(TMS80, UP, "up"); \
-XYZ(TMS80, DOWN, "down"); \
-XYZ(TMS80, LEFT, "left"); \
-XYZ(TMS80, RIGHT, "right"); \
-XYZ(TMS80, BTN_1, "z"); \
-XYZ(TMS80, BTN_2, "x"); \
-XYZ(TMS80, PAUSE, "f1"); \
-XYZ(TMS80, GG_START, "return"); \
+XYZ(SEGA, UP, "up"); \
+XYZ(SEGA, DOWN, "down"); \
+XYZ(SEGA, LEFT, "left"); \
+XYZ(SEGA, RIGHT, "right"); \
+XYZ(SEGA, BTN_1, "z"); \
+XYZ(SEGA, BTN_2, "x"); \
+XYZ(SEGA, PAUSE, "f1"); \
+XYZ(SEGA, GG_START, "return"); \
 \
-XYZ(TMS80, 1, "1"); \
-XYZ(TMS80, Q, "q"); \
-XYZ(TMS80, A, "a"); \
-XYZ(TMS80, Z, "z"); \
-XYZ(TMS80, ED, "right ctrl"); \
-XYZ(TMS80, COMMA, ","); \
-XYZ(TMS80, K, "k"); \
-XYZ(TMS80, I, "i"); \
-XYZ(TMS80, 8, "8"); \
-XYZ(TMS80, 2, "2"); \
-XYZ(TMS80, W, "w"); \
-XYZ(TMS80, S, "s"); \
-XYZ(TMS80, X, "x"); \
-XYZ(TMS80, SPC, "space"); \
-XYZ(TMS80, DOT, "."); \
-XYZ(TMS80, L, "l"); \
-XYZ(TMS80, O, "o"); \
-XYZ(TMS80, 9, "9"); \
-XYZ(TMS80, 3, "3"); \
-XYZ(TMS80, E, "e"); \
-XYZ(TMS80, D, "d"); \
-XYZ(TMS80, C, "c"); \
-XYZ(TMS80, HC, "delete"); \
-XYZ(TMS80, SLASH, "/"); \
-XYZ(TMS80, SEMICOLON, ";"); \
-XYZ(TMS80, P, "p"); \
-XYZ(TMS80, 0, "0"); \
-XYZ(TMS80, 4, "4"); \
-XYZ(TMS80, R, "r"); \
-XYZ(TMS80, F, "f"); \
-XYZ(TMS80, V, "v"); \
-XYZ(TMS80, ID, "backspace"); \
-XYZ(TMS80, PI, "right alt"); \
-XYZ(TMS80, COLON, "\'"); \
-XYZ(TMS80, AT, "\\"); \
-XYZ(TMS80, MINUS, "-"); \
-XYZ(TMS80, 5, "5"); \
-XYZ(TMS80, T, "t"); \
-XYZ(TMS80, G, "g"); \
-XYZ(TMS80, B, "b"); \
-XYZ(TMS80, DA, "down"); \
-XYZ(TMS80, CLOSE_BRACKET, "]"); \
-XYZ(TMS80, OPEN_BRACKET, "["); \
-XYZ(TMS80, CARET, "="); \
-XYZ(TMS80, 6, "6"); \
-XYZ(TMS80, Y, "y"); \
-XYZ(TMS80, H, "h"); \
-XYZ(TMS80, N, "n"); \
-XYZ(TMS80, LA, "left"); \
-XYZ(TMS80, CR, "return"); \
-XYZ(TMS80, YEN, "`"); \
-XYZ(TMS80, FNC, "tab"); \
-XYZ(TMS80, 7, "7"); \
-XYZ(TMS80, U, "u"); \
-XYZ(TMS80, J, "j"); \
-XYZ(TMS80, M, "m"); \
-XYZ(TMS80, RA, "right"); \
-XYZ(TMS80, UA, "up"); \
-XYZ(TMS80, BRK, "right shift"); \
-XYZ(TMS80, GRP, "left alt"); \
-XYZ(TMS80, CTL, "left ctrl"); \
-XYZ(TMS80, SHF, "left shift");
+XYZ(SEGA, 1, "1"); \
+XYZ(SEGA, Q, "q"); \
+XYZ(SEGA, A, "a"); \
+XYZ(SEGA, Z, "z"); \
+XYZ(SEGA, ED, "right ctrl"); \
+XYZ(SEGA, COMMA, ","); \
+XYZ(SEGA, K, "k"); \
+XYZ(SEGA, I, "i"); \
+XYZ(SEGA, 8, "8"); \
+XYZ(SEGA, 2, "2"); \
+XYZ(SEGA, W, "w"); \
+XYZ(SEGA, S, "s"); \
+XYZ(SEGA, X, "x"); \
+XYZ(SEGA, SPC, "space"); \
+XYZ(SEGA, DOT, "."); \
+XYZ(SEGA, L, "l"); \
+XYZ(SEGA, O, "o"); \
+XYZ(SEGA, 9, "9"); \
+XYZ(SEGA, 3, "3"); \
+XYZ(SEGA, E, "e"); \
+XYZ(SEGA, D, "d"); \
+XYZ(SEGA, C, "c"); \
+XYZ(SEGA, HC, "delete"); \
+XYZ(SEGA, SLASH, "/"); \
+XYZ(SEGA, SEMICOLON, ";"); \
+XYZ(SEGA, P, "p"); \
+XYZ(SEGA, 0, "0"); \
+XYZ(SEGA, 4, "4"); \
+XYZ(SEGA, R, "r"); \
+XYZ(SEGA, F, "f"); \
+XYZ(SEGA, V, "v"); \
+XYZ(SEGA, ID, "backspace"); \
+XYZ(SEGA, PI, "right alt"); \
+XYZ(SEGA, COLON, "\'"); \
+XYZ(SEGA, AT, "\\"); \
+XYZ(SEGA, MINUS, "-"); \
+XYZ(SEGA, 5, "5"); \
+XYZ(SEGA, T, "t"); \
+XYZ(SEGA, G, "g"); \
+XYZ(SEGA, B, "b"); \
+XYZ(SEGA, DA, "down"); \
+XYZ(SEGA, CLOSE_BRACKET, "]"); \
+XYZ(SEGA, OPEN_BRACKET, "["); \
+XYZ(SEGA, CARET, "="); \
+XYZ(SEGA, 6, "6"); \
+XYZ(SEGA, Y, "y"); \
+XYZ(SEGA, H, "h"); \
+XYZ(SEGA, N, "n"); \
+XYZ(SEGA, LA, "left"); \
+XYZ(SEGA, CR, "return"); \
+XYZ(SEGA, YEN, "`"); \
+XYZ(SEGA, FNC, "tab"); \
+XYZ(SEGA, 7, "7"); \
+XYZ(SEGA, U, "u"); \
+XYZ(SEGA, J, "j"); \
+XYZ(SEGA, M, "m"); \
+XYZ(SEGA, RA, "right"); \
+XYZ(SEGA, UA, "up"); \
+XYZ(SEGA, BRK, "right shift"); \
+XYZ(SEGA, GRP, "left alt"); \
+XYZ(SEGA, CTL, "left ctrl"); \
+XYZ(SEGA, SHF, "left shift");
 
 #define GAMEPADS(XYZ) \
 XYZ(HOTKEY, PAUSE, "none"); \
@@ -293,14 +314,25 @@ XYZ(PCE, DOWN, "dpdown"); \
 XYZ(PCE, LEFT, "dpleft"); \
 XYZ(PCE, RIGHT, "dpright"); \
 \
-XYZ(TMS80, UP, "dpup"); \
-XYZ(TMS80, DOWN, "dpdown"); \
-XYZ(TMS80, LEFT, "dpleft"); \
-XYZ(TMS80, RIGHT, "dpright"); \
-XYZ(TMS80, BTN_1, "a"); \
-XYZ(TMS80, BTN_2, "b"); \
-XYZ(TMS80, PAUSE, "none"); \
-XYZ(TMS80, GG_START, "start"); \
+XYZ(SEGA, UP, "dpup"); \
+XYZ(SEGA, DOWN, "dpdown"); \
+XYZ(SEGA, LEFT, "dpleft"); \
+XYZ(SEGA, RIGHT, "dpright"); \
+XYZ(SEGA, BTN_1, "a"); \
+XYZ(SEGA, BTN_2, "b"); \
+XYZ(SEGA, PAUSE, "none"); \
+XYZ(SEGA, GG_START, "start"); \
+\
+XYZ(COLECO, UP, "dpup"); \
+XYZ(COLECO, DOWN, "dpdown"); \
+XYZ(COLECO, LEFT, "dpleft"); \
+XYZ(COLECO, RIGHT, "dpright"); \
+XYZ(COLECO, BTN_1, "a"); \
+XYZ(COLECO, BTN_2, "b"); \
+XYZ(COLECO, 1, "start"); \
+XYZ(COLECO, 2, "back"); \
+XYZ(COLECO, ASTERISK, "x"); \
+XYZ(COLECO, HASHTAG, "z"); \
 \
 XYZ(PACMAN, UP, "dpup"); \
 XYZ(PACMAN, DOWN, "dpdown"); \

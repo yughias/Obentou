@@ -247,6 +247,27 @@ static void vdp_render_tiles_legacy(vdp_t* vdp, int mode, int line){
     }
 }
 
+static void vdp_render_multicolor_line(vdp_t* vdp, int line){
+    u16 tile_map_addr = vdp_get_tile_map_addr(vdp);
+    u16 tile_data_addr = vdp_get_tile_data_addr(vdp, 1);
+
+    u8* tilemap = &vdp->VRAM[tile_map_addr];
+
+    int y = line >> 3;
+    int yy = line & 7;
+    
+    for(int x = 0; x < 32; x++){
+        u8 pg_idx = tilemap[x + y * 32];  
+        u8 color_data = vdp->VRAM[tile_data_addr | pg_idx*8 | (y & 0b11)*2 | (yy >> 2)];
+        
+        for(int xx = 0; xx < 8; xx++){
+            u8 color_idx = xx < 4 ? color_data >> 4 : color_data & 0x0F;
+            u8* rgb_color = rgb_colors_sg[ color_idx ? color_idx : vdp->regs[7] & 0xF ];
+            vdp->framebuffer[(x*8+xx) + (y*8+yy)*SCREEN_WIDTH_SMS] = color(rgb_color[0], rgb_color[1], rgb_color[2]); 
+        }
+    }
+}
+
 static void vdp_put_sprite_pixel(int x, int y, vdp_t* vdp, bool* collision_array, bool* drawn_pixels, bool color_type, int col){
     if(x < 0 || x >= SCREEN_WIDTH_SMS)
         return;
@@ -497,15 +518,18 @@ void tms80_vdp_render_line(vdp_t* vdp, int y){
         return;
     }
 
-    if(mode == 2){
+    if(mode == 0b10){
         vdp_render_text_legacy(vdp, y);
+    } else if(mode == 0b1) {
+        vdp_render_multicolor_line(vdp, y);
+        vdp_render_sprites_legacy(vdp, y);
     } else {
         vdp_render_tiles_legacy(vdp, mode, y);
         vdp_render_sprites_legacy(vdp, y);
     }
 }
 
-void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank){
+void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank, bool is_nmi){
     vdp->status_reg |= (is_vblank << 7);
     
     if(is_vblank && !(vdp->regs[1] & (1 << 5)))
@@ -514,8 +538,10 @@ void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank){
     if(!is_vblank && !(vdp->regs[0] & (1 << 4)))
         return;
 
-    // TODO: switch between irq and nmi depending on the console
-    z80_nmi(z80);
+    if(is_nmi)
+        z80_nmi(z80);
+    else
+        z80->INTERRUPT_PENDING = true;
 }
 
 u8 tms80_vdp_read_status_register(vdp_t* vdp, z80_t* z80){
