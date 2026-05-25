@@ -378,9 +378,19 @@ static bool linux_menu_init_attempted;
 static bool linux_menu_ready;
 static GtkWidget* linux_menu_window;
 static GtkWidget* linux_menu_bar;
+static bool linux_menu_visible;
+static bool linux_menu_needs_sync = true;
+static int linux_menu_last_x = SDL_MIN_SINT32;
+static int linux_menu_last_y = SDL_MIN_SINT32;
+static int linux_menu_last_w = -1;
+static int linux_menu_last_h = -1;
 
 static void linux_menu_click(GtkWidget* widget, gpointer user_data){
     last_element_clicked = GPOINTER_TO_INT(user_data);
+}
+
+static void linux_menu_request_sync(){
+    linux_menu_needs_sync = true;
 }
 
 static void linux_menu_init(){
@@ -406,6 +416,8 @@ static void linux_menu_init(){
     gtk_widget_show(linux_menu_bar);
     gtk_widget_show(linux_menu_window);
     linux_menu_ready = true;
+    linux_menu_visible = true;
+    linux_menu_request_sync();
 }
 
 static void linux_menu_pump_events(){
@@ -422,9 +434,15 @@ static void linux_menu_sync_window(){
     linux_menu_pump_events();
 
     if(is_fullscreen){
-        gtk_widget_hide(linux_menu_window);
+        if(linux_menu_visible){
+            gtk_widget_hide(linux_menu_window);
+            linux_menu_visible = false;
+        }
         return;
     }
+
+    if(!linux_menu_needs_sync)
+        return;
 
     int x;
     int y;
@@ -435,9 +453,26 @@ static void linux_menu_sync_window(){
     SDL_GetWindowPosition(window, &x, &y);
     SDL_GetWindowSize(window, &w, &h);
     gtk_widget_get_preferred_size(linux_menu_bar, &req, NULL);
-    gtk_window_resize(GTK_WINDOW(linux_menu_window), w, req.height > 0 ? req.height : 1);
-    gtk_window_move(GTK_WINDOW(linux_menu_window), x, y);
-    gtk_widget_show(linux_menu_window);
+    int menu_h = req.height > 0 ? req.height : 1;
+
+    if(w != linux_menu_last_w || menu_h != linux_menu_last_h){
+        gtk_window_resize(GTK_WINDOW(linux_menu_window), w, menu_h);
+        linux_menu_last_w = w;
+        linux_menu_last_h = menu_h;
+    }
+
+    if(x != linux_menu_last_x || y != linux_menu_last_y){
+        gtk_window_move(GTK_WINDOW(linux_menu_window), x, y);
+        linux_menu_last_x = x;
+        linux_menu_last_y = y;
+    }
+
+    if(!linux_menu_visible){
+        gtk_widget_show(linux_menu_window);
+        linux_menu_visible = true;
+    }
+
+    linux_menu_needs_sync = false;
 }
 
 static void linux_set_check_state(button_t* b, bool state){
@@ -865,6 +900,9 @@ void fullScreen(){
     is_fullscreen ^= 1; 
 
     SDL_SetWindowFullscreen(window, is_fullscreen);
+    #if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
+    linux_menu_request_sync();
+    #endif
 }
 
 void background(int col){
@@ -969,6 +1007,9 @@ bool filterResize(void* userdata, SDL_Event* event){
         event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || 
         event->type == SDL_EVENT_WINDOW_EXPOSED
     ){
+        #if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
+        linux_menu_request_sync();
+        #endif
         SDL_SetAtomicInt(&is_grabbed, 1);
         if(running)
             renderBufferToWindow();
@@ -1134,6 +1175,12 @@ void destroyAllMenus(){
             linux_menu_bar = NULL;
         }
         linux_menu_ready = false;
+        linux_menu_visible = false;
+        linux_menu_needs_sync = true;
+        linux_menu_last_x = SDL_MIN_SINT32;
+        linux_menu_last_y = SDL_MIN_SINT32;
+        linux_menu_last_w = -1;
+        linux_menu_last_h = -1;
         linux_menu_init_attempted = false;
     #endif
 
