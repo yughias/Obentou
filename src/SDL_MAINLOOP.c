@@ -31,10 +31,6 @@ void initMacMenu() {
 }
 #endif
 
-#if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-#include <gtk/gtk.h>
-#endif
-
 #define MAX_NAME  64
 
 typedef struct {
@@ -46,6 +42,7 @@ typedef struct {
     unsigned long signal_id;
     char* title;
     bool checked;
+    bool enabled;
 } button_t;
 
 size_t n_button = 0;
@@ -55,6 +52,9 @@ typedef struct {
     void* hMenu;
     size_t n_button;
     bool is_radio;
+    menuId parent_menu;
+    buttonId linked_button;
+    char* title;
 } menu_t;
 
 size_t n_menu = 0;
@@ -74,9 +74,10 @@ void updateButtonVect(void (*callback)(void*), void* arg, menuId parentMenu) {
     }
     buttons[n_button].hButton = NULL;
     buttons[n_button].signal_id = 0;
-        buttons[n_button].title = NULL;
-        buttons[n_button].checked = false;
-        n_button++;
+    buttons[n_button].title = NULL;
+    buttons[n_button].checked = false;
+    buttons[n_button].enabled = true;
+    n_button++;
 }
 
 void updateMenuVect(void* new_menu_handle, bool isRadio) {
@@ -84,10 +85,14 @@ void updateMenuVect(void* new_menu_handle, bool isRadio) {
     menus[n_menu].hMenu = new_menu_handle;
     menus[n_menu].n_button = 0;
     menus[n_menu].is_radio = isRadio;
+    menus[n_menu].parent_menu = (menuId)-1;
+    menus[n_menu].linked_button = (buttonId)-1;
+    menus[n_menu].title = NULL;
     n_menu++;
 }
 
 void checkRadioButton(buttonId button_id);
+void tickButton(buttonId button_id, bool state);
 
 #ifdef __EMSCRIPTEN__
 
@@ -373,138 +378,234 @@ void createMainMenu();
 
 #endif
 
-#if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-static bool linux_menu_init_attempted;
-static bool linux_menu_ready;
-static GtkWidget* linux_menu_window;
-static GtkWidget* linux_menu_bar;
-static bool linux_menu_visible;
-static bool linux_menu_needs_sync = true;
-static int linux_menu_last_x = SDL_MIN_SINT32;
-static int linux_menu_last_y = SDL_MIN_SINT32;
-static int linux_menu_last_w = -1;
-static int linux_menu_last_h = -1;
+#if defined(__linux__)
+typedef struct {
+    SDL_FRect rect;
+    menuId menu_id;
+} linux_top_hit_t;
 
-static void linux_menu_click(GtkWidget* widget, gpointer user_data){
-    last_element_clicked = GPOINTER_TO_INT(user_data);
+typedef struct {
+    SDL_FRect rect;
+    buttonId button_id;
+    menuId submenu_id;
+    int depth;
+} linux_item_hit_t;
+
+static bool linux_menu_open;
+static menuId linux_menu_path[16];
+static int linux_menu_depth;
+static linux_top_hit_t* linux_top_hits;
+static size_t linux_top_hits_count;
+static linux_item_hit_t* linux_item_hits;
+static size_t linux_item_hits_count;
+
+static bool linux_point_in_rect(float x, float y, const SDL_FRect* r){
+    return x >= r->x && y >= r->y && x < (r->x + r->w) && y < (r->y + r->h);
 }
 
-static void linux_menu_request_sync(){
-    linux_menu_needs_sync = true;
+static menuId linux_menu_by_button(buttonId button_id){
+    for(menuId i = 0; i < n_menu; i++){
+        if(menus[i].linked_button == button_id)
+            return i;
+    }
+    return (menuId)-1;
 }
 
-static void linux_menu_init(){
-    if(linux_menu_init_attempted)
-        return;
-
-    linux_menu_init_attempted = true;
-    if(!gtk_init_check(NULL, NULL))
-        return;
-
-    linux_menu_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_decorated(GTK_WINDOW(linux_menu_window), false);
-    gtk_window_set_resizable(GTK_WINDOW(linux_menu_window), false);
-    gtk_window_set_type_hint(GTK_WINDOW(linux_menu_window), GDK_WINDOW_TYPE_HINT_DOCK);
-    gtk_window_set_skip_taskbar_hint(GTK_WINDOW(linux_menu_window), true);
-    gtk_window_set_skip_pager_hint(GTK_WINDOW(linux_menu_window), true);
-    gtk_window_set_accept_focus(GTK_WINDOW(linux_menu_window), false);
-    gtk_window_set_focus_on_map(GTK_WINDOW(linux_menu_window), false);
-    gtk_window_set_keep_above(GTK_WINDOW(linux_menu_window), true);
-
-    linux_menu_bar = gtk_menu_bar_new();
-    gtk_container_add(GTK_CONTAINER(linux_menu_window), linux_menu_bar);
-    gtk_widget_show(linux_menu_bar);
-    gtk_widget_show(linux_menu_window);
-    linux_menu_ready = true;
-    linux_menu_visible = true;
-    linux_menu_request_sync();
+static void linux_menu_close(void){
+    linux_menu_open = false;
+    linux_menu_depth = 0;
 }
 
-static void linux_menu_pump_events(){
-    if(!linux_menu_ready)
-        return;
-    while(gtk_events_pending())
-        gtk_main_iteration_do(false);
-}
+static bool linux_menu_handle_motion(float x, float y){
+    if(!linux_menu_open || is_fullscreen)
+        return false;
 
-static void linux_menu_sync_window(){
-    if(!linux_menu_ready || !linux_menu_window || !window)
-        return;
-
-    linux_menu_pump_events();
-
-    if(is_fullscreen){
-        if(linux_menu_visible){
-            gtk_widget_hide(linux_menu_window);
-            linux_menu_visible = false;
+    for(size_t i = 0; i < linux_top_hits_count; i++){
+        if(linux_point_in_rect(x, y, &linux_top_hits[i].rect)){
+            linux_menu_path[0] = linux_top_hits[i].menu_id;
+            linux_menu_depth = 1;
+            return true;
         }
-        return;
     }
 
-    if(!linux_menu_needs_sync)
-        return;
-
-    int x;
-    int y;
-    int w;
-    int h;
-
-    GtkRequisition req = {0};
-    SDL_GetWindowPosition(window, &x, &y);
-    SDL_GetWindowSize(window, &w, &h);
-    gtk_widget_get_preferred_size(linux_menu_bar, &req, NULL);
-    int menu_h = req.height > 0 ? req.height : 1;
-
-    if(w != linux_menu_last_w || menu_h != linux_menu_last_h){
-        gtk_window_resize(GTK_WINDOW(linux_menu_window), w, menu_h);
-        linux_menu_last_w = w;
-        linux_menu_last_h = menu_h;
+    for(size_t i = 0; i < linux_item_hits_count; i++){
+        if(!linux_point_in_rect(x, y, &linux_item_hits[i].rect))
+            continue;
+        linux_menu_depth = linux_item_hits[i].depth + 1;
+        if(linux_item_hits[i].submenu_id < n_menu){
+            linux_menu_path[linux_item_hits[i].depth + 1] = linux_item_hits[i].submenu_id;
+            linux_menu_depth++;
+        }
+        return true;
     }
 
-    if(x != linux_menu_last_x || y != linux_menu_last_y){
-        gtk_window_move(GTK_WINDOW(linux_menu_window), x, y);
-        linux_menu_last_x = x;
-        linux_menu_last_y = y;
-    }
-
-    if(!linux_menu_visible){
-        gtk_widget_show(linux_menu_window);
-        linux_menu_visible = true;
-    }
-
-    linux_menu_needs_sync = false;
+    return false;
 }
 
-static void linux_set_check_state(button_t* b, bool state){
-    if(!linux_menu_ready || !b->hButton)
-        return;
+static bool linux_menu_handle_click(float x, float y){
+    if(is_fullscreen)
+        return false;
 
-    b->checked = state;
-
-    GtkWidget* item = GTK_WIDGET(b->hButton);
-    if(b->signal_id)
-        g_signal_handler_block(item, b->signal_id);
-
-    if(GTK_IS_CHECK_MENU_ITEM(item)){
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), state);
-    } else if(GTK_IS_MENU_ITEM(item)) {
-        const char* title = b->title ? b->title : "";
-        if(state){
-            size_t len = strlen(title);
-            char* ticked = (char*)malloc(len + 5);
-            if(ticked){
-                memcpy(ticked, "\xE2\x9C\x93 ", 4);
-                memcpy(ticked + 4, title, len + 1);
-                gtk_menu_item_set_label(GTK_MENU_ITEM(item), ticked);
-                free(ticked);
-            }
+    for(size_t i = 0; i < linux_top_hits_count; i++){
+        if(!linux_point_in_rect(x, y, &linux_top_hits[i].rect))
+            continue;
+        if(linux_menu_open && linux_menu_depth > 0 && linux_menu_path[0] == linux_top_hits[i].menu_id){
+            linux_menu_close();
         } else {
-            gtk_menu_item_set_label(GTK_MENU_ITEM(item), title);
+            linux_menu_open = true;
+            linux_menu_path[0] = linux_top_hits[i].menu_id;
+            linux_menu_depth = 1;
         }
+        return true;
     }
 
-    if(b->signal_id)
-        g_signal_handler_unblock(item, b->signal_id);
+    if(!linux_menu_open)
+        return false;
+
+    for(size_t i = 0; i < linux_item_hits_count; i++){
+        if(!linux_point_in_rect(x, y, &linux_item_hits[i].rect))
+            continue;
+
+        button_t* b = &buttons[linux_item_hits[i].button_id];
+        if(!b->enabled)
+            return true;
+
+        if(linux_item_hits[i].submenu_id < n_menu){
+            linux_menu_depth = linux_item_hits[i].depth + 2;
+            linux_menu_path[linux_item_hits[i].depth + 1] = linux_item_hits[i].submenu_id;
+        } else {
+            last_element_clicked = (int)linux_item_hits[i].button_id;
+            linux_menu_close();
+        }
+        return true;
+    }
+
+    linux_menu_close();
+    return false;
+}
+
+static void linux_push_top_hit(SDL_FRect rect, menuId menu_id){
+    linux_top_hits = realloc(linux_top_hits, (linux_top_hits_count + 1) * sizeof(*linux_top_hits));
+    linux_top_hits[linux_top_hits_count].rect = rect;
+    linux_top_hits[linux_top_hits_count].menu_id = menu_id;
+    linux_top_hits_count++;
+}
+
+static void linux_push_item_hit(SDL_FRect rect, buttonId button_id, menuId submenu_id, int depth){
+    linux_item_hits = realloc(linux_item_hits, (linux_item_hits_count + 1) * sizeof(*linux_item_hits));
+    linux_item_hits[linux_item_hits_count].rect = rect;
+    linux_item_hits[linux_item_hits_count].button_id = button_id;
+    linux_item_hits[linux_item_hits_count].submenu_id = submenu_id;
+    linux_item_hits[linux_item_hits_count].depth = depth;
+    linux_item_hits_count++;
+}
+
+static float linux_text_width(const char* s){
+    if(!s) return 0.0f;
+    return (float)(strlen(s) * 8);
+}
+
+static void linux_menu_draw_popup(menuId menu_id, float x, float y, int depth){
+    if(menu_id >= n_menu)
+        return;
+
+    const float item_h = 20.0f;
+    const float pad = 8.0f;
+    size_t item_count = 0;
+    float w = 120.0f;
+
+    for(buttonId i = 0; i < n_button; i++){
+        if(buttons[i].parent_menu != menu_id)
+            continue;
+        float tw = linux_text_width(buttons[i].title ? buttons[i].title : "");
+        if(tw + pad * 2 + 12 > w)
+            w = tw + pad * 2 + 12;
+        item_count++;
+    }
+
+    if(!item_count)
+        return;
+
+    SDL_FRect popup = {x, y, w, item_h * (float)item_count};
+    SDL_SetRenderDrawColor(renderer, 35, 35, 38, 240);
+    SDL_RenderFillRect(renderer, &popup);
+    SDL_SetRenderDrawColor(renderer, 95, 95, 100, 255);
+    SDL_RenderRect(renderer, &popup);
+
+    size_t idx = 0;
+    for(buttonId i = 0; i < n_button; i++){
+        if(buttons[i].parent_menu != menu_id)
+            continue;
+
+        button_t* b = &buttons[i];
+        SDL_FRect item_rect = {x, y + item_h * (float)idx, w, item_h};
+        menuId sub = linux_menu_by_button(i);
+        bool selected = (depth + 1 < linux_menu_depth && linux_menu_path[depth + 1] == sub);
+
+        if(selected){
+            SDL_SetRenderDrawColor(renderer, 70, 70, 76, 255);
+            SDL_RenderFillRect(renderer, &item_rect);
+        }
+
+        const char* title = b->title ? b->title : "";
+        char line[512];
+        snprintf(line, sizeof(line), "%s%s%s", b->checked ? "\xE2\x9C\x93 " : "", title, (sub < n_menu) ? " >" : "");
+
+        if(b->enabled){
+            SDL_SetRenderDrawColor(renderer, 225, 225, 225, 255);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 140, 140, 140, 255);
+        }
+        SDL_RenderDebugText(renderer, item_rect.x + 4, item_rect.y + 5, line);
+
+        linux_push_item_hit(item_rect, i, sub, depth);
+
+        if(selected && sub < n_menu){
+            linux_menu_draw_popup(sub, item_rect.x + item_rect.w, item_rect.y, depth + 1);
+        }
+        idx++;
+    }
+}
+
+static void linux_menu_render(void){
+    linux_top_hits_count = 0;
+    linux_item_hits_count = 0;
+
+    if(is_fullscreen)
+        return;
+
+    const float bar_h = 24.0f;
+    const float item_pad = 10.0f;
+    float x = 0.0f;
+
+    SDL_SetRenderDrawColor(renderer, 25, 25, 28, 255);
+    SDL_FRect bar = {0, 0, (float)width, bar_h};
+    SDL_RenderFillRect(renderer, &bar);
+    SDL_SetRenderDrawColor(renderer, 70, 70, 75, 255);
+    SDL_RenderLine(renderer, 0, bar_h - 1, (float)width, bar_h - 1);
+
+    for(menuId i = 0; i < n_menu; i++){
+        if(menus[i].parent_menu < n_menu)
+            continue;
+
+        const char* title = menus[i].title ? menus[i].title : "";
+        float w = linux_text_width(title) + item_pad * 2;
+        SDL_FRect rect = {x, 0, w, bar_h};
+        linux_push_top_hit(rect, i);
+
+        if(linux_menu_open && linux_menu_depth > 0 && linux_menu_path[0] == i){
+            SDL_SetRenderDrawColor(renderer, 60, 60, 66, 255);
+            SDL_RenderFillRect(renderer, &rect);
+        }
+
+        SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255);
+        SDL_RenderDebugText(renderer, x + item_pad, 6, title);
+        x += w;
+    }
+
+    if(linux_menu_open && linux_menu_depth > 0){
+        linux_menu_draw_popup(linux_menu_path[0], 0.0f, bar_h, 0);
+    }
 }
 #endif
 
@@ -672,10 +773,6 @@ void mainloop(){
     frameCount++;
     has_rendered = false;
 
-    #if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-    linux_menu_pump_events();
-    #endif
-
     #ifdef _WIN32
     MSG msg;
     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -723,9 +820,6 @@ void mainloop(){
         }
     }
     #endif
-    #if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-    linux_menu_sync_window();
-    #endif
     SDL_RenderCoordinatesFromWindow(renderer, m_x, m_y, &m_x, &m_y);
     mouseX = m_x;
     mouseY = m_y;
@@ -764,9 +858,28 @@ void mainloop(){
             break;
 
             case SDL_EVENT_KEY_DOWN:
-            if(event.key.key == exitButton)
+            if(event.key.key == exitButton){
+                #if defined(__linux__)
+                if(linux_menu_open){
+                    linux_menu_close();
+                    break;
+                }
+                #endif
                 running = 0;
+            }
             break;
+
+            #if defined(__linux__)
+            case SDL_EVENT_MOUSE_MOTION:
+            linux_menu_handle_motion(event.motion.x, event.motion.y);
+            break;
+
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if(event.button.button == SDL_BUTTON_LEFT){
+                linux_menu_handle_click(event.button.x, event.button.y);
+            }
+            break;
+            #endif
         }
     }
 
@@ -900,8 +1013,9 @@ void fullScreen(){
     is_fullscreen ^= 1; 
 
     SDL_SetWindowFullscreen(window, is_fullscreen);
-    #if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-    linux_menu_request_sync();
+    #if defined(__linux__)
+    if(is_fullscreen)
+        linux_menu_close();
     #endif
 }
 
@@ -993,6 +1107,9 @@ void renderBufferToWindow(){
 
     SDL_RenderClear(renderer);
     SDL_RenderTexture(renderer, drawBuffer, NULL, NULL);
+    #if defined(__linux__)
+    linux_menu_render();
+    #endif
     SDL_RenderPresent(renderer);
 }
 
@@ -1007,9 +1124,6 @@ bool filterResize(void* userdata, SDL_Event* event){
         event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || 
         event->type == SDL_EVENT_WINDOW_EXPOSED
     ){
-        #if defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-        linux_menu_request_sync();
-        #endif
         SDL_SetAtomicInt(&is_grabbed, 1);
         if(running)
             renderBufferToWindow();
@@ -1039,7 +1153,7 @@ void createMainMenu(){
 }
 #endif
 
-#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__) || (defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU))
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__) || defined(__linux__)
 menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
     #ifdef _WIN32
         menu_rendered = false;
@@ -1071,28 +1185,22 @@ menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
         [parent addItem:item];
         
         updateMenuVect((__bridge void*)newMenu, isRadio);
-    #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-        linux_menu_init();
-        if(linux_menu_ready){
-            GtkMenuShell* parent = GTK_MENU_SHELL(linux_menu_bar);
-            if(parentId < n_menu && menus[parentId].hMenu){
-                parent = GTK_MENU_SHELL(menus[parentId].hMenu);
-            }
-
-            GtkWidget* new_menu = gtk_menu_new();
-            GtkWidget* item = gtk_menu_item_new_with_label(string);
-            gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), new_menu);
-            gtk_menu_shell_append(parent, item);
-            gtk_widget_show(new_menu);
-            gtk_widget_show(item);
-            updateMenuVect(new_menu, isRadio);
-            linux_menu_sync_window();
-        } else {
-            updateMenuVect(NULL, isRadio);
-        }
+    #elif defined(__linux__)
+        updateMenuVect(NULL, isRadio);
     #endif
 
     updateButtonVect(NULL, NULL, parentId);
+    menuId created_menu = n_menu - 1;
+    buttonId linked_button = n_button - 1;
+    menus[created_menu].parent_menu = parentId;
+    menus[created_menu].linked_button = linked_button;
+    size_t menu_title_len = strlen(string);
+    menus[created_menu].title = malloc(menu_title_len + 1);
+    if(menus[created_menu].title)
+        memcpy(menus[created_menu].title, string, menu_title_len + 1);
+    buttons[linked_button].title = malloc(menu_title_len + 1);
+    if(buttons[linked_button].title)
+        memcpy(buttons[linked_button].title, string, menu_title_len + 1);
     return n_menu-1;
 }
 
@@ -1122,28 +1230,9 @@ buttonId addButtonTo(menuId parentId, const char* string, void (*callback)(void*
         [item setTarget:macMenuHandler];
         [item setTag:n_button];
         [parent addItem:item];
-    #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-        linux_menu_init();
-        if(linux_menu_ready){
-            GtkMenuShell* parent = GTK_MENU_SHELL(linux_menu_bar);
-            if(parentId < n_menu && menus[parentId].hMenu){
-                parent = GTK_MENU_SHELL(menus[parentId].hMenu);
-            }
-
-            GtkWidget* item;
-            if(parentId < n_menu && menus[parentId].is_radio){
-                item = gtk_check_menu_item_new_with_label(string);
-                gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(item), true);
-            } else {
-                item = gtk_menu_item_new_with_label(string);
-            }
-
-            signal_id = g_signal_connect(item, "activate", G_CALLBACK(linux_menu_click), GINT_TO_POINTER((int)n_button));
-            gtk_menu_shell_append(parent, item);
-            gtk_widget_show(item);
-            button_handle = item;
-            linux_menu_sync_window();
-        }
+    #elif defined(__linux__)
+        (void)button_handle;
+        (void)signal_id;
     #endif
 
     updateButtonVect(callback, arg, parentId);
@@ -1168,24 +1257,21 @@ void destroyAllMenus(){
     #elif defined(__APPLE__)
         [NSApp setMainMenu:nil];
         macMenuHandler = nil;
-    #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-        if(linux_menu_window){
-            gtk_widget_destroy(linux_menu_window);
-            linux_menu_window = NULL;
-            linux_menu_bar = NULL;
-        }
-        linux_menu_ready = false;
-        linux_menu_visible = false;
-        linux_menu_needs_sync = true;
-        linux_menu_last_x = SDL_MIN_SINT32;
-        linux_menu_last_y = SDL_MIN_SINT32;
-        linux_menu_last_w = -1;
-        linux_menu_last_h = -1;
-        linux_menu_init_attempted = false;
+    #elif defined(__linux__)
+        linux_menu_close();
+        free(linux_top_hits);
+        free(linux_item_hits);
+        linux_top_hits = NULL;
+        linux_item_hits = NULL;
+        linux_top_hits_count = 0;
+        linux_item_hits_count = 0;
     #endif
 
     for(size_t i = 0; i < n_button; i++){
         free(buttons[i].title);
+    }
+    for(size_t i = 0; i < n_menu; i++){
+        free(menus[i].title);
     }
     free(buttons);
     free(menus);
@@ -1222,14 +1308,10 @@ void checkRadioButton(buttonId button_id){
                     tickButton(i, (i == button_id));
                 }
             }
-        #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
+        #elif defined(__linux__)
             for(size_t i = 0; i < n_button; i++) {
                 if(buttons[i].parent_menu == menu_id) {
-                    button_t* b = &buttons[i];
-                    if(b->hButton && GTK_IS_CHECK_MENU_ITEM(GTK_WIDGET(b->hButton))) {
-                        gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(b->hButton), true);
-                    }
-                    linux_set_check_state(b, (i == button_id));
+                    tickButton(i, (i == button_id));
                 }
             }
         #endif
@@ -1258,8 +1340,8 @@ void tickButton(buttonId button_id, bool state){
             NSMenuItem* item = [parent itemWithTag:button_id];
             [item setState:state ? NSControlStateValueOn : NSControlStateValueOff];
         }
-    #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-        linux_set_check_state(&buttons[button_id], state);
+    #elif defined(__linux__)
+        buttons[button_id].checked = state;
     #endif
 }
 
@@ -1285,11 +1367,8 @@ void enableButton(buttonId button_id, bool state){
             NSMenuItem* item = [parent itemWithTag:button_id];
             [item setEnabled:state];
         }
-    #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
-        button_t* b = &buttons[button_id];
-        if(b->hButton){
-            gtk_widget_set_sensitive(GTK_WIDGET(b->hButton), state);
-        }
+    #elif defined(__linux__)
+        buttons[button_id].enabled = state;
     #endif
 }
 
@@ -1321,7 +1400,7 @@ void setButtonTitle(buttonId button_id, const char* string){
             NSMenuItem* item = [parent itemWithTag:button_id];
             [item setTitle:[NSString stringWithUTF8String:string]];
         }
-    #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
+    #elif defined(__linux__)
         button_t* b = &buttons[button_id];
         size_t len = strlen(string);
         char* new_title = (char*)malloc(len + 1);
@@ -1329,13 +1408,6 @@ void setButtonTitle(buttonId button_id, const char* string){
             memcpy(new_title, string, len + 1);
             free(b->title);
             b->title = new_title;
-        }
-        if(b->hButton && GTK_IS_MENU_ITEM(GTK_WIDGET(b->hButton))) {
-            if(GTK_IS_CHECK_MENU_ITEM(GTK_WIDGET(b->hButton))) {
-                gtk_menu_item_set_label(GTK_MENU_ITEM(b->hButton), string);
-            } else {
-                linux_set_check_state(b, b->checked);
-            }
         }
     #endif
 }
