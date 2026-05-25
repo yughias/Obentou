@@ -30,9 +30,12 @@ LIBS := $(shell pkg-config --static --libs sdl3) -lGL -lm
 PLATFORM_CFLAGS := -flto=$(shell nproc) $(shell pkg-config --cflags sdl3)
 GTK_CFLAGS := $(shell pkg-config --cflags gtk+-3.0 2>/dev/null)
 GTK_LIBS := $(shell pkg-config --libs gtk+-3.0 2>/dev/null)
+OBENTOU_LINUX_GTK_MENU ?= 0
+ifeq ($(OBENTOU_LINUX_GTK_MENU),1)
 ifneq ($(strip $(GTK_CFLAGS)$(GTK_LIBS)),)
 LIBS += $(GTK_LIBS)
 PLATFORM_CFLAGS += $(GTK_CFLAGS) -DOBENTOU_USE_GTK_LINUX_MENU
+endif
 endif
 RES_OBJ :=
 endif
