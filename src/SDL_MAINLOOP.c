@@ -44,6 +44,8 @@ typedef struct {
     size_t position;
     void* hButton;
     unsigned long signal_id;
+    char* title;
+    bool checked;
 } button_t;
 
 size_t n_button = 0;
@@ -72,7 +74,9 @@ void updateButtonVect(void (*callback)(void*), void* arg, menuId parentMenu) {
     }
     buttons[n_button].hButton = NULL;
     buttons[n_button].signal_id = 0;
-    n_button++;
+        buttons[n_button].title = NULL;
+        buttons[n_button].checked = false;
+        n_button++;
 }
 
 void updateMenuVect(void* new_menu_handle, bool isRadio) {
@@ -440,13 +444,30 @@ static void linux_set_check_state(button_t* b, bool state){
     if(!linux_menu_ready || !b->hButton)
         return;
 
-    GtkWidget* item = GTK_WIDGET(b->hButton);
-    if(!GTK_IS_CHECK_MENU_ITEM(item))
-        return;
+    b->checked = state;
 
+    GtkWidget* item = GTK_WIDGET(b->hButton);
     if(b->signal_id)
         g_signal_handler_block(item, b->signal_id);
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), state);
+
+    if(GTK_IS_CHECK_MENU_ITEM(item)){
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), state);
+    } else if(GTK_IS_MENU_ITEM(item)) {
+        const char* title = b->title ? b->title : "";
+        if(state){
+            size_t len = strlen(title);
+            char* ticked = (char*)malloc(len + 5);
+            if(ticked){
+                memcpy(ticked, "\xE2\x9C\x93 ", 4);
+                memcpy(ticked + 4, title, len + 1);
+                gtk_menu_item_set_label(GTK_MENU_ITEM(item), ticked);
+                free(ticked);
+            }
+        } else {
+            gtk_menu_item_set_label(GTK_MENU_ITEM(item), title);
+        }
+    }
+
     if(b->signal_id)
         g_signal_handler_unblock(item, b->signal_id);
 }
@@ -1069,11 +1090,9 @@ buttonId addButtonTo(menuId parentId, const char* string, void (*callback)(void*
             }
 
             GtkWidget* item;
-            if(parentId < n_menu){
+            if(parentId < n_menu && menus[parentId].is_radio){
                 item = gtk_check_menu_item_new_with_label(string);
-                if(menus[parentId].is_radio){
-                    gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(item), true);
-                }
+                gtk_check_menu_item_set_draw_as_radio(GTK_CHECK_MENU_ITEM(item), true);
             } else {
                 item = gtk_menu_item_new_with_label(string);
             }
@@ -1089,6 +1108,11 @@ buttonId addButtonTo(menuId parentId, const char* string, void (*callback)(void*
     updateButtonVect(callback, arg, parentId);
     buttons[n_button - 1].hButton = button_handle;
     buttons[n_button - 1].signal_id = signal_id;
+    size_t len = strlen(string);
+    buttons[n_button - 1].title = (char*)malloc(len + 1);
+    if(buttons[n_button - 1].title){
+        memcpy(buttons[n_button - 1].title, string, len + 1);
+    }
     return n_button-1;
 }
 
@@ -1113,6 +1137,9 @@ void destroyAllMenus(){
         linux_menu_init_attempted = false;
     #endif
 
+    for(size_t i = 0; i < n_button; i++){
+        free(buttons[i].title);
+    }
     free(buttons);
     free(menus);
     buttons = NULL;
@@ -1249,8 +1276,19 @@ void setButtonTitle(buttonId button_id, const char* string){
         }
     #elif defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU)
         button_t* b = &buttons[button_id];
+        size_t len = strlen(string);
+        char* new_title = (char*)malloc(len + 1);
+        if(new_title){
+            memcpy(new_title, string, len + 1);
+            free(b->title);
+            b->title = new_title;
+        }
         if(b->hButton && GTK_IS_MENU_ITEM(GTK_WIDGET(b->hButton))) {
-            gtk_menu_item_set_label(GTK_MENU_ITEM(b->hButton), string);
+            if(GTK_IS_CHECK_MENU_ITEM(GTK_WIDGET(b->hButton))) {
+                gtk_menu_item_set_label(GTK_MENU_ITEM(b->hButton), string);
+            } else {
+                linux_set_check_state(b, b->checked);
+            }
         }
     #endif
 }
