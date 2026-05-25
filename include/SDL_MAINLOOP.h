@@ -67,7 +67,7 @@ void destroyAllWidgets();
 
 typedef size_t menuId;
 typedef size_t buttonId;
-#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__) || (defined(__linux__) && defined(OBENTOU_USE_GTK_LINUX_MENU))
 menuId addMenuTo(menuId, const char*, bool);
 buttonId addButtonTo(menuId, const char*, void (*callback)(void*), void*);
 void setButtonTitle(buttonId, const char*);
