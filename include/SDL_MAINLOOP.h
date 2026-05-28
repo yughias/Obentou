@@ -55,6 +55,8 @@ bool hasRendered();
 
 void renderPixels();
 
+void gridWindows();
+
 // getter for program arguments
 int getArgc();
 char* getArgv(int);

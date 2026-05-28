@@ -69,6 +69,8 @@ XYZ(HOTKEY, SLOWDOWN, "-"); \
 XYZ(HOTKEY, CMD_SLOWDOWN, "none"); \
 XYZ(HOTKEY, OPEN_BIOS, "b"); \
 XYZ(HOTKEY, CMD_OPEN_BIOS, "left ctrl"); \
+XYZ(HOTKEY, DEBUG_VIEW, "d"); \
+XYZ(HOTKEY, CMD_DEBUG_VIEW, "left ctrl"); \
 \
 XYZ(NES, UP, "up"); \
 XYZ(NES, DOWN, "down"); \

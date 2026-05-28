@@ -57,6 +57,10 @@ void loop(){
     controls_update();
     camera_update();
 
+    if(hotkeys_released(CONTROL_HOTKEY_DEBUG_VIEW)){
+        menu_debug_view(&emu_ctx);
+    }
+
     if(hotkeys_released(CONTROL_HOTKEY_SAVESTATE)){
         state_save_slot(&emu_ctx);
     }

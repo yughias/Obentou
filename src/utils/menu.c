@@ -479,3 +479,23 @@ void menu_create(core_ctx_t* ctx){
 void menu_tick_pause(bool paused){
     tickButton(pause_button, paused);
 }
+
+void menu_debug_view(core_ctx_t* ctx){
+    const core_t* core = ctx->core;
+    if(!core)
+        return;
+
+    for (int i = 0; i < MAX_WIDGETS; i++) {
+        const widget_t* widget = &core->widgets[i];
+        if (widget->name)
+            createWidget(widget->name, 1, 1, widget->draw, ctx->emu);
+    }
+
+    for (int i = 0; i < MAX_AUDIO_CHANNELS; i++) {
+        const sound_channel_t* ch = &core->sound_channels[i];
+        if (ch->name)
+            sound_open_wave_viewer(ch->name, ch->min, ch->max, i);
+    }
+
+    gridWindows();
+}

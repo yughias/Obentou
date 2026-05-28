@@ -690,7 +690,7 @@ void size(int w, int h){
         SDL_DestroyTexture(current_widget->texture);
         current_widget->texture = SDL_CreateTexture(current_widget->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
         SDL_SetTextureScaleMode(current_widget->texture, SDL_SCALEMODE_NEAREST);
-        SDL_SetRenderLogicalPresentation(current_widget->renderer, w, h, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+        SDL_SetRenderLogicalPresentation(current_widget->renderer, w, h, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_Surface* s;
         SDL_LockTextureToSurface(current_widget->texture, NULL, &s);
         stride = s->pitch / sizeof(Uint32);
@@ -1116,7 +1116,7 @@ void createWidget(const char* name, int w, int h, bool (*callback)(void*), void*
         wid->renderer = SDL_CreateRenderer(wid->window, NULL);
         wid->texture = SDL_CreateTexture(wid->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
         SDL_SetTextureScaleMode(wid->texture, SDL_SCALEMODE_NEAREST);
-        SDL_SetRenderLogicalPresentation(wid->renderer, w, h, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+        SDL_SetRenderLogicalPresentation(wid->renderer, w, h, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_SetWindowMinimumSize(wid->window, SDL_max(w, 512), SDL_max(h, 512));
     #endif
 }
@@ -1140,4 +1140,41 @@ void destroyAllWidgets(){
     for(int i = 0; i < MAX_WIDGETS; i++){
         destroyWidget(i);
     }
+}
+
+void gridWindows() {
+    #ifndef __EMSCRIPTEN__
+    const int padX = 8, padY = 64;
+
+    int count = 1;
+    SDL_Window *windows[MAX_WIDGETS + 1];
+
+    windows[0] = getMainWindow();
+    for (int i = 0; i < MAX_WIDGETS; i++) {
+        if (widgets[i].valid)
+            windows[count++] = widgets[i].window;
+    }
+
+    SDL_Rect display;
+    SDL_GetDisplayUsableBounds(SDL_GetPrimaryDisplay(), &display);
+
+    int maxMinW = 1, maxMinH = 1;
+    for (int i = 0; i < count; i++) {
+        int minW = 0, minH = 0;
+        SDL_GetWindowMinimumSize(windows[i], &minW, &minH);
+        if (minW > maxMinW) maxMinW = minW;
+        if (minH > maxMinH) maxMinH = minH;
+    }
+
+    int cols  = SDL_clamp((int)SDL_ceil(SDL_sqrt((float)count * display.w / display.h)), 1, count);
+    int rows  = (count + cols - 1) / cols;
+    int cellW = SDL_max((display.w - padX * (cols + 1)) / cols, maxMinW);
+    int cellH = SDL_max((display.h - padY * (rows + 1)) / rows, maxMinH);
+
+    for (int i = 0; i < count; i++) {
+        SDL_SetWindowPosition(windows[i], display.x + padX + (i % cols) * (cellW + padX),
+                                          display.y + padY + (i / cols) * (cellH + padY));
+        SDL_SetWindowSize(windows[i], cellW, cellH);
+    }
+    #endif
 }

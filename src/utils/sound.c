@@ -42,6 +42,8 @@ int sound_set_channel_sample(int sample, int channel){
 }
 
 static bool draw_wave(void* arg){
+    size(512, 512);
+
     wave_info_t* info = (wave_info_t*)arg;
     const int white = -1;
 
