@@ -19,10 +19,12 @@ At the moment the supported cores are:
 - [X] NES
 - [X] PCE (PC-Engine)
 - [X] PV1000 (Casio PV-1000)
-- [X] TMS80 (TMS9918 + Z80 systems) (sms/gg/sg1000/sc3000)
+- [X] TMS80 (TMS9918 + Z80 systems) 
+    - [X] Sega 8 Bit (sms/gg/sg1000/sc3000)
+    - [X] Coleco Vision (bios required)
 - [X] WATARA (Watara Super Vision)
 - [X] CHIP-8
-- [X] Pac-Man / Ms. Pac-Man Arcade
+- [X] PACMAN (pacman, ms. pacman, jr. pacman and other pacman based arcade boards)
 - [X] Space Invaders Arcade
 
 ## Features
@@ -36,17 +38,19 @@ At the moment the supported cores are:
 
 ## Screenshots
 
-| ![](imgs/1.bmp)  | ![](imgs/2.bmp)     | ![](imgs/3.bmp)         |
-|:----------------:|:-------------------:|:-----------------------:|
-| SG-1000          | Mega Duck           | PC Engine               |
-| ![](imgs/4.bmp)  | ![](imgs/5.bmp)     | ![](imgs/6.bmp)         |
-| Game Boy         | Byte Pusher         | Game Boy Color          |
-| ![](imgs/7.bmp)  | ![](imgs/8.bmp)     | ![](imgs/9.bmp)         |
-| PV-1000          | Watara Super Vision | SC-3000                 |
-| ![](imgs/10.bmp) | ![](imgs/11.bmp)    | ![](imgs/12.bmp)        |
-| Master System    | Famicom             | Game Gear               |
-| ![](imgs/13.bmp) | ![](imgs/14.bmp)    | ![](imgs/15.bmp)        |
-| Chip 8           |  Pac-Man (Arcade)   | Space Invaders (Arcade) |
+| ![](imgs/sg1000.bmp) | ![](imgs/megaduck.bmp) | ![](imgs/pce.bmp)       |
+|:--------------------:|:----------------------:|:-----------------------:|
+| SG-1000              | Mega Duck              | PC Engine               |
+| ![](imgs/dmg.bmp)    | ![](imgs/bp.bmp)       | ![](imgs/gbc.bmp)       |
+| Game Boy             | Byte Pusher            | Game Boy Color          |
+| ![](imgs/pv1000.bmp) | ![](imgs/watara.bmp)   | ![](imgs/sc3000.bmp)    |
+| PV-1000              | Watara Super Vision    | SC-3000                 |
+| ![](imgs/sms.bmp)    | ![](imgs/nes.bmp)      | ![](imgs/gg.bmp)        |
+| Master System        | Famicom                | Game Gear               |
+| ![](imgs/ch8.bmp)    | ![](imgs/pacman.bmp)   | ![](imgs/invaders.bmp)  |
+| Chip 8               |  Pac-Man (Arcade)      | Space Invaders (Arcade) |
+| ![](imgs/col.bmp)    |                        |                         |
+| Coleco Vision        |                        |                         | 
 
 ## Build Instructions
 
