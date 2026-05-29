@@ -17,8 +17,8 @@ void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive){
     nes_ines_load(&nes->cart, rom->data, rom->size);
     nes->ppu.vram_size = nes->cart.vram_align == VRAM_4 ? EXTENDED_VRAM_SIZE : BASIC_VRAM_SIZE;
     nes->ppu.vram = malloc(nes->ppu.vram_size);
-    m6502_t* cpu = &nes->cpu;
-    m6502_init(cpu);
+    r2A03_t* cpu = &nes->cpu;
+    r2A03_init(cpu);
     cpu->ctx = (void*)nes;
     ppu_t* ppu = &nes->ppu;
     ppu->ctx = (void*)nes;
@@ -37,19 +37,19 @@ void* NES_init(const archive_t* rom_archive, const archive_t* bios_archive){
 
     mapper_init_func mapper_init = (mapper_init_func)mapper->mapper_init;
     (*mapper_init)(nes);
-    cpu->read = (m6502_read_func)mapper->cpu_read;
-    cpu->write = (m6502_write_func)mapper->cpu_write;
+    cpu->read = (r2A03_read_func)mapper->cpu_read;
+    cpu->write = (r2A03_write_func)mapper->cpu_write;
     ppu->read = (ppu_read_func)mapper->ppu_read;
     ppu->write = (ppu_write_func)mapper->ppu_write;
 
-    m6502_reset(cpu);
+    r2A03_reset(cpu);
 
     return nes;
 }
 
 void nes_reset(nes_t* nes){
-    m6502_init(&nes->cpu);
-    m6502_reset(&nes->cpu);
+    r2A03_init(&nes->cpu);
+    r2A03_reset(&nes->cpu);
 
     if(nes->mapper){
         free(nes->mapper);
@@ -78,7 +78,7 @@ void nes_reset(nes_t* nes){
 }
 
 void NES_run_frame(nes_t* nes){
-    m6502_t* cpu = &nes->cpu;
+    r2A03_t* cpu = &nes->cpu;
     ppu_t* ppu = &nes->ppu;
     
     while(!ppu->end_of_frame){
@@ -99,11 +99,11 @@ void NES_run_frame(nes_t* nes){
         } else {
             if(ppu->nmi_pin){
                 ppu->nmi_pin = false;
-                m6502_nmi(cpu);
-            } else if(GET_IRQ(nes) && m6502_interrupt_enabled(cpu)){
-                m6502_irq(cpu);
+                r2A03_nmi(cpu);
+            } else if(GET_IRQ(nes) && r2A03_interrupt_enabled(cpu)){
+                r2A03_irq(cpu);
             } else {
-                m6502_step(cpu);
+                r2A03_step(cpu);
             }
         }
     }

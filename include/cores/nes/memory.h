@@ -1,7 +1,7 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-#include "cpus/m6502.h"
+#include "cpus/r2A03.h"
 #include "cores/nes/ppu.h"
 #include "cores/nes/apu.h"
 

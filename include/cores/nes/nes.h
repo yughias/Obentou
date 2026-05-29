@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "cores/nes/ines.h"
-#include "cpus/m6502.h"
+#include "cpus/r2A03.h"
 #include "cores/nes/ppu.h"
 #include "cores/nes/memory.h"
 #include "cores/nes/joypad.h"
@@ -22,7 +22,7 @@
 #define PPU_CYCLES_PER_FRAME (SCANLINES*PPU_CYCLES_PER_SCANLINE)
 
 #define NES_STRUCT(X) \
-    X(m6502_t, cpu, 1, 1) \
+    X(r2A03_t, cpu, 1, 1) \
     X(ppu_t, ppu, 1, 1) \
     X(apu_t, apu, 1, 1) \
     X(ines_t, cart, 1, 1) \

@@ -76,9 +76,9 @@ MAPPER_CPU_READ(1,
 MAPPER_CPU_WRITE(1, 
     if(addr >= 0x8000){
         mmc1_t* mmc1 = (mmc1_t*)n->mapper;
-        m6502_t* m = &n->cpu;
-        u32 elapsed = m->cycles - mmc1->last_write;
-        mmc1->last_write = m->cycles;
+        r2A03_t* r = &n->cpu;
+        u32 elapsed = r->cycles - mmc1->last_write;
+        mmc1->last_write = r->cycles;
         if(elapsed <= 1)
             return;
         bool bit = byte & 1;

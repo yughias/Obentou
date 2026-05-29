@@ -228,10 +228,10 @@ void nes_apu_update_dmc(apu_t* apu){
         dmc->divider = dmc->divider_reload;
         if(dmc->empty && dmc->length){
             nes_t* n = (nes_t*)apu->ctx;
-            m6502_t* m = &n->cpu;
-            m->cycles += 1;
+            r2A03_t* r = &n->cpu;
+            r->cycles += 1;
             dmc->empty = false;
-            dmc->buffer = m->read(m->ctx, dmc->address);
+            dmc->buffer = r->read(r->ctx, dmc->address);
             dmc->address += 1;
             if(!dmc->address)
                 dmc->address = 0x8000;
