@@ -24,6 +24,7 @@
 #include "cores/chip8/interface.h"
 #include "cores/pacman/interface.h"
 #include "cores/spaceinvaders/interface.h"
+#include "cores/speccy/interface.h"
 
 #define LOAD_CORE(core) \
 { \
@@ -58,7 +59,8 @@ const core_t cores[] = {
     LOAD_CORE(GBC),
     LOAD_CORE(CHIP8),
     LOAD_CORE(PACMAN),
-    LOAD_CORE(SPACEINVADERS)
+    LOAD_CORE(SPACEINVADERS),
+    LOAD_CORE(SPECCY)
 };
 
 #undef LOAD_CORE
