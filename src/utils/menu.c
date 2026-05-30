@@ -117,7 +117,18 @@ static void controls_input_box_gamepad(control_t* gamepad_ptr){
     menu_create(core_ctx_arg);
 }
 
-static void create_input_button_menu(menuId hotkey_menu, const char* name, control_t control_begin, control_t control_end, bool show_gamepad){
+static void set_control_type(const char* name){
+    control_type_t type = (uintptr_t)(name - (const char*)controls_type_names) / sizeof(controls_type_names[0]);
+    for (int i = 0; i < n_cores; i++) {
+        const core_t* core = &cores[i];
+        if (type >= core->control_type_begin && type <= core->control_type_end) {        
+            printf("set control type %s %d for core %s\n", name, type, core->name);
+            controls_set_type(core->name, type);       
+        }
+    }
+}
+
+static void create_input_button_menu(menuId hotkey_menu, const char* name, control_t control_begin, control_t control_end, control_type_t control_type_begin, control_type_t control_type_end, bool show_gamepad){
     menuId submenu = addMenuTo(hotkey_menu, name, false);
     menuId scancode_submenu = addMenuTo(submenu, "Keyboard", false);
     menuId gamepad_submenu;
@@ -135,6 +146,21 @@ static void create_input_button_menu(menuId hotkey_menu, const char* name, contr
             addButtonTo(gamepad_submenu, name, (void*)controls_input_box_gamepad, &control_args[i]);
         }
     }
+
+    if(control_type_begin == control_type_end)
+        return;
+
+    menuId type_submenu = addMenuTo(submenu, "Type", true);
+    buttonId type_buttons[control_type_end - control_type_begin + 1];
+
+    for(int i = control_type_begin; i <= control_type_end; i++){
+        char name[32];
+        sprintf(name, "%s", controls_type_names[i]);
+        type_buttons[i - control_type_begin] = addButtonTo(type_submenu, name, (void*)set_control_type, (void*)(controls_type_names + i));
+    }
+
+    int control_type = ini_getl(name, "CONTROL_TYPE", control_type_begin, argument_get_ini_path());
+    checkRadioButton(type_buttons[control_type - control_type_begin]);
 }
 
 static bool compose_recent_text(char* out, size_t len, int idx){
@@ -434,16 +460,16 @@ void menu_create(core_ctx_t* ctx){
     }
 
     menuId hotkey_menu = addMenuTo(input_menu, "Hotkeys", false);
-    create_input_button_menu(hotkey_menu, "Main key", CONTROL_HOTKEY_BEGIN, CONTROL_HOTKEY_END, true);
-    create_input_button_menu(hotkey_menu, "Secondary key", CONTROL_HOTKEY_CMD_BEGIN, CONTROL_HOTKEY_CMD_END, false);
+    create_input_button_menu(hotkey_menu, "Main key", CONTROL_HOTKEY_BEGIN, CONTROL_HOTKEY_END, 0, 0, true);
+    create_input_button_menu(hotkey_menu, "Secondary key", CONTROL_HOTKEY_CMD_BEGIN, CONTROL_HOTKEY_CMD_END, 0, 0, false);
     
     if(ctx->core)
-        create_input_button_menu(input_menu, ctx->core->name, ctx->core->control_begin, ctx->core->control_end, true);
+        create_input_button_menu(input_menu, ctx->core->name, ctx->core->control_begin, ctx->core->control_end, ctx->core->control_type_begin, ctx->core->control_type_end, true);
 
     for(int i = 0; i < n_cores; i++){
         if(ctx->core && !strcmp(ctx->core->name, cores[i].name))
             continue;
-        create_input_button_menu(input_menu, cores[i].name, cores[i].control_begin, cores[i].control_end, true);
+        create_input_button_menu(input_menu, cores[i].name, cores[i].control_begin, cores[i].control_end,cores[i].control_type_begin, cores[i].control_type_end, true);
     }
 
     addButtonTo(-1, "About", (void*)menu_info, NULL);

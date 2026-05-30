@@ -1,13 +1,11 @@
 #ifndef __LOADER_H__
 #define __LOADER_H__
 
-#define Z80_V1_HEADER_SIZE 30
+#include "types.h"
 
-#include <stdint.h>
+typedef struct speccy_t speccy_t;
 
-void loadROM(const char*);
-void loadState(const char*);
-void saveState(const char*);
-void loadSCR(const char*);
+void speccy_load_z80_state(speccy_t* speccy, u8* buffer, size_t size);
+void speccy_load_scr(speccy_t* speccy, u8* buffer, size_t size);
 
 #endif

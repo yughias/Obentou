@@ -1,152 +1,126 @@
-// #include "cores/speccy/loader.h"
+#include "cores/speccy/loader.h"
+#include "cores/speccy/speccy.h"
 
-// #include <stdio.h>
-// #include <stdint.h>
-// #include "cores/speccy/speccy.h"
+#define Z80_V1_HEADER_SIZE 30
 
-// void decodeVersion1Data(uint8_t* buffer, size_t filesize){
-//     printf("v1 loading!\n");
+#include <stdio.h>
 
-//     bool isCompressed = buffer[12] & 0b100000;
+#include "cores/speccy/speccy.h"
 
-//     if(isCompressed){
-//         uint8_t* ptr = buffer + Z80_V1_HEADER_SIZE;
-//         uint8_t* ram_ptr = MEMORY + RAM_ADDR;
-//         while(!(ptr[0] == 0x00 && ptr[1] == 0xED && ptr[2] == 0xED && ptr[3] == 0x00)){
-//             if(ptr[0] == 0xED && ptr[1] == 0xED){
-//                 memset(ram_ptr, ptr[3], ptr[2]);
-//                 ram_ptr += ptr[2];
-//                 ptr += 4;
-//             } else {
-//                 ram_ptr[0] = ptr[0];
-//                 ram_ptr += 1;
-//                 ptr += 1;
-//             }
-//         }
-//     } else
-//         memcpy(MEMORY + RAM_ADDR, buffer + Z80_V1_HEADER_SIZE, filesize - Z80_V1_HEADER_SIZE);
-// }
+static void decode_data_v1(speccy_t* speccy, u8* buffer, size_t filesize){
+    printf("v1 loading!\n");
 
-// void decodeVersion2Data(uint8_t* buffer, size_t filesize){
-//     printf("v2 loading!\n");
+    bool isCompressed = buffer[12] & 0b100000;
 
-//     uint16_t header_block_size = *(uint16_t*)(buffer + 30);  
-//     cpu.PC = *(uint16_t*)(buffer + 32);
+    if(isCompressed){
+        u8* ptr = buffer + Z80_V1_HEADER_SIZE;
+        u8* ram_ptr = speccy->ram;
+        while(!(ptr[0] == 0x00 && ptr[1] == 0xED && ptr[2] == 0xED && ptr[3] == 0x00)){
+            if(ptr[0] == 0xED && ptr[1] == 0xED){
+                memset(ram_ptr, ptr[3], ptr[2]);
+                ram_ptr += ptr[2];
+                ptr += 4;
+            } else {
+                ram_ptr[0] = ptr[0];
+                ram_ptr += 1;
+                ptr += 1;
+            }
+        }
+    } else
+        memcpy(speccy->ram, buffer + Z80_V1_HEADER_SIZE, filesize - Z80_V1_HEADER_SIZE);
+}
 
-//     uint8_t* ptr = buffer + 32 + header_block_size;
-//     uint8_t* memory_ptr = MEMORY;
+static void decode_data_v2(speccy_t* speccy, u8* buffer, size_t filesize){
+    printf("v2 loading!\n");
 
-//     while((ptr - buffer) < filesize){
-//         uint16_t length = *(uint16_t*)ptr;
-//         uint8_t  region = ptr[2];
-//         uint8_t* memory_ptr;
-//         switch(region){
-//             case 0:
-//             memory_ptr = MEMORY;
-//             break;
+    u16 header_block_size = *(u16*)(buffer + 30);  
+    speccy->cpu.PC = *(u16*)(buffer + 32);
 
-//             case 4:
-//             memory_ptr = MEMORY + 0x8000;
-//             break;
+    u8* ptr = buffer + 32 + header_block_size;
 
-//             case 5:
-//             memory_ptr = MEMORY + 0xC000;
-//             break;
+    while((ptr - buffer) < filesize){
+        u16 length = *(u16*)ptr;
+        u8  region = ptr[2];
+        u8* memory_ptr;
+        switch(region){
+            case 0:
+            memory_ptr = speccy->rom;
+            break;
 
-//             case 8:
-//             memory_ptr = MEMORY + 0x4000;
-//             break;
+            case 4:
+            memory_ptr = speccy->ram + 0x4000;
+            break;
 
-//             default:
-//             printf("error on decoding v2 file format!\n"); 
-//             return;
-//         }
-//         ptr += 3;
-//         if(length == 0xFFFF){
-//             memcpy(memory_ptr, ptr, 16384);
-//             ptr += 16384;
-//         } else {
-//             while(length != 0){
-//                 if(ptr[0] == 0xED && ptr[1] == 0xED){
-//                     memset(memory_ptr, ptr[3], ptr[2]);
-//                     memory_ptr += ptr[2];
-//                     ptr += 4;
-//                     length -= 4;
-//                 } else {
-//                     memory_ptr[0] = ptr[0];
-//                     memory_ptr += 1;
-//                     ptr += 1;
-//                     length -= 1;
-//                 }
-//             }
-//         }
-//     }
-// }
+            case 5:
+            memory_ptr = speccy->ram + 0x8000;
+            break;
 
-// size_t getFileSize(const char* filename){
-//     FILE* fptr = fopen(filename, "rb");
-//     fseek(fptr, 0, SEEK_END);
-//     size_t size = ftell(fptr);
-//     fclose(fptr);
-//     return size;
-// }
+            case 8:
+            memory_ptr = speccy->ram;
+            break;
 
-// void loadROM(const char* filename){
-//     size_t size = getFileSize(filename);
-//     if(size > RAM_ADDR){
-//         printf("rom too big, cut dimension to 16k!\n");
-//         size = RAM_ADDR;
-//     }
-//     FILE* fptr = fopen(filename, "rb");
-//     fread(MEMORY, size, 1, fptr);
-//     fclose(fptr);
-// }
+            default:
+            printf("error on decoding v2 file format!\n"); 
+            return;
+        }
+        ptr += 3;
+        if(length == 0xFFFF){
+            memcpy(memory_ptr, ptr, 16384);
+            ptr += 16384;
+        } else {
+            while(length != 0){
+                if(ptr[0] == 0xED && ptr[1] == 0xED){
+                    memset(memory_ptr, ptr[3], ptr[2]);
+                    memory_ptr += ptr[2];
+                    ptr += 4;
+                    length -= 4;
+                } else {
+                    memory_ptr[0] = ptr[0];
+                    memory_ptr += 1;
+                    ptr += 1;
+                    length -= 1;
+                }
+            }
+        }
+    }
+}
 
-// void loadState(const char* filename){
-//     uint8_t* buf;
+void speccy_load_z80_state(speccy_t* speccy, u8* buf, size_t size){
+    z80_t* cpu = &speccy->cpu;
 
-//     size_t size = getFileSize(filename);
-//     buf = malloc(size);
+    cpu->A = buf[0];
+    cpu->F = buf[1];
+    cpu->BC = *(u16*)(buf + 2);
+    cpu->HL = *(u16*)(buf + 4);
+    cpu->PC = *(u16*)(buf + 6);
+    cpu->SP = *(u16*)(buf + 8);
+    cpu->DE = *(u16*)(buf + 13);
+    cpu->BC_ = *(u16*)(buf + 15);
+    cpu->DE_ = *(u16*)(buf + 17);
+    cpu->HL_ = *(u16*)(buf + 19);
+
+    cpu->AF_ = (buf[21] << 8) | buf[22];
     
-//     FILE* fptr = fopen(filename, "rb");
-//     fread(buf, size, 1, fptr);
-//     fclose(fptr);
+    cpu->IYL = buf[23];
+    cpu->IYH = buf[24];
+    cpu->IXL = buf[25];
+    cpu->IXH = buf[26];
 
-//     cpu.A = buf[0];
-//     cpu.F = buf[1];
-//     cpu.BC = *(uint16_t*)(buf + 2);
-//     cpu.HL = *(uint16_t*)(buf + 4);
-//     cpu.PC = *(uint16_t*)(buf + 6);
-//     cpu.SP = *(uint16_t*)(buf + 8);
-//     cpu.DE = *(uint16_t*)(buf + 13);
-//     cpu.BC_ = *(uint16_t*)(buf + 15);
-//     cpu.DE_ = *(uint16_t*)(buf + 17);
-//     cpu.HL_ = *(uint16_t*)(buf + 19);
+    cpu->I = buf[10];
+    cpu->R = (buf[11] & 0x7F) | ((buf[12] & 0x1) << 7);
+    speccy->ula = (buf[12] & 0b1110) >> 1;
 
-//     cpu.AF_ = (buf[21] << 8) | buf[22];
-    
-//     cpu.IYL = buf[23];
-//     cpu.IYH = buf[24];
-//     cpu.IXL = buf[25];
-//     cpu.IXH = buf[26];
+    cpu->IFF1 = buf[27];
+    cpu->INTERRUPT_MODE = buf[29] & 0b11;
+    cpu->HALTED = false;
 
-//     cpu.I = buf[10];
-//     cpu.R = (buf[11] & 0x7F) | ((buf[12] & 0x1) << 7);
-//     ULA = (buf[12] & 0b1110) >> 1;
+    if(cpu->PC != 0)
+        decode_data_v1(speccy, buf, size);
+    else
+        decode_data_v2(speccy, buf, size);
+}
 
-//     cpu.IFF1 = buf[27];
-//     cpu.INTERRUPT_MODE = buf[29] & 0b11;
-//     cpu.INTERRUPT_PENDING = false;
-//     cpu.HALTED = false;
-
-//     if(cpu.PC != 0)
-//         decodeVersion1Data(buf, size);
-//     else
-//         decodeVersion2Data(buf, size);
-
-//     free(buf);
-// }
-
+// TODO
 // void saveState(const char* filename){
 //     FILE* fptr = fopen(filename, "wb");
 
@@ -159,15 +133,15 @@
 //     fwrite(&cpu.I,                  1, 1, fptr); // 10
 //     fwrite(&cpu.R,                  1, 1, fptr); // 11
 
-//     uint8_t byte12 = (cpu.R >> 7) | ((ULA & 0b111) << 1);
+//     u8 byte12 = (cpu.R >> 7) | ((ULA & 0b111) << 1);
 //     fwrite(&byte12,                1, 1, fptr); // 12
 //     fwrite(&cpu.DE,                2, 1, fptr); // 13
 //     fwrite(&cpu.BC_,               2, 1, fptr); // 15
 //     fwrite(&cpu.DE_,               2, 1, fptr); // 17
 //     fwrite(&cpu.HL_,               2, 1, fptr); // 19
 
-//     uint8_t a_ = cpu.AF_ >> 8;
-//     uint8_t f_ = cpu.AF_ & 0xff;
+//     u8 a_ = cpu.AF_ >> 8;
+//     u8 f_ = cpu.AF_ & 0xff;
 //     fwrite(&a_,                    1, 1, fptr); // 21
 //     fwrite(&f_,                    1, 1, fptr); // 22
 
@@ -177,7 +151,7 @@
 //     fwrite(&cpu.IXH,               1, 1, fptr); // 26
 //     fwrite(&cpu.IFF1, 1, 1, fptr); // 27
     
-//     uint8_t iff2 = 0;
+//     u8 iff2 = 0;
 //     fwrite(&iff2,                  1, 1, fptr); // 28
 //     fwrite(&cpu.INTERRUPT_MODE,    1, 1, fptr); // 29 
 
@@ -186,19 +160,13 @@
 //     fclose(fptr);
 // }
 
-// void loadSCR(const char* filename){
-//     FILE* fptr = fopen(filename, "rb");
+void speccy_load_scr(speccy_t* speccy, u8* buffer, size_t size){
+    memcpy(speccy->ram, buffer, size);
 
-//     uint8_t* ram_ptr = MEMORY + 0x4000;
+    // set border to black 'cause is cool
+    speccy->ula = 0;
 
-//     while(fread(ram_ptr++, 1, 1, fptr));
-
-//     fclose(fptr);
-
-//     // set border to black 'cause is cool
-//     ULA = 0;
-
-//     // stuck cpu to allow image to be shown
-//     cpu.PC = 0x38;
-//     MEMORY[0x38] = 0x76;
-// }
+    // stuck cpu to allow image to be shown
+    speccy->cpu.PC = 0x38;
+    speccy->rom[0x38] = 0x76;
+}

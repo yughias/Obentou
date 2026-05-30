@@ -20,14 +20,9 @@
 #define AY_ENV_COARSE      0x0C
 #define AY_ENV_SHAPE       0x0D
 
-void initAudio();
-void freeAudio();
-void emulateAy();
-void resetAy();
-void updateEnvelopeAy();
-void sendAudioToDevice();
-
-typedef struct {
+typedef struct ay_t {
+    u8 reg[0x10];
+    u8 selected;
     uint16_t pulse_counter[3];
     uint16_t noise_counter;
     uint32_t lfsr;
@@ -37,8 +32,11 @@ typedef struct {
     enum {NO_ENV, ASC_ENV, DESC_ENV} env;
     bool pulse[3];
     bool halfClock;
-} ay_t; 
+} ay_t;
 
-extern ay_t ay;
+void speccy_ay_step(ay_t* ay);
+void speccy_ay_reset(ay_t* ay);
+void speccy_ay_update_envelope(ay_t* ay);
+void speccy_send_audio(void* ctx);
 
 #endif

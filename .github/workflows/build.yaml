@@ -28,6 +28,7 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-make
+            vim
 
       - name: Build with MinGW
         shell: msys2 {0}
@@ -59,7 +60,7 @@ jobs:
       - name: Install Build Essentials
         run: |
           apt-get update
-          apt-get install -y software-properties-common git curl sudo build-essential
+          apt-get install -y software-properties-common git curl sudo build-essential vim-common
 
       - name: Checkout repo
         uses: actions/checkout@v5

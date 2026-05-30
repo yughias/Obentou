@@ -1,257 +1,173 @@
-// #include "cores/speccy/speccy.h"
-// #include <tinyfiledialogs.h>
+#include "cores/speccy/speccy.h"
+#include <tinyfiledialogs.h>
 
-// #include <stdio.h>
+#include <stdio.h>
 
-// #define DATA                  0xFF
-// #define HEADER                0x00
-// #define HEADER_PULSES         8063
-// #define DATA_PULSES           3223
-// #define PILOT_TONE_T_STATES   2168
-// #define SYNC_PULSE_1_T_STATES  667
-// #define SYNC_PULSE_2_T_STATES  735
-// #define BIT_0_T_STATES         855
-// #define BIT_1_T_STATES        1710
-// #define PAUSE_DURATION        1000
+#define DATA                  0xFF
+#define HEADER                0x00
+#define HEADER_PULSES         8063
+#define DATA_PULSES           3223
+#define PILOT_TONE_T_STATES   2168
+#define SYNC_PULSE_1_T_STATES  667
+#define SYNC_PULSE_2_T_STATES  735
+#define BIT_0_T_STATES         855
+#define BIT_1_T_STATES        1710
+#define PAUSE_DURATION        1000
 
-// typedef enum {BLOCK_START, PILOT_TONE, SYNC_TONE, DATA_LOAD, PAUSE} TAP_LOADER_STATE;
+static u8 tape_read_u8(tape_t* tape){
+    if (tape->tape_pos < tape->tape_size)
+        return tape->tape_buf[tape->tape_pos++];
+    return 0;
+}
 
-// FILE* tape_file_ptr;
-// TAPE_TYPE tapeFormat = NO_TAPE;
+static u16 tape_read_u16(tape_t* tape){
+    u8 lsb = tape_read_u8(tape);
+    u8 msb = tape_read_u8(tape);
+    return (msb << 8) | lsb;
+}
 
-// TAP_LOADER_STATE tapLoaderState;
-// uint16_t blockLength;
-// uint8_t byte;
-// uint8_t bitIdx;
-// size_t pulses;
-// size_t pulse_duration;
-// size_t clock_counter;
-// bool polarity = false;
+static void tape_stop(tape_t* tape){
+    tape->format = NO_TAPE;
+}
 
-// void sendSignal(bool bit){
-//     ULA &= ~(0b10000);
-//     ULA |= bit << 4;
-// }
+static void send_signal(speccy_t* speccy, bool bit){
+    speccy->ula &= ~(0b10000);
+    speccy->ula |= bit << 4;
+}
 
-// void tapLoaderEmitter(){
-//     sendSignal(polarity);
-//     clock_counter++;
-//     if(clock_counter == pulse_duration){
-//         clock_counter = 0;
-//         pulses--;
-//         polarity = !polarity;
-//     }
-// }
+static void tape_load_emitter(speccy_t* speccy){
+    tape_t* tape = &speccy->tape;
+    send_signal(speccy, tape->polarity);
+    tape->clock_counter++;
+    if(tape->clock_counter == tape->pulse_duration){
+        tape->clock_counter = 0;
+        tape->pulses--;
+        tape->polarity ^= 1;
+    }
+}
 
-// void fetchBitFromTap(){
-//     bool bit = byte & 0x80;
-//     byte <<= 1;
-//     bitIdx++;
-//     if(bitIdx == 8){
-//         bitIdx = 0;
-//         blockLength--;
-//         if(blockLength != 0)
-//             fread(&byte, 1, 1, tape_file_ptr);
-//     }
-//     clock_counter = 0;
-//     pulses = 2;
-//     if(bit)
-//         pulse_duration = BIT_1_T_STATES;
-//     else
-//         pulse_duration = BIT_0_T_STATES;
-// }
+static void tape_fetch_bit(tape_t* tape){
+    bool bit = tape->byte & 0x80;
+    tape->byte <<= 1;
+    tape->bitIdx++;
+    if(tape->bitIdx == 8){
+        tape->bitIdx = 0;
+        tape->block_len--;
+        if(tape->block_len != 0)
+            tape->byte = tape_read_u8(tape);
+    }
+    tape->clock_counter = 0;
+    tape->pulses = 2;
+    if(bit)
+        tape->pulse_duration = BIT_1_T_STATES;
+    else
+        tape->pulse_duration = BIT_0_T_STATES;
+}
 
-// void trapTapeRoutine(){
-//     uint8_t blockType = cpu.AF_ >> 8;
-//     bool isLoad = cpu.AF_ & 1;
-//     uint16_t address = cpu.IX;
-//     uint16_t length = cpu.DE;
+void speccy_tape_trap_routine(speccy_t* speccy){
+    z80_t* cpu = &speccy->cpu;
+    tape_t* tape = &speccy->tape;
+    uint8_t blockType = cpu->AF_ >> 8;
+    bool isLoad = cpu->AF_ & 1;
+    uint16_t address = cpu->IX;
+    //uint16_t length = cpu->DE;
 
-//     fread(&blockLength, 2, 1, tape_file_ptr);
-//     uint8_t tapBlockType;
-//     fread(&tapBlockType, 1, 1, tape_file_ptr);
+    tape->block_len = tape_read_u16(tape);
+    u8 tap_block_type = tape_read_u8(tape);
 
-//     if(tapBlockType != blockType){
-//         stopTape();
-//         printf("different block type in instant loading!\n");
-//         return;
-//     }
+    if(tap_block_type != blockType){
+        tape_stop(tape);
+        printf("different block type in instant loading!\n");
+        return;
+    }
 
-//     if(isLoad){
-//         uint8_t checksum = blockType;
-//         for(size_t n_bytes = 0; n_bytes < blockLength - 2; n_bytes++){
-//             fread(&byte, 1, 1, tape_file_ptr);
-//             cpu.writeMemory(&cpu, address, byte);
-//             address = (address + 1) % MEMORY_SIZE;
-//             checksum ^= byte;
-//         }
-//         fread(&byte, 1, 1, tape_file_ptr);
-//         if(checksum != byte){
-//             printf("different checksum in instant loading!\n");
-//             return;
-//         }
-//     }
+    if(isLoad){
+        uint8_t checksum = blockType;
+        for(size_t n_bytes = 0; n_bytes < tape->block_len - 2; n_bytes++){
+            tape->byte = tape_read_u8(tape);
+            cpu->writeMemory(speccy, address, tape->byte);
+            address += 1;
+            checksum ^= tape->byte;
+        }
+        tape->byte = tape_read_u8(tape);
+        if(checksum != tape->byte){
+            printf("different checksum in instant loading!\n");
+            return;
+        }
+    }
 
+    if(tape->tape_pos == tape->tape_size){
+        tape_stop(tape);
+    }
 
-//     size_t actual = ftell(tape_file_ptr);
-//     size_t filesize;
-//     fseek(tape_file_ptr, 0, SEEK_END);
-//     filesize = ftell(tape_file_ptr);
-//     fseek(tape_file_ptr, actual, SEEK_SET);
+    cpu->AF |= 1;
+    cpu->PC = 0x05E2;
+}
 
-//     if(actual == filesize){
-//         stopTape();
-//         showTapeStoppedMsg();
-//     }
+void speccy_tape_step(speccy_t* speccy){
+    tape_t* tape = &speccy->tape;
+    switch(tape->format){
+        case TAP_TAPE_LOAD:
+        switch(tape->loader_state){
+            case BLOCK_START:
+            if(tape->tape_pos == tape->tape_size)
+                tape_stop(tape);
+            tape->block_len = tape_read_u16(tape);
+            tape->byte = tape_read_u8(tape);
+            tape->bitIdx = 0;
+            tape->clock_counter = 0;
+            tape->pulse_duration = PILOT_TONE_T_STATES;
+            tape->polarity = true;
+            if(tape->byte == DATA)
+                tape->pulses = DATA_PULSES;
+            if(tape->byte == HEADER)
+                tape->pulses = HEADER_PULSES;
+            tape->loader_state = PILOT_TONE;
+            break;
 
-//     cpu.AF |= 1;
-//     cpu.PC = 0x05E2;
-// }
+            case PILOT_TONE:
+            if(tape->pulses == 0){
+                tape->loader_state = SYNC_TONE;
+                tape->pulses = 2;
+            }
+            tape_load_emitter(speccy);
+            break;
 
-// void stopTape(){
-//     if(tapeFormat == RAW_TAPE_SAVE)
-//         fwrite(&byte, 1, 1, tape_file_ptr);
+            case SYNC_TONE:
+            if(tape->pulses == 2){
+                tape->pulse_duration = SYNC_PULSE_1_T_STATES;
+            }
+            if(tape->pulses == 1){
+                tape->pulse_duration = SYNC_PULSE_2_T_STATES;
+            }
+            if(tape->pulses == 0){
+                tape->loader_state = DATA_LOAD;
+                tape_fetch_bit(tape);
+            }
+            tape_load_emitter(speccy);
+            break;
 
-//     if(tape_file_ptr){
-//         fclose(tape_file_ptr);
-//         tapeFormat = NO_TAPE;
-//         tape_file_ptr = NULL;
-//     }
-// }
+            case DATA_LOAD:
+            if(tape->block_len == 0 && tape->pulses == 0){
+                tape->loader_state = PAUSE;
+                tape->pulses = 1;
+                tape->clock_counter = 0;
+                tape->pulse_duration = PAUSE_DURATION;
+            }
+            if(tape->block_len != 0 && tape->pulses == 0)
+                tape_fetch_bit(tape);
+            tape_load_emitter(speccy);
+            break;
 
-// void startSaveRawTape(const char* filename){
-//     stopTape();
-//     tape_file_ptr = fopen(filename, "wb");
-//     bitIdx = 0;
-//     tapeFormat = RAW_TAPE_SAVE;
-// }
+            case PAUSE:
+            if(tape->pulses == 0)
+                tape->loader_state = BLOCK_START;
+            tape_load_emitter(speccy);
+            break;
+        }
+        break;
 
-// void startLoadRawTape(const char* filename){
-//     stopTape();
-//     tape_file_ptr = fopen(filename, "rb");
-//     bitIdx = 0;
-//     fread(&byte, 1, 1, tape_file_ptr);
-//     tapeFormat = RAW_TAPE_LOAD;
-// }
-
-// void startLoadTapFile(const char* filename){
-//     stopTape();
-//     tape_file_ptr = fopen(filename, "rb");
-//     tapeFormat = TAP_TAPE_LOAD;
-//     tapLoaderState = BLOCK_START;
-// }
-
-// void instantLoadTapFile(const char* filename){
-//     startLoadTapFile(filename);
-//     tapeFormat = TAP_INSTANT_LOAD;
-// }
-
-// void emulateTape(){
-//     switch(tapeFormat){
-//         bool bit;
-
-//         case RAW_TAPE_SAVE:
-//         bit = ULA & 0b1000;
-//         byte <<= 1;
-//         byte |= bit;
-//         bitIdx++;
-//         if(bitIdx == 8){
-//             fwrite(&byte, 1, 1, tape_file_ptr);
-//             bitIdx = 0;
-//             byte = 0;
-//         }
-//         break;
-
-//         case RAW_TAPE_LOAD:
-//         bit = byte & 0x80;
-//         byte <<= 1;
-//         bitIdx++;
-//         if(bitIdx == 8){
-//             if(!fread(&byte, 1, 1, tape_file_ptr)){
-//                 stopTape();
-//                 showTapeStoppedMsg();
-//             }
-//             bitIdx = 0;
-//         }
-//         sendSignal(bit);
-//         break;
-
-//         case TAP_TAPE_LOAD:
-//         switch(tapLoaderState){
-//             case BLOCK_START:
-//             if(!fread(&blockLength, 2, 1, tape_file_ptr)){
-//                 stopTape();
-//                 showTapeStoppedMsg();
-//             }
-//             fread(&byte, 1, 1, tape_file_ptr);
-//             bitIdx = 0;
-//             clock_counter = 0;
-//             pulse_duration = PILOT_TONE_T_STATES;
-//             polarity = true;
-//             if(byte == DATA)
-//                 pulses = DATA_PULSES;
-//             if(byte == HEADER)
-//                 pulses = HEADER_PULSES;
-//             tapLoaderState = PILOT_TONE;
-//             break;
-
-//             case PILOT_TONE:
-//             if(pulses == 0){
-//                 tapLoaderState = SYNC_TONE;
-//                 pulses = 2;
-//             }
-//             tapLoaderEmitter();
-//             break;
-
-//             case SYNC_TONE:
-//             if(pulses == 2){
-//                 pulse_duration = SYNC_PULSE_2_T_STATES;
-//             }
-//             if(pulses == 1){
-//                 pulse_duration = SYNC_PULSE_2_T_STATES;
-//             }
-//             if(pulses == 0){
-//                 tapLoaderState = DATA_LOAD;
-//                 fetchBitFromTap();
-//             }
-//             tapLoaderEmitter();
-//             break;
-
-//             case DATA_LOAD:
-//             if(blockLength == 0 && pulses == 0){
-//                 tapLoaderState = PAUSE;
-//                 pulses = 1;
-//                 clock_counter = 0;
-//                 pulse_duration = PAUSE_DURATION;
-//             }
-//             if(blockLength != 0 && pulses == 0)
-//                 fetchBitFromTap();
-//             tapLoaderEmitter();
-//             break;
-
-//             case PAUSE:
-//             if(pulses == 0)
-//                 tapLoaderState = BLOCK_START;
-//             tapLoaderEmitter();
-//             break;
-//         }
-//         break;
-
-//         default:
-//         break;
-//     }
-// }
-
-// void showTapeStoppedMsg(){
-//     #ifdef __EMSCRIPTEN__
-//         return;
-//     #endif
-
-//     tinyfd_messageBox(
-//                 "ZX SPECTRUM TAPE",
-//                 "Tape has been stopped!",
-//                 "ok",
-//                 "info",
-//                 0
-//     );
-// }
+        default:
+        break;
+    }
+}

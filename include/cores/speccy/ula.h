@@ -14,15 +14,9 @@
 #define SCREEN_T_STATES 128
 #define RETRACE_T_STATES 48
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "types.h"
 
-extern bool flashRevert;
-
-uint16_t getScreenPixelIndex(uint8_t, uint8_t);
-int getPixelColor(bool, uint8_t, uint8_t);
-void getBorderColor(uint8_t*, uint8_t*, uint8_t*);
-void updateColorFlash();
-void emulateUlaRender(size_t clock);
+void speccy_ula_update_color_flash(bool* flash);
+void ula_render(size_t clock, bool flash, u8 ula, uint8_t* ram);
 
 #endif

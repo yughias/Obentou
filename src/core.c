@@ -41,6 +41,8 @@
     .sound_callback = core##_sound_callback, \
     .control_begin = CONTROL_##core##_BEGIN, \
     .control_end = CONTROL_##core##_END, \
+    .control_type_begin = CONTROL_TYPE_##core##_BEGIN, \
+    .control_type_end = CONTROL_TYPE_##core##_END, \
     .sound_channels = { core##_sound_channels }, \
     .widgets = { core##_widgets }, \
     .savestate = core##_savestate, \
@@ -211,7 +213,7 @@ void core_restart(core_ctx_t* ctx){
     sound_open(&audio_spec, core->sound_callback, ctx->emu);
     sound_set_push_rate(core->sound_push_rate < 0 ? push_rate : core->sound_push_rate);
 
-    controls_init(core->control_begin, core->control_end);
+    controls_init(core);
 
     if(first_loading && core->loadstate && state_get_autosave()){
         state_load_autosave(ctx);

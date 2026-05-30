@@ -1,24 +1,12 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "types.h"
 
-#define MEMORY_SIZE 0x10000
-#define RAM_ADDR    0x4000
+u8 speccy_read_mem(void*, u16);
+void speccy_write_mem(void*, u16, u8);
 
-extern uint8_t* MEMORY;
-
-uint8_t readMemory(void*, uint16_t);
-void    writeMemory(void*, uint16_t, uint8_t);
-
-uint8_t readIO(void*, uint16_t);
-void writeIO(void*, uint16_t, uint8_t);
-
-void initMemory();
-void freeMemory();
-
-void emulateMemoryContention(size_t, uint16_t);
-void ulaContention(size_t);
+u8 speccy_read_io(void*, u16);
+void speccy_write_io(void*, u16, u8);
 
 #endif

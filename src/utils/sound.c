@@ -83,7 +83,7 @@ static bool draw_wave(void* arg){
         else if (state == 2) {
             // STATE 2: OFF
             if (prev_val != local_min && val == local_min) {
-                trigger_idx = candidate_idx;
+                trigger_idx = (candidate_idx + i) / 2;
                 break;
             }
         }

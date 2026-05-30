@@ -5,6 +5,7 @@
 !src/
 !codegen/
 !ext/
+!assets/
 !*.dll
 !Makefile
 !config.rc

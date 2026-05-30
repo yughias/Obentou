@@ -1,5 +1,6 @@
 #include "utils/controls.h"
 #include "utils/argument.h"
+#include "core.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -19,6 +20,9 @@ static SDL_Scancode control_scancode_maps[CONTROL_COUNT];
 static SDL_GamepadButton control_gamepad_maps[CONTROL_COUNT];
 static control_t begin;
 static control_t end;
+static control_type_t begin_type;
+static control_type_t end_type;
+static control_type_t actual_type;
 
 static bool* pressed;
 static bool* prev_pressed;
@@ -41,89 +45,98 @@ static int gamepad_players[MAX_GAMEPADS];
 
 #define DECLARE_CONTROL_NAME2(system, name) [ CONTROL_ ## system ## _ ## name ] = #name,
 #define DECLARE_CONTROL_NAME3(system, name, val) [ CONTROL_ ## system ## _ ## name ] = #name,
-#define DECLARE_CONTROL_NAME(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_NAME3, DECLARE_CONTROL_NAME2)(__VA_ARGS__)
+#define DECLARE_CONTROL_NAME(...) GET_MACRO_ENUM(__VA_ARGS__, _, DECLARE_CONTROL_NAME3, DECLARE_CONTROL_NAME2)(__VA_ARGS__)
 
 const char controls_names[CONTROL_COUNT][32] = {
     [CONTROL_NONE] = "None",
     CONTROLS_ENUM(DECLARE_CONTROL_NAME)
 };
 
+#define DECLARE_CONTROL_TYPE_NAME2(system, name) [ CONTROL_TYPE_ ## system ## _ ## name ] = #name,
+#define DECLARE_CONTROL_TYPE_NAME3(system, name, val) [ CONTROL_TYPE_ ## system ## _ ## name ] = #name,
+#define DECLARE_CONTROL_TYPE_NAME4(system, name, val1, val2) [ CONTROL_TYPE_ ## system ## _ ## name ] = #name,
+#define DECLARE_CONTROL_TYPE_NAME(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_TYPE_NAME4, DECLARE_CONTROL_TYPE_NAME3, DECLARE_CONTROL_TYPE_NAME2)(__VA_ARGS__)
+
+const char controls_type_names[CONTROL_TYPE_COUNT][32] = {
+    CONTROLS_TYPE_ENUM(DECLARE_CONTROL_TYPE_NAME)
+};
+
 #define SCANCODES(XYZ) \
-XYZ(HOTKEY, PAUSE, "p"); \
-XYZ(HOTKEY, CMD_PAUSE, "left ctrl"); \
-XYZ(HOTKEY, RESET, "r"); \
-XYZ(HOTKEY, CMD_RESET, "left ctrl"); \
-XYZ(HOTKEY, TURBO, "tab"); \
-XYZ(HOTKEY, CMD_TURBO, "none"); \
-XYZ(HOTKEY, REWIND, "tab"); \
-XYZ(HOTKEY, CMD_REWIND, "left shift"); \
-XYZ(HOTKEY, OPEN, "o"); \
-XYZ(HOTKEY, CMD_OPEN, "left ctrl"); \
-XYZ(HOTKEY, SPEEDUP, "="); \
-XYZ(HOTKEY, CMD_SPEEDUP, "none"); \
-XYZ(HOTKEY, SAVESTATE, "s"); \
-XYZ(HOTKEY, CMD_SAVESTATE, "left ctrl"); \
-XYZ(HOTKEY, LOADSTATE, "l"); \
-XYZ(HOTKEY, CMD_LOADSTATE, "left ctrl"); \
-XYZ(HOTKEY, SLOWDOWN, "-"); \
-XYZ(HOTKEY, CMD_SLOWDOWN, "none"); \
-XYZ(HOTKEY, OPEN_BIOS, "b"); \
-XYZ(HOTKEY, CMD_OPEN_BIOS, "left ctrl"); \
-XYZ(HOTKEY, DEBUG_VIEW, "d"); \
-XYZ(HOTKEY, CMD_DEBUG_VIEW, "left ctrl"); \
+XYZ(HOTKEY, PAUSE, "p") \
+XYZ(HOTKEY, CMD_PAUSE, "left ctrl") \
+XYZ(HOTKEY, RESET, "r") \
+XYZ(HOTKEY, CMD_RESET, "left ctrl") \
+XYZ(HOTKEY, TURBO, "tab") \
+XYZ(HOTKEY, CMD_TURBO, "none") \
+XYZ(HOTKEY, REWIND, "tab") \
+XYZ(HOTKEY, CMD_REWIND, "left shift") \
+XYZ(HOTKEY, OPEN, "o") \
+XYZ(HOTKEY, CMD_OPEN, "left ctrl") \
+XYZ(HOTKEY, SPEEDUP, "=") \
+XYZ(HOTKEY, CMD_SPEEDUP, "none") \
+XYZ(HOTKEY, SAVESTATE, "s") \
+XYZ(HOTKEY, CMD_SAVESTATE, "left ctrl") \
+XYZ(HOTKEY, LOADSTATE, "l") \
+XYZ(HOTKEY, CMD_LOADSTATE, "left ctrl") \
+XYZ(HOTKEY, SLOWDOWN, "-") \
+XYZ(HOTKEY, CMD_SLOWDOWN, "none") \
+XYZ(HOTKEY, OPEN_BIOS, "b") \
+XYZ(HOTKEY, CMD_OPEN_BIOS, "left ctrl") \
+XYZ(HOTKEY, DEBUG_VIEW, "d") \
+XYZ(HOTKEY, CMD_DEBUG_VIEW, "left ctrl") \
 \
-XYZ(NES, UP, "up"); \
-XYZ(NES, DOWN, "down"); \
-XYZ(NES, LEFT, "left"); \
-XYZ(NES, RIGHT, "right"); \
-XYZ(NES, A, "x"); \
-XYZ(NES, B, "z"); \
-XYZ(NES, SELECT, "right shift"); \
-XYZ(NES, START, "return"); \
+XYZ(NES, UP, "up") \
+XYZ(NES, DOWN, "down") \
+XYZ(NES, LEFT, "left") \
+XYZ(NES, RIGHT, "right") \
+XYZ(NES, A, "x") \
+XYZ(NES, B, "z") \
+XYZ(NES, SELECT, "right shift") \
+XYZ(NES, START, "return") \
 \
-XYZ(WATARA, UP, "up"); \
-XYZ(WATARA, DOWN, "down"); \
-XYZ(WATARA, LEFT, "left"); \
-XYZ(WATARA, RIGHT, "right"); \
-XYZ(WATARA, A, "x"); \
-XYZ(WATARA, B, "z"); \
-XYZ(WATARA, SELECT, "right shift"); \
-XYZ(WATARA, START, "return"); \
+XYZ(WATARA, UP, "up") \
+XYZ(WATARA, DOWN, "down") \
+XYZ(WATARA, LEFT, "left") \
+XYZ(WATARA, RIGHT, "right") \
+XYZ(WATARA, A, "x") \
+XYZ(WATARA, B, "z") \
+XYZ(WATARA, SELECT, "right shift") \
+XYZ(WATARA, START, "return") \
 \
-XYZ(GBC, UP, "up"); \
-XYZ(GBC, DOWN, "down"); \
-XYZ(GBC, LEFT, "left"); \
-XYZ(GBC, RIGHT, "right"); \
-XYZ(GBC, A, "x"); \
-XYZ(GBC, B, "z"); \
-XYZ(GBC, SELECT, "right shift"); \
-XYZ(GBC, START, "return"); \
+XYZ(GBC, UP, "up") \
+XYZ(GBC, DOWN, "down") \
+XYZ(GBC, LEFT, "left") \
+XYZ(GBC, RIGHT, "right") \
+XYZ(GBC, A, "x") \
+XYZ(GBC, B, "z") \
+XYZ(GBC, SELECT, "right shift") \
+XYZ(GBC, START, "return") \
 \
-XYZ(PV1000, UP, "up"); \
-XYZ(PV1000, DOWN, "down"); \
-XYZ(PV1000, LEFT, "left"); \
-XYZ(PV1000, RIGHT, "right"); \
-XYZ(PV1000, BTN_1, "z"); \
-XYZ(PV1000, BTN_2, "x"); \
-XYZ(PV1000, SELECT, "right shift"); \
-XYZ(PV1000, START, "return"); \
+XYZ(PV1000, UP, "up") \
+XYZ(PV1000, DOWN, "down") \
+XYZ(PV1000, LEFT, "left") \
+XYZ(PV1000, RIGHT, "right") \
+XYZ(PV1000, BTN_1, "z") \
+XYZ(PV1000, BTN_2, "x") \
+XYZ(PV1000, SELECT, "right shift") \
+XYZ(PV1000, START, "return") \
 \
-XYZ(BYTEPUSHER, 1, "1"); \
-XYZ(BYTEPUSHER, 2, "2"); \
-XYZ(BYTEPUSHER, 3, "3"); \
-XYZ(BYTEPUSHER, C, "4"); \
-XYZ(BYTEPUSHER, 4, "q"); \
-XYZ(BYTEPUSHER, 5, "w"); \
-XYZ(BYTEPUSHER, 6, "e"); \
-XYZ(BYTEPUSHER, D, "r"); \
-XYZ(BYTEPUSHER, 7, "a"); \
-XYZ(BYTEPUSHER, 8, "s"); \
-XYZ(BYTEPUSHER, 9, "d"); \
-XYZ(BYTEPUSHER, E, "f"); \
-XYZ(BYTEPUSHER, A, "z"); \
-XYZ(BYTEPUSHER, 0, "x"); \
-XYZ(BYTEPUSHER, B, "c"); \
-XYZ(BYTEPUSHER, F, "v"); \
+XYZ(BYTEPUSHER, 1, "1") \
+XYZ(BYTEPUSHER, 2, "2") \
+XYZ(BYTEPUSHER, 3, "3") \
+XYZ(BYTEPUSHER, C, "4") \
+XYZ(BYTEPUSHER, 4, "q") \
+XYZ(BYTEPUSHER, 5, "w") \
+XYZ(BYTEPUSHER, 6, "e") \
+XYZ(BYTEPUSHER, D, "r") \
+XYZ(BYTEPUSHER, 7, "a") \
+XYZ(BYTEPUSHER, 8, "s") \
+XYZ(BYTEPUSHER, 9, "d") \
+XYZ(BYTEPUSHER, E, "f") \
+XYZ(BYTEPUSHER, A, "z") \
+XYZ(BYTEPUSHER, 0, "x") \
+XYZ(BYTEPUSHER, B, "c") \
+XYZ(BYTEPUSHER, F, "v") \
 \
 XYZ(COLECO, UP, "up") \
 XYZ(COLECO, DOWN, "down") \
@@ -146,209 +159,256 @@ XYZ(COLECO, PURPLE, "s") \
 XYZ(COLECO, BTN_1, "z") \
 XYZ(COLECO, BTN_2, "x") \
 \
-XYZ(CHIP8, 1, "1"); \
-XYZ(CHIP8, 2, "2"); \
-XYZ(CHIP8, 3, "3"); \
-XYZ(CHIP8, C, "4"); \
-XYZ(CHIP8, 4, "q"); \
-XYZ(CHIP8, 5, "w"); \
-XYZ(CHIP8, 6, "e"); \
-XYZ(CHIP8, D, "r"); \
-XYZ(CHIP8, 7, "a"); \
-XYZ(CHIP8, 8, "s"); \
-XYZ(CHIP8, 9, "d"); \
-XYZ(CHIP8, E, "f"); \
-XYZ(CHIP8, A, "z"); \
-XYZ(CHIP8, 0, "x"); \
-XYZ(CHIP8, B, "c"); \
-XYZ(CHIP8, F, "v"); \
+XYZ(CHIP8, 1, "1") \
+XYZ(CHIP8, 2, "2") \
+XYZ(CHIP8, 3, "3") \
+XYZ(CHIP8, C, "4") \
+XYZ(CHIP8, 4, "q") \
+XYZ(CHIP8, 5, "w") \
+XYZ(CHIP8, 6, "e") \
+XYZ(CHIP8, D, "r") \
+XYZ(CHIP8, 7, "a") \
+XYZ(CHIP8, 8, "s") \
+XYZ(CHIP8, 9, "d") \
+XYZ(CHIP8, E, "f") \
+XYZ(CHIP8, A, "z") \
+XYZ(CHIP8, 0, "x") \
+XYZ(CHIP8, B, "c") \
+XYZ(CHIP8, F, "v") \
 \
-XYZ(PACMAN, UP, "up"); \
-XYZ(PACMAN, DOWN, "down"); \
-XYZ(PACMAN, LEFT, "left"); \
-XYZ(PACMAN, RIGHT, "right"); \
-XYZ(PACMAN, BUTTON, "z"); \
-XYZ(PACMAN, COIN, "right shift"); \
-XYZ(PACMAN, START1, "1"); \
-XYZ(PACMAN, START2, "2"); \
+XYZ(PACMAN, UP, "up") \
+XYZ(PACMAN, DOWN, "down") \
+XYZ(PACMAN, LEFT, "left") \
+XYZ(PACMAN, RIGHT, "right") \
+XYZ(PACMAN, BUTTON, "z") \
+XYZ(PACMAN, COIN, "right shift") \
+XYZ(PACMAN, START1, "1") \
+XYZ(PACMAN, START2, "2") \
 \
-XYZ(SPACEINVADERS, FIRE, "z"); \
-XYZ(SPACEINVADERS, LEFT, "left"); \
-XYZ(SPACEINVADERS, RIGHT, "right"); \
-XYZ(SPACEINVADERS, COIN, "right shift"); \
-XYZ(SPACEINVADERS, START, "return"); \
+XYZ(SPACEINVADERS, FIRE, "z") \
+XYZ(SPACEINVADERS, LEFT, "left") \
+XYZ(SPACEINVADERS, RIGHT, "right") \
+XYZ(SPACEINVADERS, COIN, "right shift") \
+XYZ(SPACEINVADERS, START, "return") \
 \
-XYZ(PCE, UP, "up"); \
-XYZ(PCE, DOWN, "down"); \
-XYZ(PCE, LEFT, "left"); \
-XYZ(PCE, RIGHT, "right"); \
-XYZ(PCE, BTN_2, "z"); \
-XYZ(PCE, BTN_1, "x"); \
-XYZ(PCE, SELECT, "right shift"); \
-XYZ(PCE, START, "return"); \
+XYZ(PCE, UP, "up") \
+XYZ(PCE, DOWN, "down") \
+XYZ(PCE, LEFT, "left") \
+XYZ(PCE, RIGHT, "right") \
+XYZ(PCE, BTN_2, "z") \
+XYZ(PCE, BTN_1, "x") \
+XYZ(PCE, SELECT, "right shift") \
+XYZ(PCE, START, "return") \
 \
-XYZ(SEGA, UP, "up"); \
-XYZ(SEGA, DOWN, "down"); \
-XYZ(SEGA, LEFT, "left"); \
-XYZ(SEGA, RIGHT, "right"); \
-XYZ(SEGA, BTN_1, "z"); \
-XYZ(SEGA, BTN_2, "x"); \
-XYZ(SEGA, PAUSE, "f1"); \
-XYZ(SEGA, GG_START, "return"); \
+XYZ(SEGA, UP, "up") \
+XYZ(SEGA, DOWN, "down") \
+XYZ(SEGA, LEFT, "left") \
+XYZ(SEGA, RIGHT, "right") \
+XYZ(SEGA, BTN_1, "z") \
+XYZ(SEGA, BTN_2, "x") \
+XYZ(SEGA, PAUSE, "f1") \
+XYZ(SEGA, GG_START, "return") \
 \
-XYZ(SEGA, 1, "1"); \
-XYZ(SEGA, Q, "q"); \
-XYZ(SEGA, A, "a"); \
-XYZ(SEGA, Z, "z"); \
-XYZ(SEGA, ED, "right ctrl"); \
-XYZ(SEGA, COMMA, ","); \
-XYZ(SEGA, K, "k"); \
-XYZ(SEGA, I, "i"); \
-XYZ(SEGA, 8, "8"); \
-XYZ(SEGA, 2, "2"); \
-XYZ(SEGA, W, "w"); \
-XYZ(SEGA, S, "s"); \
-XYZ(SEGA, X, "x"); \
-XYZ(SEGA, SPC, "space"); \
-XYZ(SEGA, DOT, "."); \
-XYZ(SEGA, L, "l"); \
-XYZ(SEGA, O, "o"); \
-XYZ(SEGA, 9, "9"); \
-XYZ(SEGA, 3, "3"); \
-XYZ(SEGA, E, "e"); \
-XYZ(SEGA, D, "d"); \
-XYZ(SEGA, C, "c"); \
-XYZ(SEGA, HC, "delete"); \
-XYZ(SEGA, SLASH, "/"); \
-XYZ(SEGA, SEMICOLON, ";"); \
-XYZ(SEGA, P, "p"); \
-XYZ(SEGA, 0, "0"); \
-XYZ(SEGA, 4, "4"); \
-XYZ(SEGA, R, "r"); \
-XYZ(SEGA, F, "f"); \
-XYZ(SEGA, V, "v"); \
-XYZ(SEGA, ID, "backspace"); \
-XYZ(SEGA, PI, "right alt"); \
-XYZ(SEGA, COLON, "\'"); \
-XYZ(SEGA, AT, "\\"); \
-XYZ(SEGA, MINUS, "-"); \
-XYZ(SEGA, 5, "5"); \
-XYZ(SEGA, T, "t"); \
-XYZ(SEGA, G, "g"); \
-XYZ(SEGA, B, "b"); \
-XYZ(SEGA, DA, "down"); \
-XYZ(SEGA, CLOSE_BRACKET, "]"); \
-XYZ(SEGA, OPEN_BRACKET, "["); \
-XYZ(SEGA, CARET, "="); \
-XYZ(SEGA, 6, "6"); \
-XYZ(SEGA, Y, "y"); \
-XYZ(SEGA, H, "h"); \
-XYZ(SEGA, N, "n"); \
-XYZ(SEGA, LA, "left"); \
-XYZ(SEGA, CR, "return"); \
-XYZ(SEGA, YEN, "`"); \
-XYZ(SEGA, FNC, "tab"); \
-XYZ(SEGA, 7, "7"); \
-XYZ(SEGA, U, "u"); \
-XYZ(SEGA, J, "j"); \
-XYZ(SEGA, M, "m"); \
-XYZ(SEGA, RA, "right"); \
-XYZ(SEGA, UA, "up"); \
-XYZ(SEGA, BRK, "right shift"); \
-XYZ(SEGA, GRP, "left alt"); \
-XYZ(SEGA, CTL, "left ctrl"); \
-XYZ(SEGA, SHF, "left shift");
+XYZ(SEGA, 1, "1") \
+XYZ(SEGA, Q, "q") \
+XYZ(SEGA, A, "a") \
+XYZ(SEGA, Z, "z") \
+XYZ(SEGA, ED, "right ctrl") \
+XYZ(SEGA, COMMA, ",") \
+XYZ(SEGA, K, "k") \
+XYZ(SEGA, I, "i") \
+XYZ(SEGA, 8, "8") \
+XYZ(SEGA, 2, "2") \
+XYZ(SEGA, W, "w") \
+XYZ(SEGA, S, "s") \
+XYZ(SEGA, X, "x") \
+XYZ(SEGA, SPC, "space") \
+XYZ(SEGA, DOT, ".") \
+XYZ(SEGA, L, "l") \
+XYZ(SEGA, O, "o") \
+XYZ(SEGA, 9, "9") \
+XYZ(SEGA, 3, "3") \
+XYZ(SEGA, E, "e") \
+XYZ(SEGA, D, "d") \
+XYZ(SEGA, C, "c") \
+XYZ(SEGA, HC, "delete") \
+XYZ(SEGA, SLASH, "/") \
+XYZ(SEGA, SEMICOLON, "") \
+XYZ(SEGA, P, "p") \
+XYZ(SEGA, 0, "0") \
+XYZ(SEGA, 4, "4") \
+XYZ(SEGA, R, "r") \
+XYZ(SEGA, F, "f") \
+XYZ(SEGA, V, "v") \
+XYZ(SEGA, ID, "backspace") \
+XYZ(SEGA, PI, "right alt") \
+XYZ(SEGA, COLON, "\'") \
+XYZ(SEGA, AT, "\\") \
+XYZ(SEGA, MINUS, "-") \
+XYZ(SEGA, 5, "5") \
+XYZ(SEGA, T, "t") \
+XYZ(SEGA, G, "g") \
+XYZ(SEGA, B, "b") \
+XYZ(SEGA, DA, "down") \
+XYZ(SEGA, CLOSE_BRACKET, "]") \
+XYZ(SEGA, OPEN_BRACKET, "[") \
+XYZ(SEGA, CARET, "=") \
+XYZ(SEGA, 6, "6") \
+XYZ(SEGA, Y, "y") \
+XYZ(SEGA, H, "h") \
+XYZ(SEGA, N, "n") \
+XYZ(SEGA, LA, "left") \
+XYZ(SEGA, CR, "return") \
+XYZ(SEGA, YEN, "`") \
+XYZ(SEGA, FNC, "tab") \
+XYZ(SEGA, 7, "7") \
+XYZ(SEGA, U, "u") \
+XYZ(SEGA, J, "j") \
+XYZ(SEGA, M, "m") \
+XYZ(SEGA, RA, "right") \
+XYZ(SEGA, UA, "up") \
+XYZ(SEGA, BRK, "right shift") \
+XYZ(SEGA, GRP, "left alt") \
+XYZ(SEGA, CTL, "left ctrl") \
+XYZ(SEGA, SHF, "left shift") \
+\
+XYZ(SPECCY, UP, "up") \
+XYZ(SPECCY, DOWN, "down") \
+XYZ(SPECCY, LEFT, "left") \
+XYZ(SPECCY, RIGHT, "right") \
+XYZ(SPECCY, JOY_BTN, "x") \
+XYZ(SPECCY, SHIFT, "left shift") \
+XYZ(SPECCY, Z, "z") \
+XYZ(SPECCY, X, "x") \
+XYZ(SPECCY, C, "c") \
+XYZ(SPECCY, V, "v") \
+XYZ(SPECCY, A, "a") \
+XYZ(SPECCY, S, "s") \
+XYZ(SPECCY, D, "d") \
+XYZ(SPECCY, F, "f") \
+XYZ(SPECCY, G, "g") \
+XYZ(SPECCY, Q, "q") \
+XYZ(SPECCY, W, "w") \
+XYZ(SPECCY, E, "e") \
+XYZ(SPECCY, R, "r") \
+XYZ(SPECCY, T, "t") \
+XYZ(SPECCY, 1, "1") \
+XYZ(SPECCY, 2, "2") \
+XYZ(SPECCY, 3, "3") \
+XYZ(SPECCY, 4, "4") \
+XYZ(SPECCY, 5, "5") \
+XYZ(SPECCY, 0, "0") \
+XYZ(SPECCY, 9, "9") \
+XYZ(SPECCY, 8, "8") \
+XYZ(SPECCY, 7, "7") \
+XYZ(SPECCY, 6, "6") \
+XYZ(SPECCY, P, "p") \
+XYZ(SPECCY, O, "o") \
+XYZ(SPECCY, I, "i") \
+XYZ(SPECCY, U, "u") \
+XYZ(SPECCY, Y, "y") \
+XYZ(SPECCY, ENTER, "return") \
+XYZ(SPECCY, L, "l") \
+XYZ(SPECCY, K, "k") \
+XYZ(SPECCY, J, "j") \
+XYZ(SPECCY, H, "h") \
+XYZ(SPECCY, SPACE, "space") \
+XYZ(SPECCY, SYM_SHIFT, "left alt") \
+XYZ(SPECCY, M, "m") \
+XYZ(SPECCY, N, "n") \
+XYZ(SPECCY, B, "b") \
+XYZ(SPECCY, DELETE, "backspace")
 
 #define GAMEPADS(XYZ) \
-XYZ(HOTKEY, PAUSE, "none"); \
-XYZ(HOTKEY, RESET, "none"); \
-XYZ(HOTKEY, TURBO, "none"); \
-XYZ(HOTKEY, REWIND, "none"); \
-XYZ(HOTKEY, OPEN,  "none"); \
-XYZ(HOTKEY, SPEEDUP, "none"); \
-XYZ(HOTKEY, SLOWDOWN, "none"); \
-XYZ(HOTKEY, OPEN_BIOS, "none"); \
-XYZ(HOTKEY, LOADSTATE, "none"); \
-XYZ(HOTKEY, SAVESTATE, "none"); \
+XYZ(HOTKEY, PAUSE, "none") \
+XYZ(HOTKEY, RESET, "none") \
+XYZ(HOTKEY, TURBO, "none") \
+XYZ(HOTKEY, REWIND, "none") \
+XYZ(HOTKEY, OPEN,  "none") \
+XYZ(HOTKEY, SPEEDUP, "none") \
+XYZ(HOTKEY, SLOWDOWN, "none") \
+XYZ(HOTKEY, OPEN_BIOS, "none") \
+XYZ(HOTKEY, LOADSTATE, "none") \
+XYZ(HOTKEY, SAVESTATE, "none") \
 \
-XYZ(GBC, A, "b"); \
-XYZ(GBC, B, "a"); \
-XYZ(GBC, SELECT, "back"); \
-XYZ(GBC, START, "start"); \
-XYZ(GBC, UP, "dpup"); \
-XYZ(GBC, DOWN, "dpdown"); \
-XYZ(GBC, LEFT, "dpleft"); \
-XYZ(GBC, RIGHT, "dpright"); \
+XYZ(GBC, A, "b") \
+XYZ(GBC, B, "a") \
+XYZ(GBC, SELECT, "back") \
+XYZ(GBC, START, "start") \
+XYZ(GBC, UP, "dpup") \
+XYZ(GBC, DOWN, "dpdown") \
+XYZ(GBC, LEFT, "dpleft") \
+XYZ(GBC, RIGHT, "dpright") \
 \
-XYZ(PV1000, BTN_1, "a"); \
-XYZ(PV1000, BTN_2, "b"); \
-XYZ(PV1000, SELECT, "back"); \
-XYZ(PV1000, START, "start"); \
-XYZ(PV1000, UP, "dpup"); \
-XYZ(PV1000, DOWN, "dpdown"); \
-XYZ(PV1000, LEFT, "dpleft"); \
-XYZ(PV1000, RIGHT, "dpright"); \
+XYZ(PV1000, BTN_1, "a") \
+XYZ(PV1000, BTN_2, "b") \
+XYZ(PV1000, SELECT, "back") \
+XYZ(PV1000, START, "start") \
+XYZ(PV1000, UP, "dpup") \
+XYZ(PV1000, DOWN, "dpdown") \
+XYZ(PV1000, LEFT, "dpleft") \
+XYZ(PV1000, RIGHT, "dpright") \
 \
-XYZ(WATARA, A, "b"); \
-XYZ(WATARA, B, "a"); \
-XYZ(WATARA, SELECT, "back"); \
-XYZ(WATARA, START, "start"); \
-XYZ(WATARA, UP, "dpup"); \
-XYZ(WATARA, DOWN, "dpdown"); \
-XYZ(WATARA, LEFT, "dpleft"); \
-XYZ(WATARA, RIGHT, "dpright"); \
+XYZ(WATARA, A, "b") \
+XYZ(WATARA, B, "a") \
+XYZ(WATARA, SELECT, "back") \
+XYZ(WATARA, START, "start") \
+XYZ(WATARA, UP, "dpup") \
+XYZ(WATARA, DOWN, "dpdown") \
+XYZ(WATARA, LEFT, "dpleft") \
+XYZ(WATARA, RIGHT, "dpright") \
 \
-XYZ(NES, A, "b"); \
-XYZ(NES, B, "a"); \
-XYZ(NES, SELECT, "back"); \
-XYZ(NES, START, "start"); \
-XYZ(NES, UP, "dpup"); \
-XYZ(NES, DOWN, "dpdown"); \
-XYZ(NES, LEFT, "dpleft"); \
-XYZ(NES, RIGHT, "dpright"); \
+XYZ(NES, A, "b") \
+XYZ(NES, B, "a") \
+XYZ(NES, SELECT, "back") \
+XYZ(NES, START, "start") \
+XYZ(NES, UP, "dpup") \
+XYZ(NES, DOWN, "dpdown") \
+XYZ(NES, LEFT, "dpleft") \
+XYZ(NES, RIGHT, "dpright") \
 \
-XYZ(PCE, BTN_2, "a"); \
-XYZ(PCE, BTN_1, "b"); \
-XYZ(PCE, SELECT, "back"); \
-XYZ(PCE, START, "start"); \
-XYZ(PCE, UP, "dpup"); \
-XYZ(PCE, DOWN, "dpdown"); \
-XYZ(PCE, LEFT, "dpleft"); \
-XYZ(PCE, RIGHT, "dpright"); \
+XYZ(PCE, BTN_2, "a") \
+XYZ(PCE, BTN_1, "b") \
+XYZ(PCE, SELECT, "back") \
+XYZ(PCE, START, "start") \
+XYZ(PCE, UP, "dpup") \
+XYZ(PCE, DOWN, "dpdown") \
+XYZ(PCE, LEFT, "dpleft") \
+XYZ(PCE, RIGHT, "dpright") \
 \
-XYZ(SEGA, UP, "dpup"); \
-XYZ(SEGA, DOWN, "dpdown"); \
-XYZ(SEGA, LEFT, "dpleft"); \
-XYZ(SEGA, RIGHT, "dpright"); \
-XYZ(SEGA, BTN_1, "a"); \
-XYZ(SEGA, BTN_2, "b"); \
-XYZ(SEGA, PAUSE, "none"); \
-XYZ(SEGA, GG_START, "start"); \
+XYZ(SEGA, UP, "dpup") \
+XYZ(SEGA, DOWN, "dpdown") \
+XYZ(SEGA, LEFT, "dpleft") \
+XYZ(SEGA, RIGHT, "dpright") \
+XYZ(SEGA, BTN_1, "a") \
+XYZ(SEGA, BTN_2, "b") \
+XYZ(SEGA, PAUSE, "none") \
+XYZ(SEGA, GG_START, "start") \
 \
-XYZ(COLECO, UP, "dpup"); \
-XYZ(COLECO, DOWN, "dpdown"); \
-XYZ(COLECO, LEFT, "dpleft"); \
-XYZ(COLECO, RIGHT, "dpright"); \
-XYZ(COLECO, BTN_1, "a"); \
-XYZ(COLECO, BTN_2, "b"); \
-XYZ(COLECO, 1, "start"); \
-XYZ(COLECO, 2, "back"); \
-XYZ(COLECO, ASTERISK, "x"); \
-XYZ(COLECO, HASHTAG, "z"); \
+XYZ(COLECO, UP, "dpup") \
+XYZ(COLECO, DOWN, "dpdown") \
+XYZ(COLECO, LEFT, "dpleft") \
+XYZ(COLECO, RIGHT, "dpright") \
+XYZ(COLECO, BTN_1, "a") \
+XYZ(COLECO, BTN_2, "b") \
+XYZ(COLECO, 1, "start") \
+XYZ(COLECO, 2, "back") \
+XYZ(COLECO, ASTERISK, "x") \
+XYZ(COLECO, HASHTAG, "z") \
 \
-XYZ(PACMAN, UP, "dpup"); \
-XYZ(PACMAN, DOWN, "dpdown"); \
-XYZ(PACMAN, LEFT, "dpleft"); \
-XYZ(PACMAN, RIGHT, "dpright"); \
-XYZ(PACMAN, BUTTON, "b"); \
-XYZ(PACMAN, COIN, "back"); \
-XYZ(PACMAN, START1, "start"); \
+XYZ(PACMAN, UP, "dpup") \
+XYZ(PACMAN, DOWN, "dpdown") \
+XYZ(PACMAN, LEFT, "dpleft") \
+XYZ(PACMAN, RIGHT, "dpright") \
+XYZ(PACMAN, BUTTON, "b") \
+XYZ(PACMAN, COIN, "back") \
+XYZ(PACMAN, START1, "start") \
 \
-XYZ(SPACEINVADERS, FIRE, "b"); \
-XYZ(SPACEINVADERS, LEFT, "dpleft"); \
-XYZ(SPACEINVADERS, RIGHT, "dpright"); \
-XYZ(SPACEINVADERS, COIN, "back"); \
-XYZ(SPACEINVADERS, START, "start"); \
+XYZ(SPACEINVADERS, FIRE, "b") \
+XYZ(SPACEINVADERS, LEFT, "dpleft") \
+XYZ(SPACEINVADERS, RIGHT, "dpright") \
+XYZ(SPACEINVADERS, COIN, "back") \
+XYZ(SPACEINVADERS, START, "start") \
 
 #define LOAD_SCANCODE(console, button, default) { \
     char name[64] = ""; \
@@ -421,10 +481,12 @@ void controls_save_maps(){
     GAMEPADS(SAVE_GAMEPAD);
 }
 
-void controls_init(control_t begin_, control_t end_) {
+void controls_init(const core_t* core) {
     controls_free();
-    begin = begin_;
-    end = end_;
+    begin = core->control_begin;
+    end = core->control_end;
+    begin_type = core->control_type_begin;
+    end_type = core->control_type_end;
     pressed = malloc(ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
     prev_pressed = malloc(ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
     memset(pressed, 0, ACTIVE_BUTTONS * sizeof(bool) * MAX_PLAYERS);
@@ -432,7 +494,7 @@ void controls_init(control_t begin_, control_t end_) {
     memset(gamepads, 0, MAX_GAMEPADS * sizeof(SDL_Gamepad*));
 
     disable_illegal = ini_getbool("GENERAL", "DISABLE_ILLEGAL_INPUT", true, argument_get_ini_path());
-
+    actual_type = ini_getl(core->name, "CONTROL_TYPE", begin_type, argument_get_ini_path());
     keyboard_player = ini_getl("GENERAL", "KEYBOARD_PLAYER", 0, argument_get_ini_path());
 
     for(int i = 0; i < MAX_GAMEPADS; i++){
@@ -667,4 +729,14 @@ void controls_set_gamepad_player(int gamepad_idx, int player){
 
 int controls_get_gamepad_player(int gamepad_idx){
     return gamepad_players[gamepad_idx];
+}
+
+control_type_t controls_get_actual_type(){
+    return actual_type;
+}
+
+void controls_set_type(const char* name, control_type_t type){
+    if(type >= begin_type && type <= end_type)
+        actual_type = type;
+    ini_putl(name, "CONTROL_TYPE", type, argument_get_ini_path());
 }

@@ -3,7 +3,7 @@ OBJ := $(patsubst %.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
 CC := gcc
-CFLAGS_COMMON := -Iinclude -Iext/include -O3
+CFLAGS_COMMON := -Iconverted_assets -Iinclude -Iext/include -O3
 DEBUG_FLAGS := -pg -no-pie
 
 OBJ_LIB := $(filter-out obj/src/SDL_MAINLOOP.o, $(OBJ))
@@ -14,6 +14,9 @@ TEST_UTIL_SRC := $(filter-out $(TEST_SRC), $(shell find test/src test/ext -name 
 OBJ_TEST      := $(patsubst %.c, obj/%.o, $(TEST_SRC))
 OBJ_TEST_UTIL := $(patsubst %.c, obj/%.o, $(TEST_UTIL_SRC))
 DEP_TEST      := $(OBJ_TEST:.o=.d) $(OBJ_TEST_UTIL:.o=.d)
+
+RAW_ASSETS        := $(shell find assets -type f 2>/dev/null)
+GENERATED_HEADERS := $(patsubst assets/%, converted_assets/%.h, $(RAW_ASSETS))
 
 ifeq ($(OS),Windows_NT)
     EXE_EXT         := .exe
@@ -54,6 +57,8 @@ config.ini: base_config.ini
 $(EXE): $(OBJ) $(RES_OBJ)
 	$(CC) $(OBJ) $(RES_OBJ) $(CFLAGS) $(LIBS) -o $(EXE)
 
+$(OBJ) $(OBJ_TEST) $(OBJ_TEST_UTIL) obj/test_build/SDL_MAINLOOP.o: $(GENERATED_HEADERS)
+
 obj/test_build/SDL_MAINLOOP.o: src/SDL_MAINLOOP.c
 	@mkdir -p $(dir $@)
 	$(CC) -c -MMD -MP -DTEST $(CFLAGS) $< -o $@
@@ -73,13 +78,17 @@ obj/%.o: %.c
 app.res: config.rc logo.ico
 	windres config.rc -O coff -o app.res
 
+converted_assets/%.h: assets/%
+	@mkdir -p $(dir $@)
+	xxd -i $< > $@
+    
 nes-mappers:
 	gcc codegen/nes/mappers.c -o nes-mappers.exe
 	./nes-mappers.exe
 	rm nes-mappers.exe
 
-emcc:
-	emcc -Iinclude -Iext/include $(SRC) -O3 -flto=full \
+emcc: $(GENERATED_HEADERS)
+	emcc -Iconverted_assets -Iinclude -Iext/include $(SRC) -O3 -flto=full \
 	-sUSE_SDL=3 \
 	-sINVOKE_RUN=0 \
 	-sSTACK_SIZE=2MB \
@@ -93,7 +102,7 @@ emcc:
 	cp logo.ico website/favicon.ico
 
 clean:
-	rm -rf obj obentou obentou.exe app.res config.ini ./test_*$(EXE_EXT)
+	rm -rf obj obentou obentou.exe app.res config.ini ./test_*$(EXE_EXT) converted_assets
 
 loc:
 	find src -name \*.c | xargs wc -l

@@ -219,15 +219,91 @@
     XY(SPACEINVADERS, COIN) \
     XY(SPACEINVADERS, START, END) \
     \
-    XY(SPECCY, STUB, BEGIN) \
-    XY(SPECCY, STUB1) \
-    XY(SPECCY, STUB2, END)
+    XY(SPECCY, UP, BEGIN) \
+    XY(SPECCY, DOWN) \
+    XY(SPECCY, LEFT) \
+    XY(SPECCY, RIGHT) \
+    XY(SPECCY, JOY_BTN) \
+    XY(SPECCY, SHIFT) \
+    XY(SPECCY, Z) \
+    XY(SPECCY, X) \
+    XY(SPECCY, C) \
+    XY(SPECCY, V) \
+    XY(SPECCY, A) \
+    XY(SPECCY, S) \
+    XY(SPECCY, D) \
+    XY(SPECCY, F) \
+    XY(SPECCY, G) \
+    XY(SPECCY, Q) \
+    XY(SPECCY, W) \
+    XY(SPECCY, E) \
+    XY(SPECCY, R) \
+    XY(SPECCY, T) \
+    XY(SPECCY, 1) \
+    XY(SPECCY, 2) \
+    XY(SPECCY, 3) \
+    XY(SPECCY, 4) \
+    XY(SPECCY, 5) \
+    XY(SPECCY, 0) \
+    XY(SPECCY, 9) \
+    XY(SPECCY, 8) \
+    XY(SPECCY, 7) \
+    XY(SPECCY, 6) \
+    XY(SPECCY, P) \
+    XY(SPECCY, O) \
+    XY(SPECCY, I) \
+    XY(SPECCY, U) \
+    XY(SPECCY, Y) \
+    XY(SPECCY, ENTER) \
+    XY(SPECCY, L) \
+    XY(SPECCY, K) \
+    XY(SPECCY, J) \
+    XY(SPECCY, H) \
+    XY(SPECCY, SPACE) \
+    XY(SPECCY, SYM_SHIFT) \
+    XY(SPECCY, M) \
+    XY(SPECCY, N) \
+    XY(SPECCY, B) \
+    XY(SPECCY, DELETE, END)
 
-#define GET_MACRO_ENUM(_1, _2, _3, NAME, ...) NAME
+#define CONTROLS_TYPE_ENUM(XY) \
+    XY(GBC, DEFAULT, BEGIN, END) \
+    \
+    XY(NES, DEFAULT, BEGIN, END) \
+    \
+    XY(PV1000, DEFAULT, BEGIN, END) \
+    \
+    XY(WATARA, DEFAULT, BEGIN, END) \
+    \
+    XY(PCE, TWO_BUTTONS_CONTROLLER, BEGIN, END) \
+    \
+    XY(SEGA, DEFAULT, BEGIN, END) \
+    \
+    XY(COLECO, DEFAULT, BEGIN, END) \
+    \
+    XY(BYTEPUSHER, DEFAULT, BEGIN, END) \
+    \
+    XY(CHIP8, DEFAULT, BEGIN, END) \
+    \
+    XY(PACMAN, DEFAULT, BEGIN, END) \
+    \
+    XY(SPACEINVADERS, DEFAULT, BEGIN, END) \
+    \
+    XY(SPECCY, KEYBOARD, BEGIN) \
+    XY(SPECCY, KEYBOARD_WITH_CURSOR) \
+    XY(SPECCY, KEYBOARD_WITH_KEMPSTON, END)
+
+    
+#define GET_MACRO_ENUM(_1, _2, _3, _4, NAME, ...) NAME
 
 #define DECLARE_CONTROL_ENUM2(system, name) CONTROL_ ## system ## _ ## name,
 #define DECLARE_CONTROL_ENUM3(system, name, val) DECLARE_CONTROL_ENUM2(system, name) CONTROL_ ## system ## _ ## val = CONTROL_ ## system ## _ ## name,
-#define DECLARE_CONTROL_ENUM(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_ENUM3, DECLARE_CONTROL_ENUM2)(__VA_ARGS__)
+#define DECLARE_CONTROL_ENUM(...) GET_MACRO_ENUM(__VA_ARGS__, _, DECLARE_CONTROL_ENUM3, DECLARE_CONTROL_ENUM2)(__VA_ARGS__)
+
+#define DECLARE_CONTROL_TYPE_ENUM2(system, name) CONTROL_TYPE_ ## system ## _ ## name,
+#define DECLARE_CONTROL_TYPE_ENUM3(system, name, val) DECLARE_CONTROL_TYPE_ENUM2(system, name) CONTROL_TYPE_ ## system ## _ ## val = CONTROL_TYPE_ ## system ## _ ## name,
+#define DECLARE_CONTROL_TYPE_ENUM4(system, name, val1, val2) DECLARE_CONTROL_TYPE_ENUM2(system, name) CONTROL_TYPE_ ## system ## _ ## val1 = CONTROL_TYPE_ ## system ## _ ## name, CONTROL_TYPE_ ## system ## _ ## val2 = CONTROL_TYPE_ ## system ## _ ## name,
+#define DECLARE_CONTROL_TYPE_ENUM(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_TYPE_ENUM4, DECLARE_CONTROL_TYPE_ENUM3, DECLARE_CONTROL_TYPE_ENUM2)(__VA_ARGS__)
 
 typedef enum control_t {
     CONTROL_ALWAYS = -1,
@@ -236,9 +312,16 @@ typedef enum control_t {
     CONTROL_COUNT
 } control_t;
 
-extern const char controls_names[CONTROL_COUNT][32];
+typedef enum control_type_t {
+    CONTROLS_TYPE_ENUM(DECLARE_CONTROL_TYPE_ENUM)
+    CONTROL_TYPE_COUNT
+} control_type_t;
 
-void controls_init(control_t begin, control_t end);
+extern const char controls_names[CONTROL_COUNT][32];
+extern const char controls_type_names[CONTROL_TYPE_COUNT][32];
+
+typedef struct core_t core_t;
+void controls_init(const core_t* core);
 void controls_update();
 void controls_free();
 void controls_load_maps();
@@ -261,4 +344,6 @@ void controls_set_gamepad_player(int gamepad_idx, int player);
 void controls_get_gamepad_info(int index, char* name, int len, int* id);
 int controls_get_gamepad_player(int gamepad_idx);
 bool controls_gamepad_search();
+void controls_set_type(const char* name, control_type_t type);
+control_type_t controls_get_actual_type();
 #endif

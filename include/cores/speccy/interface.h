@@ -4,9 +4,9 @@
 void SPECCY_run_frame(void* ctx);
 void* SPECCY_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool SPECCY_detect(const archive_t* rom_archive, const archive_t* bios_archive);
+byte_vec_t SPECCY_savestate(void* ctx);
+bool SPECCY_loadstate(void* ctx, byte_vec_t* state);
 #define SPECCY_sound_callback NULL
-#define SPECCY_savestate NULL
-#define SPECCY_loadstate NULL
 #define SPECCY_close NULL
 
 #define SPECCY_WIDTH 356
@@ -23,8 +23,14 @@ bool SPECCY_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 } \
 
 #define SPECCY_sound_channels \
-{ "BEEPER", 0, 1 }
+{ "BEEPER", 0,    1 }, \
+{ "AY CH0", 0, 8191 }, \
+{ "AY CH1", 0, 8191 }, \
+{ "AY CH2", 0, 8191 }
 
-#define SPECCY_widgets
+#include "cores/speccy/visualizers.h"
+
+#define SPECCY_widgets \
+{ "TAPE STATE", speccy_draw_tape_state }
 
 #endif

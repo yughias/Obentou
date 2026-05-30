@@ -45,6 +45,8 @@ typedef struct core_t {
     audio_callback_ptr sound_callback;
     control_t control_begin;
     control_t control_end;
+    control_type_t control_type_begin;
+    control_type_t control_type_end;
     savestate_ptr savestate;
     loadstate_ptr loadstate;
     bool has_bios;
