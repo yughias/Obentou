@@ -40,8 +40,6 @@ static control_t control_args[CONTROL_COUNT];
 static core_ctx_t* core_ctx_arg;
 
 static buttonId audio_channel_buttons[MAX_AUDIO_CHANNELS];
-static int apu_idxs[MAX_AUDIO_CHANNELS];
-static int widget_idxs[MAX_WIDGETS];
 
 static SDL_RendererLogicalPresentation fit_mode = SDL_LOGICAL_PRESENTATION_LETTERBOX;
 static SDL_RendererLogicalPresentation stretch_mode = SDL_LOGICAL_PRESENTATION_STRETCH;
@@ -324,13 +322,13 @@ static void apu_mute_channel(void* audio_idx){
 }
 
 static void menu_open_wave_viewer(void* audio_idx){
-    int idx = *(int*)audio_idx;
+    int idx = (uptr)audio_idx;
     const sound_channel_t *ch = &core_ctx_arg->core->sound_channels[idx];
     sound_open_wave_viewer(ch->name, ch->min, ch->max, idx);
 }
 
 static void menu_open_widget(void* widget_idx){
-    int idx = *(int*)widget_idx;
+    int idx = (uptr)widget_idx;
     const widget_t* w = &core_ctx_arg->core->widgets[idx];
     createWidget(w->name, 1, 1, w->draw, core_ctx_arg->emu);
 }
@@ -479,21 +477,19 @@ void menu_create(core_ctx_t* ctx){
 
         for(int i = 0; i < MAX_WIDGETS; i++) {
             const widget_t* wid = &ctx->core->widgets[i];
-            widget_idxs[i] = i;
             if(!wid->name)
                 break;
-            addButtonTo(core_menu, wid->name, menu_open_widget, widget_idxs + i);
+            addButtonTo(core_menu, wid->name, menu_open_widget, (void*)(uptr)i);
         }
 
         if(ctx->core->sound_channels[0].name) {
             menuId apu_menu = addMenuTo(core_menu, "APU", false);
             for(int i = 0; i < MAX_AUDIO_CHANNELS; i++){
                 if(ctx->core->sound_channels[i].name){
-                    apu_idxs[i] = i;
                     menuId audio_channel_menu = addMenuTo(apu_menu, ctx->core->sound_channels[i].name, false);
-                    audio_channel_buttons[i] = addButtonTo(audio_channel_menu, "Enabled", apu_mute_channel, apu_idxs + i);
+                    audio_channel_buttons[i] = addButtonTo(audio_channel_menu, "Enabled", apu_mute_channel, (void*)(uptr)i);
                     tickButton(audio_channel_buttons[i], true);
-                    addButtonTo(audio_channel_menu, "Waveform", menu_open_wave_viewer, apu_idxs + i);
+                    addButtonTo(audio_channel_menu, "Waveform", menu_open_wave_viewer, (void*)(uptr)i);
                 }
             }
         }

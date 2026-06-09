@@ -14,4 +14,6 @@ typedef uint64_t u64;
 typedef int8_t i8;
 typedef int16_t i16;
 
+typedef uintptr_t uptr;
+
 #endif
