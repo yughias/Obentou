@@ -529,7 +529,7 @@ void tms80_vdp_render_line(vdp_t* vdp, int y){
     }
 }
 
-void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank, bool is_nmi){
+void tms80_vdp_fire_interrupt(vdp_t* vdp, bool is_vblank){
     vdp->status_reg |= (is_vblank << 7);
     
     if(is_vblank && !(vdp->regs[1] & (1 << 5)))
@@ -538,17 +538,14 @@ void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank, bool is_nm
     if(!is_vblank && !(vdp->regs[0] & (1 << 4)))
         return;
 
-    if(is_nmi)
-        z80_nmi(z80);
-    else
-        z80->INTERRUPT_PENDING = true;
+    vdp->irq = true;
 }
 
 u8 tms80_vdp_read_status_register(vdp_t* vdp, z80_t* z80){
     u8 out = vdp->status_reg;
     vdp->status_reg &= 0x1F;
     vdp->control_port_flag = 0;
-    z80->INTERRUPT_PENDING = false;
+    vdp->irq = false;
     return out;
 }
 

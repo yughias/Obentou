@@ -168,7 +168,6 @@ void z80_init(z80_t* z80){
     z80->INTERRUPT_MODE    = 1;
     z80->IFF1 = false;
     z80->IFF2 = false;
-    z80->INTERRUPT_PENDING = false;
     z80->INTERRUPT_DELAY = false;
     z80->INTERRUPT_VECT = 0x0000;
     z80->cycles = 0;
@@ -179,7 +178,6 @@ void serialize_z80_t(z80_t* z80, byte_vec_t* vec){
     byte_vec_push(vec, z80->IFF1);
     byte_vec_push(vec, z80->IFF2);
     byte_vec_push(vec, z80->INTERRUPT_DELAY);
-    byte_vec_push(vec, z80->INTERRUPT_PENDING);
     byte_vec_push(vec, z80->INTERRUPT_MODE);
     byte_vec_push(vec, z80->INTERRUPT_VECT);
 
@@ -212,7 +210,6 @@ u8* deserialize_z80_t(z80_t* z80, u8* data, u8* end) {
     z80->IFF1 = *(data++);
     z80->IFF2 = *(data++);
     z80->INTERRUPT_DELAY = *(data++);
-    z80->INTERRUPT_PENDING = *(data++);
     z80->INTERRUPT_MODE = *(data++);
     z80->INTERRUPT_VECT = *(data++);
 
@@ -330,10 +327,16 @@ void z80_print(z80_t* z80){
     fprintf(stderr, "cycles: %llu\n\n", z80->cycles);
 }
 
-static void processInterrupt(z80_t* z80){
+void z80_nmi(z80_t* z80){
+    CALL(z80, 0x66);
+    z80->HALTED = false;
+    z80->cycles += 11;
+    z80->IFF1 = false;
+}
+
+void z80_irq(z80_t* z80){
     z80->IFF1 = false;
     z80->IFF2 = false;
-    z80->INTERRUPT_PENDING = false;
     z80->HALTED = false;
     switch(z80->INTERRUPT_MODE){
         case 1:
@@ -351,19 +354,11 @@ static void processInterrupt(z80_t* z80){
     }
 }
 
-void z80_nmi(z80_t* z80){
-    CALL(z80, 0x66);
-    z80->HALTED = false;
-    z80->cycles += 11;
-    z80->IFF1 = false;
+bool z80_is_interrupt_enabled(z80_t* z80){
+    return !z80->INTERRUPT_DELAY && z80->IFF1;
 }
 
 void z80_step(z80_t* z80){
-    if(!z80->INTERRUPT_DELAY && z80->IFF1 && z80->INTERRUPT_PENDING){
-        processInterrupt(z80);
-        return;
-    }
-
     z80->INTERRUPT_DELAY = false;
 
     if(z80->HALTED){

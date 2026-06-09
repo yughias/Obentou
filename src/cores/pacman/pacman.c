@@ -665,9 +665,9 @@ void PACMAN_run_frame(pacman_t* p)
 
     p->z80.cycles -= PACMAN_CYCLES_PER_FRAME;
 
-    if (p->VBLANK_ENABLED && p->z80.IFF1) {
-        p->z80.INTERRUPT_PENDING = true;
-        p->z80.INTERRUPT_VECT    = p->IO;
+    if (p->VBLANK_ENABLED && z80_is_interrupt_enabled(&p->z80)) {
+        p->z80.INTERRUPT_VECT = p->IO;
+        z80_irq(&p->z80);
     }
 
     pacman_draw_video(p);

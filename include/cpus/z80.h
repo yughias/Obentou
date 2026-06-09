@@ -30,7 +30,6 @@ typedef struct z80_t {
     bool     HALTED;
     bool     IFF1, IFF2;
     bool     INTERRUPT_DELAY;
-    bool     INTERRUPT_PENDING;
     u8  INTERRUPT_MODE;
     u8 INTERRUPT_VECT;
 
@@ -75,6 +74,8 @@ void z80_init(z80_t*);
 void z80_print(z80_t*);
 void z80_step(z80_t*);
 void z80_nmi(z80_t*);
+void z80_irq(z80_t*);
+bool z80_is_interrupt_enabled(z80_t*);
 
 typedef struct byte_vec_t byte_vec_t;
 void serialize_z80_t(z80_t*, byte_vec_t*);

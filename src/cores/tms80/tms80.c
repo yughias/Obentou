@@ -268,7 +268,6 @@ u8 tms80_get_coleco_pad(tms80_t* tms80, u8 port){
     if (tms80->keypad_reg == 0) {
         // keypad
         u8 data = 0x0F;
-        // TODO proper control_tms80 for keypad
         if (controls_pressed(CONTROL_COLECO_0, port)) data &= 0x0a; /* 0 */
 		if (controls_pressed(CONTROL_COLECO_1, port)) data &= 0x0d; /* 1 */
 		if (controls_pressed(CONTROL_COLECO_2, port)) data &= 0x07; /* 2 */
@@ -304,6 +303,20 @@ u8 tms80_gg_get_start_button(){
     return 0xC0;
 }
 
+static bool check_interrupts(tms80_t* tms80){
+    if (tms80->type == COLECO)
+        return !tms80->vdp.prev_irq && tms80->vdp.irq;
+    return tms80->vdp.irq && z80_is_interrupt_enabled(&tms80->z80);
+}
+
+
+static void fire_interrupts(tms80_t* tms80){
+    if (tms80->type == COLECO)
+        z80_nmi(&tms80->z80);
+    else
+        z80_irq(&tms80->z80);
+}
+
 void TMS80_run_frame(tms80_t* tms80){
     z80_t* z80 = &tms80->z80;
     vdp_t* vdp = &tms80->vdp;
@@ -316,8 +329,12 @@ void TMS80_run_frame(tms80_t* tms80){
         u32 old_cycles = z80->cycles;
         int old_line = old_cycles / CYCLES_PER_LINE;
         
-        z80_step(z80);
-        //printf("PC: %X OP: %X %X %X\n", z80->PC, z80->readMemory(z80->ctx, z80->PC), z80->readMemory(z80->ctx, z80->PC+1), z80->readMemory(z80->ctx, z80->PC+2));
+        if (check_interrupts(tms80)) {
+            fire_interrupts(tms80);
+        } else
+            z80_step(z80);
+
+        vdp->prev_irq = vdp->irq;
 
         u32 elapsed = z80->cycles - old_cycles;
         tms80_sn76489_update(apu, elapsed);
@@ -328,10 +345,10 @@ void TMS80_run_frame(tms80_t* tms80){
             vdp->v_counter = old_line;
 
             if(vdp->regs[0] & (1 << 4)){
-                if(old_line <= SCREEN_HEIGHT_SMS){
+                if(old_line < SCREEN_HEIGHT_SMS){
                     vdp->line_reg -= 1;
                     if(vdp->line_reg == 0xFF){
-                        tms80_vdp_fire_interrupt(vdp, z80, false, false);
+                        tms80_vdp_fire_interrupt(vdp, false);
                         vdp->line_reg = vdp->regs[0xA];
                     }
                 } else {
@@ -345,8 +362,8 @@ void TMS80_run_frame(tms80_t* tms80){
                 tms80_vdp_render_line(vdp, old_line);
             }
 
-            if(old_line == SCREEN_HEIGHT_SMS){
-                tms80_vdp_fire_interrupt(vdp, z80, true, tms80->type == COLECO);
+            if(line == SCREEN_HEIGHT_SMS){
+                tms80_vdp_fire_interrupt(vdp, true);
             }
         }
     }

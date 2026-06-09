@@ -32,6 +32,10 @@ void* PV1000_init(const archive_t* rom_archive, const archive_t* bios_archive){
     return pv1000;
 }
 
+static bool check_irq(pv1000_t* pv1000){
+    return (pv1000->vdp.irq) && z80_is_interrupt_enabled(&pv1000->z80);
+}
+
 void PV1000_run_frame(pv1000_t* pv1000){
     z80_t* z80 = &pv1000->z80;
     vdp_t* vdp = &pv1000->vdp;
@@ -41,7 +45,10 @@ void PV1000_run_frame(pv1000_t* pv1000){
     while(z80->cycles < CYCLES_PER_FRAME){
         u32 old_cycles = z80->cycles;
 
-        z80_step(z80);
+        if (check_irq(pv1000))
+            z80_irq(z80);
+        else
+            z80_step(z80);
 
         int old_lines = old_cycles / CYCLES_PER_LINE;
         int lines = z80->cycles / CYCLES_PER_LINE;
@@ -51,7 +58,7 @@ void PV1000_run_frame(pv1000_t* pv1000){
                 pv1000->status |= 0b1;
             if(next_interrupt != 256)
                 next_interrupt += 4;
-            z80->INTERRUPT_PENDING = true;
+            pv1000->vdp.irq = true;
         }
     }
 

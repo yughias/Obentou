@@ -30,6 +30,7 @@ u8 pv1000_readIO(void* ctx, u16 addr){
     if(addr == 0xFC){
         u8 status = pv1000->status; 
         pv1000->status &= ~0b1;
+        pv1000->vdp.irq = false;
         return status;
     }
 

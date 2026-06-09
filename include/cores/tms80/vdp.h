@@ -40,6 +40,8 @@ X(u8, scroll_y, 1, 0) \
 X(u8, status_reg, 1, 0) \
 X(u8, line_reg, 1, 0) \
 X(u8, regs, 16, 1, 0) \
+X(bool, irq, 1, 0) \
+X(bool, prev_irq, 1, 0) \
 X(int, framebuffer[SCREEN_WIDTH_SMS*SCREEN_HEIGHT_SMS], 0, 0)
 
 DECLARE_SERIALIZABLE_STRUCT(vdp, VDP_STRUCT);
@@ -48,7 +50,7 @@ void tms80_vdp_write_to_control_port(vdp_t* vdp, u8 byte);
 u8 tms80_vdp_read_from_data_port(vdp_t* vdp);
 void tms80_vdp_write_to_data_port(vdp_t* vdp, u8 byte);
 u8 tms80_vdp_read_status_register(vdp_t* vdp, z80_t* z80);
-void tms80_vdp_fire_interrupt(vdp_t* vdp, z80_t* z80, bool is_vblank, bool is_nmi);
+void tms80_vdp_fire_interrupt(vdp_t* vdp, bool is_vblank);
 u8 tms80_vdp_get_v_counter(vdp_t* vdp);
 void tms80_vdp_skip_bios(vdp_t* vdp);
 void tms80_vdp_render_line(vdp_t* vdp, int line);
