@@ -74,7 +74,6 @@ After a successful build, an executable named ``obentou.exe`` will be generated.
 
 ## Cores that will be supported on the future
 
-- [ ] ZX-Spectrum 48k
 - [ ] Gameboy Advance
 
 ## Next features
