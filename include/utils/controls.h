@@ -224,47 +224,94 @@
     XY(SPECCY, LEFT, "left", "none", 0.0f, 0.0f, 0.5f) \
     XY(SPECCY, RIGHT, "right", "none", 0.0f, 0.0f, 0.5f) \
     XY(SPECCY, JOY_BTN, "x", "none", 0.0f, 0.0f, 0.5f) \
-    XY(SPECCY, SHIFT, "left shift", "none", 0.09f, 0.85f, 0.5f) \
-    XY(SPECCY, Z, "z", "none", 0.18f, 0.85f, 0.5f) \
-    XY(SPECCY, X, "x", "none", 0.27f, 0.85f, 0.5f) \
-    XY(SPECCY, C, "c", "none", 0.36f, 0.85f, 0.5f) \
-    XY(SPECCY, V, "v", "none", 0.45f, 0.85f, 0.5f) \
-    XY(SPECCY, A, "a", "none", 0.09f, 0.65f, 0.5f) \
-    XY(SPECCY, S, "s", "none", 0.18f, 0.65f, 0.5f) \
-    XY(SPECCY, D, "d", "none", 0.27f, 0.65f, 0.5f) \
-    XY(SPECCY, F, "f", "none", 0.36f, 0.65f, 0.5f) \
-    XY(SPECCY, G, "g", "none", 0.45f, 0.65f, 0.5f) \
-    XY(SPECCY, Q, "q", "none", 0.09f, 0.45f, 0.5f) \
-    XY(SPECCY, W, "w", "none", 0.18f, 0.45f, 0.5f) \
-    XY(SPECCY, E, "e", "none", 0.27f, 0.45f, 0.5f) \
-    XY(SPECCY, R, "r", "none", 0.36f, 0.45f, 0.5f) \
-    XY(SPECCY, T, "t", "none", 0.45f, 0.45f, 0.5f) \
-    XY(SPECCY, 1, "1", "none", 0.09f, 0.25f, 0.5f) \
-    XY(SPECCY, 2, "2", "none", 0.18f, 0.25f, 0.5f) \
-    XY(SPECCY, 3, "3", "none", 0.27f, 0.25f, 0.5f) \
-    XY(SPECCY, 4, "4", "none", 0.36f, 0.25f, 0.5f) \
-    XY(SPECCY, 5, "5", "none", 0.45f, 0.25f, 0.5f) \
-    XY(SPECCY, 0, "0", "none", 0.91f, 0.25f, 0.5f) \
-    XY(SPECCY, 9, "9", "none", 0.82f, 0.25f, 0.5f) \
-    XY(SPECCY, 8, "8", "none", 0.73f, 0.25f, 0.5f) \
-    XY(SPECCY, 7, "7", "none", 0.64f, 0.25f, 0.5f) \
-    XY(SPECCY, 6, "6", "none", 0.55f, 0.25f, 0.5f) \
-    XY(SPECCY, P, "p", "none", 0.91f, 0.45f, 0.5f) \
-    XY(SPECCY, O, "o", "none", 0.82f, 0.45f, 0.5f) \
-    XY(SPECCY, I, "i", "none", 0.73f, 0.45f, 0.5f) \
-    XY(SPECCY, U, "u", "none", 0.64f, 0.45f, 0.5f) \
-    XY(SPECCY, Y, "y", "none", 0.55f, 0.45f, 0.5f) \
-    XY(SPECCY, ENTER, "return", "none", 0.91f, 0.65f, 0.5f) \
-    XY(SPECCY, L, "l", "none", 0.82f, 0.65f, 0.5f) \
-    XY(SPECCY, K, "k", "none", 0.73f, 0.65f, 0.5f) \
-    XY(SPECCY, J, "j", "none", 0.64f, 0.65f, 0.5f) \
-    XY(SPECCY, H, "h", "none", 0.55f, 0.65f, 0.5f) \
-    XY(SPECCY, SPACE, "space", "none", 0.91f, 0.85f, 0.5f) \
-    XY(SPECCY, SYM_SHIFT, "left alt", "none", 0.82f, 0.85f, 0.5f) \
-    XY(SPECCY, M, "m", "none", 0.73f, 0.85f, 0.5f) \
-    XY(SPECCY, N, "n", "none", 0.64f, 0.85f, 0.5f) \
-    XY(SPECCY, B, "b", "none", 0.55f, 0.85f, 0.5f) \
-    XY(SPECCY, DELETE, END, "backspace", "none", 0.0f, 0.0f, 0.5f)
+    XY(SPECCY, SHIFT, "left shift", "none", 0.09f, 0.70f, 0.5f) \
+    XY(SPECCY, Z, "z", "none", 0.18f, 0.70f, 0.5f) \
+    XY(SPECCY, X, "x", "none", 0.27f, 0.70f, 0.5f) \
+    XY(SPECCY, C, "c", "none", 0.36f, 0.70f, 0.5f) \
+    XY(SPECCY, V, "v", "none", 0.45f, 0.70f, 0.5f) \
+    XY(SPECCY, A, "a", "none", 0.09f, 0.60f, 0.5f) \
+    XY(SPECCY, S, "s", "none", 0.18f, 0.60f, 0.5f) \
+    XY(SPECCY, D, "d", "none", 0.27f, 0.60f, 0.5f) \
+    XY(SPECCY, F, "f", "none", 0.36f, 0.60f, 0.5f) \
+    XY(SPECCY, G, "g", "none", 0.45f, 0.60f, 0.5f) \
+    XY(SPECCY, Q, "q", "none", 0.09f, 0.50f, 0.5f) \
+    XY(SPECCY, W, "w", "none", 0.18f, 0.50f, 0.5f) \
+    XY(SPECCY, E, "e", "none", 0.27f, 0.50f, 0.5f) \
+    XY(SPECCY, R, "r", "none", 0.36f, 0.50f, 0.5f) \
+    XY(SPECCY, T, "t", "none", 0.45f, 0.50f, 0.5f) \
+    XY(SPECCY, 1, "1", "none", 0.09f, 0.40f, 0.5f) \
+    XY(SPECCY, 2, "2", "none", 0.18f, 0.40f, 0.5f) \
+    XY(SPECCY, 3, "3", "none", 0.27f, 0.40f, 0.5f) \
+    XY(SPECCY, 4, "4", "none", 0.36f, 0.40f, 0.5f) \
+    XY(SPECCY, 5, "5", "none", 0.45f, 0.40f, 0.5f) \
+    XY(SPECCY, 0, "0", "none", 0.91f, 0.40f, 0.5f) \
+    XY(SPECCY, 9, "9", "none", 0.82f, 0.40f, 0.5f) \
+    XY(SPECCY, 8, "8", "none", 0.73f, 0.40f, 0.5f) \
+    XY(SPECCY, 7, "7", "none", 0.64f, 0.40f, 0.5f) \
+    XY(SPECCY, 6, "6", "none", 0.55f, 0.40f, 0.5f) \
+    XY(SPECCY, P, "p", "none", 0.91f, 0.50f, 0.5f) \
+    XY(SPECCY, O, "o", "none", 0.82f, 0.50f, 0.5f) \
+    XY(SPECCY, I, "i", "none", 0.73f, 0.50f, 0.5f) \
+    XY(SPECCY, U, "u", "none", 0.64f, 0.50f, 0.5f) \
+    XY(SPECCY, Y, "y", "none", 0.55f, 0.50f, 0.5f) \
+    XY(SPECCY, ENTER, "return", "none", 0.91f, 0.60f, 0.5f) \
+    XY(SPECCY, L, "l", "none", 0.82f, 0.60f, 0.5f) \
+    XY(SPECCY, K, "k", "none", 0.73f, 0.60f, 0.5f) \
+    XY(SPECCY, J, "j", "none", 0.64f, 0.60f, 0.5f) \
+    XY(SPECCY, H, "h", "none", 0.55f, 0.60f, 0.5f) \
+    XY(SPECCY, SPACE, "space", "none", 0.91f, 0.70f, 0.5f) \
+    XY(SPECCY, SYM_SHIFT, "left alt", "none", 0.82f, 0.70f, 0.5f) \
+    XY(SPECCY, M, "m", "none", 0.73f, 0.70f, 0.5f) \
+    XY(SPECCY, N, "n", "none", 0.64f, 0.70f, 0.5f) \
+    XY(SPECCY, B, "b", "none", 0.55f, 0.70f, 0.5f) \
+    XY(SPECCY, DELETE, END, "backspace", "none", 0.0f, 0.0f, 0.5f) \
+    \
+    XY(JACE, UP, BEGIN, "up", "none", 0.0f, 0.0f, 0.5f) \
+    XY(JACE, DOWN, "down", "none", 0.0f, 0.0f, 0.5f) \
+    XY(JACE, LEFT, "left", "none", 0.0f, 0.0f, 0.5f) \
+    XY(JACE, RIGHT, "right", "none", 0.0f, 0.0f, 0.5f) \
+    XY(JACE, SHIFT, "left shift", "none", 0.09f, 0.70f, 0.5f) \
+    XY(JACE, Z, "z", "none", 0.18f, 0.70f, 0.5f) \
+    XY(JACE, X, "x", "none", 0.27f, 0.70f, 0.5f) \
+    XY(JACE, C, "c", "none", 0.36f, 0.70f, 0.5f) \
+    XY(JACE, V, "v", "none", 0.45f, 0.70f, 0.5f) \
+    XY(JACE, A, "a", "none", 0.09f, 0.60f, 0.5f) \
+    XY(JACE, S, "s", "none", 0.18f, 0.60f, 0.5f) \
+    XY(JACE, D, "d", "none", 0.27f, 0.60f, 0.5f) \
+    XY(JACE, F, "f", "none", 0.36f, 0.60f, 0.5f) \
+    XY(JACE, G, "g", "none", 0.45f, 0.60f, 0.5f) \
+    XY(JACE, Q, "q", "none", 0.09f, 0.50f, 0.5f) \
+    XY(JACE, W, "w", "none", 0.18f, 0.50f, 0.5f) \
+    XY(JACE, E, "e", "none", 0.27f, 0.50f, 0.5f) \
+    XY(JACE, R, "r", "none", 0.36f, 0.50f, 0.5f) \
+    XY(JACE, T, "t", "none", 0.45f, 0.50f, 0.5f) \
+    XY(JACE, 1, "1", "none", 0.09f, 0.40f, 0.5f) \
+    XY(JACE, 2, "2", "none", 0.18f, 0.40f, 0.5f) \
+    XY(JACE, 3, "3", "none", 0.27f, 0.40f, 0.5f) \
+    XY(JACE, 4, "4", "none", 0.36f, 0.40f, 0.5f) \
+    XY(JACE, 5, "5", "none", 0.45f, 0.40f, 0.5f) \
+    XY(JACE, 0, "0", "none", 0.91f, 0.40f, 0.5f) \
+    XY(JACE, 9, "9", "none", 0.82f, 0.40f, 0.5f) \
+    XY(JACE, 8, "8", "none", 0.73f, 0.40f, 0.5f) \
+    XY(JACE, 7, "7", "none", 0.64f, 0.40f, 0.5f) \
+    XY(JACE, 6, "6", "none", 0.55f, 0.40f, 0.5f) \
+    XY(JACE, P, "p", "none", 0.91f, 0.50f, 0.5f) \
+    XY(JACE, O, "o", "none", 0.82f, 0.50f, 0.5f) \
+    XY(JACE, I, "i", "none", 0.73f, 0.50f, 0.5f) \
+    XY(JACE, U, "u", "none", 0.64f, 0.50f, 0.5f) \
+    XY(JACE, Y, "y", "none", 0.55f, 0.50f, 0.5f) \
+    XY(JACE, ENTER, "return", "none", 0.91f, 0.60f, 0.5f) \
+    XY(JACE, L, "l", "none", 0.82f, 0.60f, 0.5f) \
+    XY(JACE, K, "k", "none", 0.73f, 0.60f, 0.5f) \
+    XY(JACE, J, "j", "none", 0.64f, 0.60f, 0.5f) \
+    XY(JACE, H, "h", "none", 0.55f, 0.60f, 0.5f) \
+    XY(JACE, SPACE, "space", "none", 0.91f, 0.70f, 0.5f) \
+    XY(JACE, SYM_SHIFT, "left alt", "none", 0.82f, 0.70f, 0.5f) \
+    XY(JACE, M, "m", "none", 0.73f, 0.70f, 0.5f) \
+    XY(JACE, N, "n", "none", 0.64f, 0.70f, 0.5f) \
+    XY(JACE, B, "b", "none", 0.55f, 0.70f, 0.5f) \
+    XY(JACE, DELETE, "backspace", "none", 0.0f, 0.0f, 0.5f) \
+    XY(JACE, TAPE_PLAY_STOP, END, "f5", "none", 0.25f, 0.20f, 1.0f)
 
 #define CONTROLS_TYPE_ENUM(XY) \
     XY(GBC, DEFAULT, BEGIN, END) \
@@ -291,7 +338,9 @@
     \
     XY(SPECCY, KEYBOARD, BEGIN) \
     XY(SPECCY, KEYBOARD_WITH_CURSOR) \
-    XY(SPECCY, KEYBOARD_WITH_KEMPSTON, END)
+    XY(SPECCY, KEYBOARD_WITH_KEMPSTON, END) \
+    \
+    XY(JACE, DEFAULT, BEGIN, END)
 
     
 #define GET_MACRO_ENUM(_1, _2, _3, _4, _5, _6, _7, _8, NAME, ...) NAME

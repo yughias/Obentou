@@ -886,7 +886,6 @@ void fullScreen(){
 
 void background(int col){
     SDL_FillSurfaceRect(back_surface, NULL, col);
-    renderPixels();
 }
 
 int color(int red, int green, int blue){

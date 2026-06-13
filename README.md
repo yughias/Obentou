@@ -27,6 +27,7 @@ At the moment the supported cores are:
 - [X] PACMAN (pacman, ms. pacman, jr. pacman and other pacman based arcade boards)
 - [X] Space Invaders Arcade
 - [X] SPECCY (Zx Spectrum 48k)
+- [X] JACE (Jupiter Ace)
 
 ## Features
 
@@ -50,8 +51,8 @@ At the moment the supported cores are:
 | Master System        | Famicom                | Game Gear               |
 | ![](imgs/ch8.bmp)    | ![](imgs/pacman.bmp)   | ![](imgs/invaders.bmp)  |
 | Chip 8               |  Pac-Man (Arcade)      | Space Invaders (Arcade) |
-| ![](imgs/col.bmp)    | ![](imgs/speccy.bmp)   |                         |
-| Coleco Vision        |  Zx Spectrum 48k       |                         | 
+| ![](imgs/col.bmp)    | ![](imgs/speccy.bmp)   | ![](imgs/jace.bmp)      |
+| Coleco Vision        |  Zx Spectrum 48k       | Jupiter Ace             | 
 
 ## Build Instructions
 
