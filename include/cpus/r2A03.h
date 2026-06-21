@@ -1,5 +1,5 @@
-#ifndef __M6502_H__
-#define __M6502_H__
+#ifndef __R2A03_H__
+#define __R2A03_H__
 
 #include "types.h"
 
@@ -9,7 +9,7 @@ typedef struct r2A03_t r2A03_t;
 typedef u8 (*r2A03_read_func)(void*, u16);
 typedef void (*r2A03_write_func)(void*, u16, u8);
 
-#define M6502_STRUCT(X) \
+#define R2A03_STRUCT(X) \
     X(u16, pc, 1, 0) \
     X(u8, s, 1, 0) \
     X(u8, p, 1, 0) \
@@ -24,7 +24,7 @@ typedef void (*r2A03_write_func)(void*, u16, u8);
     X(bool, in_mem, 1, 0) \
     X(void*, ctx, 0, 0)
 
-DECLARE_SERIALIZABLE_STRUCT(r2A03, M6502_STRUCT)
+DECLARE_SERIALIZABLE_STRUCT(r2A03, R2A03_STRUCT)
 
 void r2A03_init(r2A03_t* cpu);
 void r2A03_reset(r2A03_t* cpu);

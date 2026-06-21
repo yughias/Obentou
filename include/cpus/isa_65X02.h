@@ -151,7 +151,7 @@ GEN_BBS(0) GEN_BBS(1) GEN_BBS(2) GEN_BBS(3)
 GEN_BBS(4) GEN_BBS(5) GEN_BBS(6) GEN_BBS(7)
 #endif
 
-#ifdef R2A03
+#if defined(R2A03) || defined(M6502)
 /* The magic byte is CPU- (and sometimes board-) dependent. */
 #define MAGIC_BYTE 0xEE
 #endif
@@ -329,16 +329,22 @@ static void ADC(CPU_TYPE* CPU) {
     bool carry = CPU->p & SET_C;
     bool new_c, new_v;
 
-#ifdef W65C02
-    /* W65C02: full BCD support */
+#ifndef R2A03
+    /* W65C02 AND M6502: full BCD support */
     if (CPU->p & SET_D) {
-        CPU->slow_op ? dummy_read(0x7F) : dummy_read(CPU->mem_addr);
+        #ifdef W65C02
+            CPU->slow_op ? dummy_read(0x7F) : dummy_read(CPU->mem_addr);
+        #endif
         u8 a0 = CPU->a & 0xF,  a1 = CPU->a >> 4;
         u8 b0 = CPU->op_arg & 0xF, b1 = CPU->op_arg >> 4;
         u8 lo = a0 + b0 + carry;
         u8 hi = a1 + b1;
         bool half_carry = false;
         if (lo > 9) { half_carry = true; hi += 1; lo += 6; }
+        #ifdef M6502
+        calculate_n(hi << 4);
+        calculate_z(CPU->a + CPU->op_arg + carry);
+        #endif
         if (hi > 9) { hi += 6; }
         CPU->a = (hi << 4) | (lo & 0x0F);
         new_c   = hi > 9;
@@ -347,10 +353,15 @@ static void ADC(CPU_TYPE* CPU) {
         if (b1 & 0x08) b1 |= 0xF0;
         i8 ires = (i8)a1 + (i8)b1 + (i8)half_carry;
         new_v = ires < -8 || ires > 7;
+        #ifdef M6502
+        change_c(new_c);
+        change_v(new_v);
+        return;
+        #endif
     } else
 #endif
     {
-        /* R2A03 always takes this path; W65C02 takes it in binary mode. */
+        /* R2A03 always takes this path; others take it in binary mode. */
         u16 ires = (i16)(i8)CPU->op_arg + (i16)(i8)CPU->a + carry;
         u16 ures = CPU->op_arg + CPU->a + carry;
         CPU->a = (u8)ures;
@@ -527,9 +538,26 @@ static void SBC(CPU_TYPE* CPU) {
         new_c = (u16)res <= (u16)CPU->a || (res & 0xff0) == 0xff0;
         CPU->a = (u8)res;
     } else
+#elif defined(M6502)
+    /* M6502: BCD supported, N/Z/V/C set from binary result before decimal adjust */
+    if (CPU->p & SET_D) {
+        u16 tmp = CPU->a - CPU->op_arg - !carry;
+        new_c = tmp < 0x100;
+        new_v = ((CPU->a ^ tmp) & 0x80) && ((CPU->a ^ CPU->op_arg) & 0x80);
+        calculate_n(tmp);
+        calculate_z((u8)tmp);
+        u8 lo = (CPU->a & 0x0F) - (CPU->op_arg & 0x0F) - !carry;
+        u8 hi = (CPU->a >> 4) - (CPU->op_arg >> 4);
+        if ((lo & 0x10) != 0) { lo = ((lo - 6) & 0x0F); hi--; }
+        if ((hi & 0x10) != 0) { hi = ((hi - 6) & 0x0F); }
+        CPU->a = (hi << 4) | lo;
+        change_c(new_c);
+        change_v(new_v);
+        return;
+    } else
 #endif
     {
-        /* R2A03 always takes this path; W65C02 takes it in binary mode. */
+        /* R2A03 always takes this path; others take it in binary mode. */
         CPU->op_arg = ~CPU->op_arg;
         u16 ires = (i16)(i8)CPU->op_arg + (i16)(i8)CPU->a + carry;
         u16 ures = CPU->op_arg + CPU->a + carry;
@@ -690,17 +718,7 @@ static void STP(CPU_TYPE* CPU) {
 
 #endif
 
-#ifdef R2A03
-
-static void JAM(CPU_TYPE* CPU) {
-    dummy_read(CPU->pc);
-    dummy_read(0xFFFF);
-    dummy_read(0xFFFE);
-    dummy_read(0xFFFE);
-    dummy_read(0xFFFF);
-    for (int i = 0; i < 5; i++)
-        dummy_read(0xFFFF);
-}
+#if defined(R2A03) || defined(M6502)
 
 static void NOP1(CPU_TYPE* CPU) {
     dummy_read(CPU->mem_addr);
@@ -708,6 +726,20 @@ static void NOP1(CPU_TYPE* CPU) {
 
 static void NOP2(CPU_TYPE* CPU) {
 }
+
+#endif
+
+#ifdef M6502
+
+static void JAM(CPU_TYPE* CPU) {
+    dummy_read(CPU->pc);
+    dummy_read(CPU->pc);
+    CPU->pc -= 1;
+}
+
+#endif
+
+#if defined(R2A03) || defined(M6502)
 
 static void SLO(CPU_TYPE* CPU) {
     get_arg;
@@ -898,21 +930,66 @@ static void SRE(CPU_TYPE* CPU) {
     calculate_z(CPU->a);
 }
 
+#endif
+
 static void RRA(CPU_TYPE* CPU) {
     get_arg;
-    bool carry = CPU->p & SET_C;
-    change_c(CPU->op_arg & 1);
+    bool c = CPU->p & SET_C;
+    bool carry = CPU->op_arg & 1;
     write_byte(CPU->mem_addr, CPU->op_arg);
-    CPU->op_arg = (CPU->op_arg >> 1) | (carry << 7);
+    CPU->op_arg = (CPU->op_arg >> 1) | (c << 7);
     write_byte(CPU->mem_addr, CPU->op_arg);
 
-    u16 ires = (i16)(i8)CPU->op_arg + (i16)(i8)CPU->a + (bool)(CPU->p & SET_C);
-    u16 ures = CPU->op_arg + CPU->a + (bool)(CPU->p & SET_C);
+#ifdef M6502
+    bool new_c, new_v;
+    if (CPU->p & SET_D) {
+        u8 a0 = CPU->a & 0xF,  a1 = CPU->a >> 4;
+        u8 b0 = CPU->op_arg & 0xF, b1 = CPU->op_arg >> 4;
+        u8 lo = a0 + b0 + carry;
+        u8 hi = a1 + b1;
+        bool half_carry = false;
+        if (lo > 9) { half_carry = true; hi += 1; lo += 6; }
+        calculate_n(hi << 4);
+        calculate_z(CPU->a + CPU->op_arg + carry);
+        if (hi > 9) { hi += 6; }
+        CPU->a = (hi << 4) | (lo & 0x0F);
+        new_c = hi > 9;
+        if (a1 & 0x08) a1 |= 0xF0;
+        if (b1 & 0x08) b1 |= 0xF0;
+        i8 ires = (i8)a1 + (i8)b1 + (i8)half_carry;
+        new_v = ires < -8 || ires > 7;
+    } else {
+        u16 ires = (i16)(i8)CPU->op_arg + (i16)(i8)CPU->a + carry;
+        u16 ures = CPU->op_arg + CPU->a + carry;
+        CPU->a = (u8)ures;
+        new_c = ures > 0xFF;
+        new_v = ((bool)(ires & 0xFF00)) ^ ((bool)(ires & 0x80));
+        calculate_n(CPU->a);
+        calculate_z(CPU->a);
+    }
+    change_c(new_c);
+    change_v(new_v);
+#else
+    u16 ires = (i16)(i8)CPU->op_arg + (i16)(i8)CPU->a + carry;
+    u16 ures = CPU->op_arg + CPU->a + carry;
     CPU->a  = (u8)ures;
     change_c(ures > 0xFF);
     change_v(((bool)(ires & 0xFF00)) ^ ((bool)(ires & 0x80)));
     calculate_n(CPU->a);
     calculate_z(CPU->a);
+#endif
+}
+
+#ifdef R2A03
+
+static void JAM(CPU_TYPE* CPU) {
+    dummy_read(CPU->pc);
+    dummy_read(0xFFFF);
+    dummy_read(0xFFFE);
+    dummy_read(0xFFFE);
+    dummy_read(0xFFFF);
+    for (int i = 0; i < 5; i++)
+        dummy_read(0xFFFF);
 }
 
 #endif
