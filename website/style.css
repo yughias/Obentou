@@ -20,7 +20,7 @@ canvas {
     flex-grow: 1 !important;
     min-height: 0 !important;
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     display: block;
     object-fit: contain;
     outline: none;
