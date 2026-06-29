@@ -275,14 +275,16 @@ static void vdp_put_sprite_pixel(int x, int y, vdp_t* vdp, bool* collision_array
     if(y >= SCREEN_HEIGHT_SMS)
         return;
 
-    if(collision_array[x])
-        vdp->status_reg |= 0x20;
-    else 
-        collision_array[x] = true;
+    if(color_type){
+        if(collision_array[x])
+            vdp->status_reg |= 0x20;
+        else
+            collision_array[x] = true;
 
-    if(color_type && !drawn_pixels[x]){
-        vdp->framebuffer[x + y*SCREEN_WIDTH_SMS] = col; 
-        drawn_pixels[x] = true;
+        if(!drawn_pixels[x]){
+            vdp->framebuffer[x + y*SCREEN_WIDTH_SMS] = col;
+            drawn_pixels[x] = true;
+        }
     }
 }
 
@@ -472,6 +474,7 @@ static void vdp_render_sprites_mode_4(vdp_t* vdp, int y, bool* drawn_pixels){
     bool hide_left_col = vdp->regs[0] & (1 << 5);
     int shift_x = vdp->regs[0] & (1 << 3) ? -8 : 0;
 
+    int sprite_count = 0;
     for(int i = 0; i < 64; i++){
         int startX = sprite_table[128 | (i << 1)] + shift_x;
         int startY = sprite_table[i];
@@ -486,6 +489,11 @@ static void vdp_render_sprites_mode_4(vdp_t* vdp, int y, bool* drawn_pixels){
         int py = y - startY;
         if(py < 0 || py >= sprite_height)
             continue;
+        sprite_count++;
+        if(sprite_count > 8){
+            vdp->status_reg |= 0x40;
+            break;
+        }
         u8 sprite_idx = sprite_table[128 | 1 | (i << 1)];
         if(sprite_height == 16)
             sprite_idx = (sprite_idx & ~0b1) | (py >= 8);
