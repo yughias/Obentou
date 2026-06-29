@@ -22,12 +22,22 @@ static inline void name##_free(name##_t* vec) { \
     name##_init(vec); \
 } \
 \
+static inline size_t next_pow2(size_t x) { \
+    x--; \
+    x |= x >> 1; \
+    x |= x >> 2; \
+    x |= x >> 4; \
+    x |= x >> 8; \
+    x |= x >> 16; \
+    x |= x >> 32; \
+    return x + 1; \
+} \
+\
 static inline void name##_ensure_capacity(name##_t* vec, size_t needed) { \
     if (needed > vec->allocated) { \
-        size_t new_alloc = vec->allocated ? vec->allocated : 1; \
-        while (new_alloc < needed) new_alloc *= 2; \
+        size_t new_alloc = next_pow2(needed); \
         type* new_data = realloc(vec->data, sizeof(type) * new_alloc); \
-        if (!new_data) abort(); /* or handle error */ \
+        if (!new_data) { printf("vec: realloc\n"); exit(EXIT_FAILURE); } \
         vec->data = new_data; \
         vec->allocated = new_alloc; \
     } \
