@@ -11,6 +11,10 @@
 #define main disable_main
 #endif
 
+#ifdef __ANDROID__
+#include <SDL3_ttf/SDL_ttf.h>
+#endif
+
 static int last_element_clicked = -1;
 
 #ifdef __APPLE__
@@ -82,7 +86,63 @@ void updateMenuVect(void* new_menu_handle, bool isRadio) {
     n_menu++;
 }
 
-void checkRadioButton(buttonId button_id);
+#ifdef __ANDROID__
+
+#include <jni.h>
+
+static jclass android_activity_class = NULL;
+static jobject android_activity = NULL;
+static jobject android_root_menu = NULL;
+
+static void android_menu_init(JNIEnv *env) {
+    if(android_activity) return;
+    jobject local = (jobject)SDL_GetAndroidActivity();
+    android_activity = (*env)->NewGlobalRef(env, local);
+    android_activity_class = (jclass)(*env)->NewGlobalRef(env, (*env)->GetObjectClass(env, android_activity));
+}
+
+static jobject android_menu_get_root(JNIEnv *env) {
+    android_menu_init(env);
+    if(!android_root_menu) {
+        jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaMenuGetRoot", "()Ljava/lang/Object;");
+        jobject local = (*env)->CallObjectMethod(env, android_activity, mid);
+        android_root_menu = (*env)->NewGlobalRef(env, local);
+    }
+    return android_root_menu;
+}
+
+JNIEXPORT void JNICALL
+Java_emu_MainActivity_nativeMenuItemClicked(JNIEnv *env, jobject thiz, jint id) {
+    (void)env; (void)thiz;
+    if(id >= 0 && id < (jint)n_button)
+        last_element_clicked = id;
+}
+
+static void android_widget_create(int id, const char* name, int w, int h) {
+    JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+    android_menu_init(env);
+    jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaWidgetCreate", "(ILjava/lang/String;II)V");
+    jstring jname = (*env)->NewStringUTF(env, name);
+    (*env)->CallVoidMethod(env, android_activity, mid, id, jname, w, h);
+    (*env)->DeleteLocalRef(env, jname);
+}
+
+static void android_widget_update(int id, int* pixels, int w, int h) {
+    JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+    jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaWidgetUpdate", "(I[III)V");
+    jintArray jpixels = (*env)->NewIntArray(env, w * h);
+    (*env)->SetIntArrayRegion(env, jpixels, 0, w * h, (jint*)pixels);
+    (*env)->CallVoidMethod(env, android_activity, mid, id, jpixels, w, h);
+    (*env)->DeleteLocalRef(env, jpixels);
+}
+
+static void android_widget_destroy(int id) {
+    JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+    jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaWidgetDestroy", "(I)V");
+    (*env)->CallVoidMethod(env, android_activity, mid, id);
+}
+
+#endif
 
 #ifdef __EMSCRIPTEN__
 
@@ -93,7 +153,6 @@ void emscripten_handle_click(int buttonId) {
 
 EM_JS(void, js_init_menu_dom, (), {
     if (document.getElementById('sdl-menu-bar')) return;
-
     var bar = document.createElement('div');
     bar.id = 'sdl-menu-bar';
     document.body.prepend(bar); 
@@ -305,6 +364,10 @@ EM_JS(void, js_destroy_widget_canvas, (int id), {
 
 int width = 800;
 int height = 600;
+int screenWidth;
+int screenHeight;
+int aspectRatioWidth;
+int aspectRatioHeight;
 int stride = 4;
 int* pixels;
 
@@ -330,7 +393,9 @@ static SDL_Surface* windowIcon;
 static bool running;
 static bool has_rendered;
 
-void (*onExit)();
+void (*onExit)(bool background);
+void (*onDrawOverlay)(SDL_Renderer* renderer, void* ctx);
+void* overlayCtx;
 
 #ifndef __EMSCRIPTEN__
 Uint32 winFlags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
@@ -393,8 +458,6 @@ void emscripten_mainloop(){
         mainloop();
         elapsed = b_clock - a_clock;
         a_clock = b_clock;
-        // if mainloop lasted for more than millis_per_frame
-        // immediately end to avoid infinite lag!
         if(elapsed > millis_per_frame)
             deltaTime = 0;
         else 
@@ -409,12 +472,12 @@ typedef struct widget_t {
     bool valid;
     int width;
     int height;
-    #ifndef __EMSCRIPTEN__
+    #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
     SDL_Window* window;
     SDL_Texture* texture;
     SDL_Renderer* renderer;
     #else
-    int* em_pixels;
+    int* sw_pixels;
     #endif
     const char* name;
     bool (*callback)(void*);
@@ -426,22 +489,41 @@ static widget_t* current_widget;
 
 static void destroyWidget(int i);
 
-#ifdef __EMSCRIPTEN__
-
-EMSCRIPTEN_KEEPALIVE
-void notify_widget_closed(int id) {
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+static void handle_widget_closed(int id) {
     if (id >= 0 && id < MAX_WIDGETS) {
         if (widgets[id].valid) {
-            if (widgets[id].em_pixels) {
-                free(widgets[id].em_pixels);
-                widgets[id].em_pixels = NULL;
+            if (widgets[id].sw_pixels) {
+                free(widgets[id].sw_pixels);
+                widgets[id].sw_pixels = NULL;
             }
             widgets[id].valid = false;
             printf("Widget %d (%s) removed from C array.\n", id, widgets[id].name);
         }
     }
 }
+#endif
 
+#ifdef __EMSCRIPTEN__
+EMSCRIPTEN_KEEPALIVE
+void notify_widget_closed(int id) {
+    handle_widget_closed(id);
+}
+#endif
+
+#ifdef __ANDROID__
+JNIEXPORT void JNICALL
+Java_emu_MainActivity_nativeWidgetClosed(JNIEnv *env, jobject thiz, jint id) {
+    (void)env; (void)thiz;
+    handle_widget_closed(id);
+}
+
+bool android_enter_background_callback(void* userdata, SDL_Event* event) {
+    if (event->type == SDL_EVENT_WILL_ENTER_BACKGROUND) {
+        onExit(true);
+    }
+    return false;    
+}
 #endif
 
 int main(int argc, char** argv){
@@ -471,6 +553,11 @@ int main(int argc, char** argv){
     
     #ifndef __EMSCRIPTEN__
     SDL_SetEventFilter(filterResize, NULL);
+    #endif
+
+    #ifdef __ANDROID__
+    TTF_Init();
+    SDL_AddEventWatch(android_enter_background_callback, NULL);
     #endif
 
     #ifdef _WIN32
@@ -511,7 +598,7 @@ int main(int argc, char** argv){
     #endif
 
     if(onExit)
-        (*onExit)();
+        (*onExit)(false);
 
     SDL_DestroyTexture(drawBuffer);
 	SDL_DestroyRenderer(renderer);
@@ -523,14 +610,36 @@ int main(int argc, char** argv){
 
     SDL_DestroyWindow(window);
 
+    #ifdef __ANDROID__
+    TTF_Quit();
+    #endif
+
     SDL_Quit();
 
     return 0;
 }
 
+static void transformCoordinates(float x, float y, float* out_x, float* out_y) {
+    #ifdef __ANDROID__
+    if (scaling_mode == SDL_LOGICAL_PRESENTATION_LETTERBOX) {
+        float scale = SDL_min(screenWidth / (float)aspectRatioWidth, screenHeight / (float)aspectRatioHeight);
+        SDL_FRect dst_rect = {
+            screenWidth / 2 - aspectRatioWidth * scale / 2,
+            0,
+            aspectRatioWidth * scale,
+            aspectRatioHeight * scale
+        };
+        *out_x = ((x - dst_rect.x) / dst_rect.w) * width;
+        *out_y = ((y - dst_rect.y) / dst_rect.h) * height;
+    } else
+    #endif
+    SDL_RenderCoordinatesFromWindow(renderer, x, y, out_x, out_y);
+}
+
 void mainloop(){
     frameCount++;
     has_rendered = false;
+    SDL_GetWindowSizeInPixels(window, &screenWidth, &screenHeight);
 
     #ifdef _WIN32
     MSG msg;
@@ -579,7 +688,7 @@ void mainloop(){
         }
     }
     #endif
-    SDL_RenderCoordinatesFromWindow(renderer, m_x, m_y, &m_x, &m_y);
+    transformCoordinates(m_x, m_y, &m_x, &m_y);
     mouseX = m_x;
     mouseY = m_y;
     if(mouseX < 0)
@@ -607,7 +716,7 @@ void mainloop(){
                     running = 0;
                 else
                     SDL_DestroyWindow(target_win);
-                #ifndef __EMSCRIPTEN__
+                #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
                 for(int i = 0; i < MAX_WIDGETS; i++){
                     if(widgets[i].valid && widgets[i].window == target_win)
                         destroyWidget(i);
@@ -617,7 +726,7 @@ void mainloop(){
             break;
 
             case SDL_EVENT_KEY_DOWN:
-            if(event.key.key == exitButton)
+            if(event.key.key == exitButton || event.key.key == SDLK_AC_BACK)
                 running = 0;
             break;
         }
@@ -636,13 +745,25 @@ void mainloop(){
             width = widgets[i].width;
             height = widgets[i].height;
             current_widget = &widgets[i];
-            #ifdef __EMSCRIPTEN__
-            pixels = widgets[i].em_pixels;
+            
+            #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+            pixels = widgets[i].sw_pixels;
             memset(pixels, 0, width*height*sizeof(int));
             stride = width;
             bool res = widgets[i].callback(widgets[i].data);
-            if(res)
+            if(res) {
+                #ifdef __EMSCRIPTEN__
                 js_update_widget_canvas(i, pixels, width, height);
+                #elif defined(__ANDROID__)
+                // Android requires ARGB_8888 for bitmaps to display properly.
+                // SDL defaults to XRGB (0x00RRGGBB). We must OR the alpha channel 
+                // heavily so it's 255 (0xFF), otherwise widgets will render completely transparent!
+                for(int p = 0; p < width * height; p++) {
+                    pixels[p] |= 0xFF000000;
+                }
+                android_widget_update(i, pixels, width, height);
+                #endif
+            }
             #else
             SDL_Surface* surface;
             SDL_RenderClear(widgets[i].renderer);
@@ -686,12 +807,17 @@ void size(int w, int h){
     if(current_widget) {
         current_widget->width = w;
         current_widget->height = h;
-        #ifdef __EMSCRIPTEN__
-        current_widget->em_pixels = (int*)realloc(current_widget->em_pixels, w * h * sizeof(int));
+        
+        #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+        current_widget->sw_pixels = (int*)realloc(current_widget->sw_pixels, w * h * sizeof(int));
         int widget_id = (int)(current_widget - widgets);
+        #ifdef __EMSCRIPTEN__
         js_resize_widget_dom(widget_id, w, h);
-        pixels = current_widget->em_pixels;
+        #endif
+        // (Android Bitmap is dynamically re-created in Java if dimensions change)
+        pixels = current_widget->sw_pixels;
         stride = w;
+        
         #else
         SDL_UnlockTexture(current_widget->texture);
         SDL_DestroyTexture(current_widget->texture);
@@ -722,6 +848,8 @@ void size(int w, int h){
         SDL_SetTextureScaleMode(drawBuffer, SDL_SCALEMODE_NEAREST);
     } else {
         SDL_DestroyTexture(drawBuffer);
+        SDL_DestroySurface(back_surface);
+        SDL_DestroySurface(front_surface);
         drawBuffer = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
         back_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
         front_surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_XRGB8888);
@@ -753,6 +881,7 @@ void fullScreen(){
     is_fullscreen ^= 1; 
 
     SDL_SetWindowFullscreen(window, is_fullscreen);
+    SDL_SyncWindow(window);
 }
 
 void background(int col){
@@ -812,18 +941,18 @@ void setWindowSize(int w, int h){
 
 void setAspectRatio(float ratio){
     aspectRatio = ratio;
-    int render_width = width;
-    int render_height = height;
-    float render_ratio = (float)render_width / (float)render_height;
+    aspectRatioWidth = width;
+    aspectRatioHeight = height;
+    float render_ratio = (float)width / (float)height;
     if(aspectRatio > 0.0f){
         if(aspectRatio > 1.0f){
-            render_width = width / render_ratio * aspectRatio + 0.5f;
+            aspectRatioWidth = width / render_ratio * aspectRatio + 0.5f;
         } else {
-            render_height = height * render_ratio / aspectRatio + 0.5f;
+            aspectRatioHeight = height * render_ratio / aspectRatio + 0.5f;
         }
     }
 
-    SDL_SetRenderLogicalPresentation(renderer, render_width, render_height, scaling_mode);
+    SDL_SetRenderLogicalPresentation(renderer, aspectRatioWidth, aspectRatioHeight, scaling_mode);
 }
 
 void setScalingMode(SDL_RendererLogicalPresentation mode){
@@ -837,13 +966,45 @@ void setScalingMode(SDL_RendererLogicalPresentation mode){
 
 void renderBufferToWindow(){
     SDL_Surface* locked_surface;
+
+    int rw, rh;
+    SDL_RendererLogicalPresentation prev_mode;
+    SDL_GetRenderLogicalPresentation(renderer, &rw, &rh, &prev_mode);
+    
     SDL_LockTextureToSurface(drawBuffer, NULL, &locked_surface);
     SDL_BlitSurface(front_surface, NULL, locked_surface, NULL);
     SDL_UnlockTexture(drawBuffer);
 
     SDL_RenderClear(renderer);
-    SDL_RenderTexture(renderer, drawBuffer, NULL, NULL);
-    SDL_RenderPresent(renderer);
+
+    #ifdef __ANDROID__
+    if (prev_mode == SDL_LOGICAL_PRESENTATION_LETTERBOX) {
+        SDL_SetRenderLogicalPresentation(renderer, rw, rh, SDL_LOGICAL_PRESENTATION_DISABLED);
+        float scale = SDL_min(screenWidth / (float)rw, screenHeight / (float)rh);
+        SDL_FRect dst_rect = {
+            screenWidth / 2 - rw * scale / 2,
+            0,
+            rw * scale,
+            rh * scale
+        };
+        SDL_RenderTexture(renderer, drawBuffer, NULL, &dst_rect);
+        SDL_SetRenderLogicalPresentation(renderer, rw, rh, prev_mode);
+    } else 
+    #endif
+    {
+        SDL_RenderTexture(renderer, drawBuffer, NULL, NULL);
+    }
+
+    if (onDrawOverlay) {
+        SDL_SetRenderLogicalPresentation(renderer, rw, rh, SDL_LOGICAL_PRESENTATION_DISABLED);
+        onDrawOverlay(renderer, overlayCtx);
+        SDL_RenderPresent(renderer);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        SDL_SetRenderLogicalPresentation(renderer, rw, rh, prev_mode);
+    } else {
+        SDL_RenderPresent(renderer);
+    }
 }
 
 bool hasRendered(){
@@ -874,6 +1035,10 @@ SDL_Surface* getMainWindowSurface(){
     return front_surface;
 }
 
+SDL_Renderer* getMainRenderer(){
+    return renderer;
+}
+
 #ifdef _WIN32
 HWND getWindowHandler(){
     SDL_PropertiesID props = SDL_GetWindowProperties(window);
@@ -886,7 +1051,7 @@ void createMainMenu(){
 }
 #endif
 
-#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__) || defined(__ANDROID__)
 menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
     #ifdef _WIN32
         menu_rendered = false;
@@ -918,6 +1083,23 @@ menuId addMenuTo(menuId parentId, const char* string, bool isRadio){
         [parent addItem:item];
         
         updateMenuVect((__bridge void*)newMenu, isRadio);
+    #elif defined(__ANDROID__)
+        JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+        jobject parent = (parentId < n_menu) ? (jobject)menus[parentId].hMenu : android_menu_get_root(env);
+
+        jmethodID create_popup = (*env)->GetMethodID(env, android_activity_class, "javaMenuCreateSubPopup", "()Ljava/lang/Object;");
+        jobject new_popup = (*env)->NewGlobalRef(env, (*env)->CallObjectMethod(env, android_activity, create_popup));
+
+        jmethodID add_link = (*env)->GetMethodID(env, android_activity_class, "javaMenuAddSubmenuLink", "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V");
+        jstring jtitle = (*env)->NewStringUTF(env, string);
+        (*env)->CallVoidMethod(env, android_activity, add_link, parent, new_popup, jtitle);
+
+        if(isRadio) {
+            jmethodID set_group = (*env)->GetMethodID(env, android_activity_class, "javaMenuSetGroupCheckable", "(Ljava/lang/Object;I)V");
+            (*env)->CallVoidMethod(env, android_activity, set_group, new_popup, (jint)n_menu);
+        }
+
+        updateMenuVect(new_popup, isRadio);
     #endif
 
     updateButtonVect(NULL, NULL, parentId);
@@ -948,6 +1130,15 @@ buttonId addButtonTo(menuId parentId, const char* string, void (*callback)(void*
         [item setTarget:macMenuHandler];
         [item setTag:n_button];
         [parent addItem:item];
+    #elif defined(__ANDROID__)
+        JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+        jobject parent = (parentId < n_menu) ? (jobject)menus[parentId].hMenu : android_menu_get_root(env);
+        bool is_radio_child = (parentId < n_menu) && menus[parentId].is_radio;
+        jint group_id = (parentId < n_menu) ? (jint)parentId : 0;
+
+        jmethodID add_item = (*env)->GetMethodID(env, android_activity_class, "javaMenuAddItem", "(Ljava/lang/Object;IILjava/lang/String;Z)V");
+        jstring jtitle = (*env)->NewStringUTF(env, string);
+        (*env)->CallVoidMethod(env, android_activity, add_item, parent, group_id, (jint)n_button, jtitle, (jboolean)is_radio_child);
     #endif
 
     updateButtonVect(callback, arg, parentId);
@@ -965,6 +1156,20 @@ void destroyAllMenus(){
     #elif defined(__APPLE__)
         [NSApp setMainMenu:nil];
         macMenuHandler = nil;
+    #elif defined(__ANDROID__)
+        if(android_activity) {
+            JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+            jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaMenuDestroyAll", "()V");
+            (*env)->CallVoidMethod(env, android_activity, mid);
+            for(size_t i = 0; i < n_menu; i++) {
+                if(menus[i].hMenu)
+                    (*env)->DeleteGlobalRef(env, (jobject)menus[i].hMenu);
+            }
+            if(android_root_menu) {
+                (*env)->DeleteGlobalRef(env, android_root_menu);
+                android_root_menu = NULL;
+            }
+        }
     #endif
 
     free(buttons);
@@ -1002,6 +1207,12 @@ void checkRadioButton(buttonId button_id){
                     tickButton(i, (i == button_id));
                 }
             }
+        #elif defined(__ANDROID__)
+            for(size_t i = 0; i < n_button; i++) {
+                if(buttons[i].parent_menu == menu_id) {
+                    tickButton(i, (i == button_id));
+                }
+            }
         #endif
     }
 }
@@ -1028,30 +1239,13 @@ void tickButton(buttonId button_id, bool state){
             NSMenuItem* item = [parent itemWithTag:button_id];
             [item setState:state ? NSControlStateValueOn : NSControlStateValueOff];
         }
-    #endif
-}
-
-void enableButton(buttonId button_id, bool state){
-    if(button_id >= n_button) return;
-
-    #ifdef _WIN32
-        button_t* b = &buttons[button_id];
-        menuId menu_id = b->parent_menu;
-        if(menu_id >= n_menu) return;
-
-        EnableMenuItem(
-            (HMENU)menus[menu_id].hMenu,
-            b->position,
-            MF_BYPOSITION | (state ? MF_ENABLED : MF_DISABLED)
-        );
-    #elif defined(__EMSCRIPTEN__)
-        js_enable_button(button_id, state);
-    #elif defined(__APPLE__)
-        button_t* b = &buttons[button_id];
-        if(b->parent_menu < n_menu) {
-            NSMenu* parent = (__bridge NSMenu*)menus[b->parent_menu].hMenu;
-            NSMenuItem* item = [parent itemWithTag:button_id];
-            [item setEnabled:state];
+    #elif defined(__ANDROID__)
+        menuId menu_id = buttons[button_id].parent_menu;
+        if(menu_id < n_menu) {
+            JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+            android_menu_init(env);
+            jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaMenuSetItemChecked", "(Ljava/lang/Object;IZ)V");
+            (*env)->CallVoidMethod(env, android_activity, mid, (jobject)menus[menu_id].hMenu, (jint)button_id, (jboolean)state);
         }
     #endif
 }
@@ -1084,6 +1278,15 @@ void setButtonTitle(buttonId button_id, const char* string){
             NSMenuItem* item = [parent itemWithTag:button_id];
             [item setTitle:[NSString stringWithUTF8String:string]];
         }
+    #elif defined(__ANDROID__)
+        menuId menu_id = buttons[button_id].parent_menu;
+        if(menu_id < n_menu) {
+            JNIEnv *env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+            android_menu_init(env);
+            jmethodID mid = (*env)->GetMethodID(env, android_activity_class, "javaMenuSetItemTitle", "(Ljava/lang/Object;ILjava/lang/String;)V");
+            jstring jtitle = (*env)->NewStringUTF(env, string);
+            (*env)->CallVoidMethod(env, android_activity, mid, (jobject)menus[menu_id].hMenu, (jint)button_id, jtitle);
+        }
     #endif
 }
 #endif
@@ -1115,9 +1318,15 @@ void createWidget(const char* name, int w, int h, bool (*callback)(void*), void*
     wid->callback = callback;
     wid->data = userdata;
 
-    #ifdef __EMSCRIPTEN__
-        wid->em_pixels = (int*)malloc(w * h * sizeof(int));
+    #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+        wid->sw_pixels = (int*)malloc(w * h * sizeof(int));
+        
+        #ifdef __EMSCRIPTEN__
         js_create_widget_canvas(idx, name, w, h);
+        #elif defined(__ANDROID__)
+        android_widget_create(idx, name, w, h);
+        #endif
+        
     #else
         wid->window = SDL_CreateWindow(name, w, h, SDL_WINDOW_RESIZABLE);
         wid->renderer = SDL_CreateRenderer(wid->window, NULL);
@@ -1131,13 +1340,18 @@ void createWidget(const char* name, int w, int h, bool (*callback)(void*), void*
 static void destroyWidget(int i){
     widget_t* w = &widgets[i];
     if(w->valid){
-        #ifdef __EMSCRIPTEN__
-        js_destroy_widget_canvas(i);
-        free(w->em_pixels);
+        #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+            #ifdef __EMSCRIPTEN__
+            js_destroy_widget_canvas(i);
+            #elif defined(__ANDROID__)
+            android_widget_destroy(i);
+            #endif
+            
+            free(w->sw_pixels);
         #else
-        SDL_DestroyWindow(w->window);
-        SDL_DestroyTexture(w->texture);
-        SDL_DestroyRenderer(w->renderer);
+            SDL_DestroyWindow(w->window);
+            SDL_DestroyTexture(w->texture);
+            SDL_DestroyRenderer(w->renderer);
         #endif
         memset(w, 0, sizeof(widget_t));
     }
@@ -1150,7 +1364,7 @@ void destroyAllWidgets(){
 }
 
 void gridWindows() {
-    #ifndef __EMSCRIPTEN__
+    #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
     const int padX = 8, padY = 64;
 
     int count = 1;

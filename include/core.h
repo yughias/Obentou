@@ -74,10 +74,13 @@ extern const size_t n_cores;
 const core_t* core_detect(const archive_t* rom_archive, const archive_t* bios_archive, const char* force_core);
 void core_restart(core_ctx_t* ctx);
 void core_switch_pause(core_ctx_t* ctx);
+bool core_is_paused(core_ctx_t* ctx);
 void core_ctx_set_speed(ctx_args_t* ctx);
 void core_ctx_close(core_ctx_t* ctx);
+void core_save_emu(core_ctx_t* ctx);
 void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path, const char* force_core);
 void core_ctx_run_frame(core_ctx_t* ctx);
+const char* core_get_base_path(core_ctx_t* ctx);
 
 
 #endif

@@ -19,6 +19,10 @@ typedef Uint32 button;
 
 extern int width;
 extern int height;
+extern int screenWidth;
+extern int screenHeight;
+extern int aspectRatioWidth;
+extern int aspectRatioHeight;
 extern int stride;
 extern int* pixels;
 
@@ -32,7 +36,9 @@ extern int mouseX;
 extern int mouseY;
 extern button exitButton;
 
-extern void (*onExit)();
+extern void (*onExit)(bool background);
+extern void (*onDrawOverlay)(SDL_Renderer* renderer, void* ctx);
+extern void* overlayCtx;
 
 void setup();
 void loop();
@@ -42,6 +48,7 @@ void setWindowSize(int, int);
 void setAspectRatio(float);
 SDL_Window* getMainWindow();
 SDL_Surface* getMainWindowSurface();
+SDL_Renderer* getMainRenderer();
 float millis();
 void fullScreen();
 void background(int);
@@ -69,7 +76,7 @@ void destroyAllWidgets();
 
 typedef size_t menuId;
 typedef size_t buttonId;
-#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) || defined(__APPLE__) || defined(__ANDROID__)
 menuId addMenuTo(menuId, const char*, bool);
 buttonId addButtonTo(menuId, const char*, void (*callback)(void*), void*);
 void setButtonTitle(buttonId, const char*);

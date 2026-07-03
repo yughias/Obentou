@@ -6,6 +6,7 @@
 #include "utils/argument.h"
 #include "utils/state.h"
 #include "utils/rewind.h"
+#include "utils/overlay.h"
 
 #include "SDL_MAINLOOP.h"
 
@@ -69,18 +70,33 @@ const core_t cores[] = {
 
 const size_t n_cores = sizeof(cores)/sizeof(core_t);
 
+const char* core_get_base_path(core_ctx_t* ctx){
+    const char* base_path = archive_get_path(ctx->rom);
+    if (!base_path || !base_path[0])
+        base_path = archive_get_path(ctx->bios);
+    if (!base_path || !base_path[0])
+        base_path = ctx->core->name;
+    return base_path;
+}
+
 static void save_sav(core_ctx_t* ctx){
     char sav_path[FILENAME_MAX];
-    path_set_ext(archive_get_path(ctx->rom), sav_path, "sav");
+    path_set_ext(core_get_base_path(ctx), sav_path, "sav");
     ctx->core->close(ctx->emu, sav_path);
 }
 
-static void core_close_emu(core_ctx_t* ctx){
+void core_save_emu(core_ctx_t* ctx){
     if(ctx->emu){
         if(ctx->core->savestate && state_get_autosave())
             state_save_autosave(ctx);
         if(ctx->core->close)
             save_sav(ctx);
+    }
+}
+
+void core_close_emu(core_ctx_t* ctx){
+    if(ctx->emu){
+        core_save_emu(ctx);
         free(ctx->emu);
         destroyAllWidgets();
     }
@@ -156,6 +172,11 @@ void core_ctx_run_frame(core_ctx_t* ctx){
     const core_t* core = ctx->core;
 
     if(!core){
+        // return to frontend for android
+        #ifdef __ANDROID__
+        core_ctx_close(ctx);
+        exit(EXIT_SUCCESS);
+        #endif
         background(0);
         renderPixels();
         return;
@@ -177,6 +198,10 @@ void core_switch_pause(core_ctx_t* ctx){
     menu_tick_pause(ctx->pause);
 }
 
+bool core_is_paused(core_ctx_t* ctx){
+    return ctx->pause;
+}
+
 void core_ctx_close(core_ctx_t* ctx){
     sound_close();
 
@@ -184,6 +209,10 @@ void core_ctx_close(core_ctx_t* ctx){
 
     archive_free(ctx->rom);
     archive_free(ctx->bios);
+    ctx->rom = NULL;
+    ctx->bios = NULL;
+    ctx->emu = NULL;
+    ctx->core = NULL;
 }
 
 void core_restart(core_ctx_t* ctx){
@@ -208,12 +237,19 @@ void core_restart(core_ctx_t* ctx){
     core_close_emu(ctx);
 
     ctx->emu = core->init(ctx->rom, ctx->bios);
+    if (!ctx->emu) {
+        core_ctx_close(ctx);
+        core_restart(ctx);
+        return;
+    }
+
     float push_rate = sound_get_push_rate();
 
     sound_open(&audio_spec, core->sound_callback, ctx->emu);
     sound_set_push_rate(core->sound_push_rate < 0 ? push_rate : core->sound_push_rate);
 
     controls_init(core);
+    overlay_init(core);
 
     if(first_loading && core->loadstate && state_get_autosave()){
         state_load_autosave(ctx);

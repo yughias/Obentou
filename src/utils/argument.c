@@ -2,12 +2,13 @@
 
 #include "SDL_MAINLOOP.h"
 #include "minIni.h"
+#include "tinyfiledialogs.h"
 
 #include "argparse.h"
 
 #ifdef __EMSCRIPTEN__
 #define _fullpath(dest, base, maxlen) SDL_strlcpy(dest, base, maxlen)
-#elif defined(__linux__) || defined(__unix__) || defined(__APPLE__)
+#elif defined(__linux__) || defined(__unix__) || defined(__APPLE__) || defined(__ANDROID__)
     char *_fullpath(char *target, const char *path, size_t size) {
         return realpath(path, target);
     }
@@ -26,6 +27,7 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
     *rom_path = NULL;
     *bios_path = NULL;
     *force_core = NULL;
+
     struct argparse_option options[] = {
         OPT_HELP(),
         OPT_GROUP("Options"),
@@ -44,7 +46,7 @@ void argument_get(const char** rom_path, const char** bios_path, const char** fo
     argc = argparse_parse(&argparse, argc, argv);
 
     if(argc)
-        *rom_path = argv[0];    
+        *rom_path = argv[0];
 }
 
 void argument_get_default_bios(char* path, const char* core_name){
@@ -60,8 +62,11 @@ const char* argument_get_ini_path(){
     if(ini_path[0])
         return ini_path;
 
-    #ifdef __EMSCRIPTEN__
+    #if defined(__EMSCRIPTEN__)
     snprintf(ini_path, FILENAME_MAX, "/ROMs/config.ini");
+    #elif defined(__ANDROID__)
+    const char* base_path = SDL_GetAndroidInternalStoragePath();
+    snprintf(ini_path, FILENAME_MAX, "%s/config.ini", base_path);
     #else
     const char* base_path = SDL_GetBasePath();
     snprintf(ini_path, FILENAME_MAX, "%sconfig.ini", base_path);

@@ -20,7 +20,6 @@
 static buttonId pause_button;
 static buttonId speed_buttons[4];
 static buttonId fullscreen_button;
-static buttonId default_bios_button;
 static buttonId disable_illegal_input_button;
 static buttonId autosave_button;
 static buttonId keyboard_player_select_button[2];
@@ -294,21 +293,12 @@ void menu_open_bios(core_ctx_t* ctx){
 
 void menu_select_default_bios(const char* core_name){
     sound_pause(true);
-
-    char* selected_default_bios = tinyfd_openFileDialog(
-        "Select Default Bios",
-        NULL,
-        0,
-        NULL,
-        NULL,
-        0
-    );
-
+    char* selected_default_bios = tinyfd_openFileDialog("Select Default Bios", NULL, 0, NULL, NULL, 0);
+    if (!selected_default_bios)
+        selected_default_bios = "";
     argument_set_default_bios(selected_default_bios, core_name);
 
-    char new_path[FILENAME_MAX];
-    get_bios_path_button_text(new_path, FILENAME_MAX, core_name);
-    setButtonTitle(default_bios_button, new_path);
+    menu_create(core_ctx_arg); 
 }
 
 void menu_speed_check(int speed_level){
@@ -356,6 +346,7 @@ void menu_create(core_ctx_t* ctx){
         slot_args[i].value = i;
     }
 
+    #ifndef __ANDROID__
     menuId file_menu = addMenuTo(-1, "File", false);
     menuId recent_menu = addMenuTo(file_menu, "Recent", false);
     addButtonTo(file_menu, "Open Rom", (void*)menu_open_rom, ctx);
@@ -365,9 +356,10 @@ void menu_create(core_ctx_t* ctx){
     for(int i = 0; i < n_cores; i++){
         if(cores[i].has_bios){
             get_bios_path_button_text(label, 1024, cores[i].name);
-            default_bios_button = addButtonTo(default_bios_menu, label, (void*)menu_select_default_bios, (void*)(cores[i].name));
+            addButtonTo(default_bios_menu, label, (void*)menu_select_default_bios, (void*)(cores[i].name));
         }    
     }
+    #endif
     
     if(ctx->core && ctx->core->savestate && ctx->core->loadstate){
         menuId state_menu = addMenuTo(-1, "State", false);
@@ -389,10 +381,14 @@ void menu_create(core_ctx_t* ctx){
     }
 
     menuId emu_menu = addMenuTo(-1, "Emu", false);
+    #ifndef __ANDROID__
     menuId speed_menu = addMenuTo(emu_menu, "Speed", true);
+    #endif
     menuId video_menu = addMenuTo(-1, "Video", false);
 
+    #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
     fullscreen_button = addButtonTo(video_menu, "Fullscreen", (void*)menu_fullscreen, NULL);
+    #endif
     menuId scaling_menu = addMenuTo(video_menu, "Scaling", true);
 
     buttonId fit_button = addButtonTo(scaling_menu, "Fit", (void*)menu_change_scaling_mode, &fit_mode);
@@ -404,9 +400,12 @@ void menu_create(core_ctx_t* ctx){
     if(ctx->core)
         addButtonTo(video_menu, "Screenshot", (void*)menu_save_screenshot, ctx);
 
+    #ifndef __ANDROID__
     pause_button = addButtonTo(emu_menu, "Pause", (void*)core_switch_pause, ctx);
+    #endif
     addButtonTo(emu_menu, "Restart", (void*)core_restart, ctx);
 
+    #ifndef __ANDROID__
     for(int i = 0; i < 4; i++){
         char speed_str[3] = {'0' + (1 << i), 'x', 0};
         speed_buttons[i] = addButtonTo(speed_menu, speed_str, (void*)core_ctx_set_speed, &speed_args[i]);
@@ -423,6 +422,7 @@ void menu_create(core_ctx_t* ctx){
     }
 
     addButtonTo(recent_menu, "Clear History", (void*)menu_clear_recent, ctx);
+    #endif
 
     menuId input_menu = addMenuTo(-1, "Input", false);
     disable_illegal_input_button = addButtonTo(input_menu, "Disable illegal input", (void*)menu_disable_illegal, NULL);

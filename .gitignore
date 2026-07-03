@@ -16,6 +16,7 @@
 !LICENSE
 !imgs/
 !README.md
+!CMakeLists.txt
 
 !test/
 test/*.exe
@@ -25,3 +26,7 @@ website/*.ico
 website/*.data
 website/*.wasm
 website/*.js
+
+!android/
+android/**/build
+android/**/.*

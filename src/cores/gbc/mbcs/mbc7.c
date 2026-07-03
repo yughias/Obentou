@@ -76,6 +76,7 @@ void gb_mbc7_ram_write(gb_t* gb, u16 addr, u8 byte){
             int dx = 0;
             int dy = 0;
             // TODO
+            #ifndef __ANDROID__
             SDL_MouseButtonFlags ms = SDL_GetMouseState(NULL, NULL);
             bool isMousePressed = ms & SDL_BUTTON_LMASK;
             if(isMousePressed){
@@ -83,10 +84,16 @@ void gb_mbc7_ram_write(gb_t* gb, u16 addr, u8 byte){
                 dy = -(mouseY - height / 2);
             } else if(controls_gamepad_connected()) {
                 float sensors[3];
-                controls_get_gamepad_accelerometer(sensors);
-                dx = sensors[0] * 10;
-                dy = sensors[2] * 10;
+                controls_get_accelerometer(sensors);
+                dx = sensors[0] * 20.0f;
+                dy = sensors[2] * 20.0f;
             }
+            #else
+                float sensors[3];
+                controls_get_accelerometer(sensors);
+                dx = sensors[0] * 20.0f;
+                dy = -sensors[1] * 20.0f;
+            #endif
             mbc7->accelerometer_x = 0x81D0 + dx;
             mbc7->accelerometer_y = 0x81D0 + dy;
         }

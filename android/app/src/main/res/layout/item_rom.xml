@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp"
+    android:background="#1E1E1E"
+    android:gravity="center_vertical"
+    android:descendantFocusability="blocksDescendants">
+
+    <ImageView
+        android:id="@+id/ivScreenshot"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:scaleType="fitCenter"
+        android:layout_marginEnd="16dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvRomTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvRomSystem"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp" />
+            
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnShowData"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_info_details"
+        android:contentDescription="Show Data"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:focusable="false" />
+
+    <ImageButton
+        android:id="@+id/btnDeleteRom"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_delete"
+        android:contentDescription="Delete ROM"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:focusable="false" />
+
+</LinearLayout>

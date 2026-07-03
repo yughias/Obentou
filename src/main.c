@@ -6,18 +6,27 @@
 #include "utils/menu.h"
 #include "utils/state.h"
 #include "utils/rewind.h"
+#include "utils/overlay.h"
+#include "android.h"
 
 #include "core.h"
 
-static core_ctx_t emu_ctx;
+core_ctx_t emu_ctx;
 
-void obentou_exit(){
-    sound_close();
-    camera_close();
-    controls_free();
-    core_ctx_close(&emu_ctx);
-    controls_save_maps();
-    rewind_clear();
+void obentou_exit(bool background){
+    SDL_Log("obentou exit");
+    if (background) {
+        SDL_Log("Saving emu");
+        core_save_emu(&emu_ctx);
+    } else {
+        sound_close();
+        camera_close();
+        controls_free();
+        core_ctx_close(&emu_ctx);
+        controls_save_maps();
+        rewind_clear();
+        overlay_clear();
+    }
 }
 
 void setup(){
@@ -44,7 +53,7 @@ void setup(){
                 emu_ctx.core->run_frame(emu_ctx.emu);
             menu_save_screenshot(&emu_ctx);
         }
-        obentou_exit();
+        obentou_exit(true);
         exit(EXIT_SUCCESS);
     }
 
@@ -69,9 +78,11 @@ void loop(){
         state_load_slot(&emu_ctx);
     }
 
+    #if !defined(_EMSCRIPTEN__) && !defined(__ANDROID__)
     if(controls_double_click()){
         menu_fullscreen();
     }
+    #endif
 
     if(hotkeys_released(CONTROL_HOTKEY_OPEN))
         menu_open_rom(&emu_ctx);
@@ -95,7 +106,7 @@ void loop(){
     if(hotkeys_released(CONTROL_HOTKEY_PAUSE))
         core_switch_pause(&emu_ctx);
 
-     if(hotkeys_pressed(CONTROL_HOTKEY_REWIND)){
+     if(hotkeys_pressed(CONTROL_HOTKEY_REWIND) || android_is_rewind()){
         byte_vec_t* prev = rewind_recover_state();
         if(prev){
             emu_ctx.core->loadstate(emu_ctx.emu, prev); 
@@ -104,7 +115,7 @@ void loop(){
                 emu_ctx.core->run_frame(emu_ctx.emu);
         }
     } else {
-        if (emu_ctx.core && emu_ctx.core->savestate) {
+        if (emu_ctx.core && emu_ctx.core->savestate && !core_is_paused(&emu_ctx)) {
             byte_vec_t state = emu_ctx.core->savestate(emu_ctx.emu);
             rewind_add_state(&state);
         }

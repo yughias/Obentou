@@ -57,7 +57,162 @@ misrepresented as being the original software.
     |__________________________________________|
 */
 
-#ifndef __EMSCRIPTEN__
+#if defined(__ANDROID__)
+
+#include <SDL3/SDL.h>
+#include <string.h>
+#include <jni.h>
+#include <stdio.h>
+#define BUFFER_SIZE 1024
+static char string_buffer[BUFFER_SIZE];
+static volatile int s_dialog_finished;
+static int s_dialog_has_result;
+
+static void get_real_android_filename(const char *uri_str, char *out_name, size_t max_len) {
+    JNIEnv *env = (JNIEnv *)SDL_GetAndroidJNIEnv();
+    jobject activity = (jobject)SDL_GetAndroidActivity();
+    
+    // Set a fallback just in case the query fails
+    SDL_strlcpy(out_name, "rom.bin", max_len);
+
+    if (!env || !activity) return;
+
+    // Convert C string to Java Uri object: Uri.parse(uri_str)
+    jclass uri_class = (*env)->FindClass(env, "android/net/Uri");
+    jmethodID parse_method = (*env)->GetStaticMethodID(env, uri_class, "parse", "(Ljava/lang/String;)Landroid/net/Uri;");
+    jstring j_uri_str = (*env)->NewStringUTF(env, uri_str);
+    jobject uri_obj = (*env)->CallStaticObjectMethod(env, uri_class, parse_method, j_uri_str);
+
+    // Get ContentResolver: activity.getContentResolver()
+    jclass activity_class = (*env)->GetObjectClass(env, activity);
+    jmethodID get_resolver_method = (*env)->GetMethodID(env, activity_class, "getContentResolver", "()Landroid/content/ContentResolver;");
+    jobject resolver_obj = (*env)->CallObjectMethod(env, activity, get_resolver_method);
+
+    // Query the database: resolver.query(uri, null, null, null, null)
+    jclass resolver_class = (*env)->GetObjectClass(env, resolver_obj);
+    jmethodID query_method = (*env)->GetMethodID(env, resolver_class, "query", "(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;");
+    jobject cursor_obj = (*env)->CallObjectMethod(env, resolver_obj, query_method, uri_obj, NULL, NULL, NULL, NULL);
+
+    if (cursor_obj) {
+        jclass cursor_class = (*env)->GetObjectClass(env, cursor_obj);
+        jmethodID move_to_first = (*env)->GetMethodID(env, cursor_class, "moveToFirst", "()Z");
+        
+        // if (cursor.moveToFirst())
+        if ((*env)->CallBooleanMethod(env, cursor_obj, move_to_first)) {
+            // Find the "_display_name" column
+            jmethodID get_col_index = (*env)->GetMethodID(env, cursor_class, "getColumnIndex", "(Ljava/lang/String;)I");
+            jstring col_name = (*env)->NewStringUTF(env, "_display_name");
+            jint name_index = (*env)->CallIntMethod(env, cursor_obj, get_col_index, col_name);
+
+            if (name_index != -1) {
+                // Get the actual string value
+                jmethodID get_string_method = (*env)->GetMethodID(env, cursor_class, "getString", "(I)Ljava/lang/String;");
+                jstring filename_jstr = (jstring)(*env)->CallObjectMethod(env, cursor_obj, get_string_method, name_index);
+                
+                if (filename_jstr) {
+                    const char *filename_cstr = (*env)->GetStringUTFChars(env, filename_jstr, NULL);
+                    if (filename_cstr) {
+                        SDL_strlcpy(out_name, filename_cstr, max_len); // Copy "tetris.gb" to our buffer
+                        (*env)->ReleaseStringUTFChars(env, filename_jstr, filename_cstr);
+                    }
+                    (*env)->DeleteLocalRef(env, filename_jstr);
+                }
+            }
+            (*env)->DeleteLocalRef(env, col_name);
+        }
+        // cursor.close()
+        jmethodID close_method = (*env)->GetMethodID(env, cursor_class, "close", "()V");
+        (*env)->CallVoidMethod(env, cursor_obj, close_method);
+        
+        (*env)->DeleteLocalRef(env, cursor_class);
+        (*env)->DeleteLocalRef(env, cursor_obj);
+    }
+
+    // Clean up JNI references
+    (*env)->DeleteLocalRef(env, resolver_class);
+    (*env)->DeleteLocalRef(env, resolver_obj);
+    (*env)->DeleteLocalRef(env, activity_class);
+    (*env)->DeleteLocalRef(env, uri_obj);
+    (*env)->DeleteLocalRef(env, j_uri_str);
+    (*env)->DeleteLocalRef(env, uri_class);
+}
+
+static int copy_content_uri_to_local(const char *uri) {
+    SDL_Log("copy_content_uri_to_local: %s", uri);
+    SDL_IOStream *src = SDL_IOFromFile(uri, "rb");
+    if (!src) {
+        SDL_Log("tinyfd_openFileDialog: could not open %s (%s)", uri, SDL_GetError());
+        return 0;
+    }
+
+    // --- GET THE REAL FILENAME VIA ANDROID OS ---
+    char real_filename[256];
+    get_real_android_filename(uri, real_filename, sizeof(real_filename));
+    
+    SDL_Log("Android reports the real filename is: %s", real_filename);
+
+    char dir[512];
+    snprintf(dir, sizeof(dir), "%s/ROMs", SDL_GetAndroidInternalStoragePath());
+
+    SDL_CreateDirectory(dir);
+    
+    // Now use the real filename for your local copy!
+    snprintf(string_buffer, sizeof(string_buffer), "%s/%s", dir, real_filename);
+
+    SDL_Log("Saving to: %s", string_buffer);
+
+    SDL_IOStream *dst = SDL_IOFromFile(string_buffer, "wb");
+    if (!dst) {
+        SDL_Log("tinyfd_openFileDialog: could not create %s (%s)", string_buffer, SDL_GetError());
+        SDL_CloseIO(src);
+        return 0;
+    }
+
+    char buf[8192];
+    size_t n;
+    while ((n = SDL_ReadIO(src, buf, sizeof(buf))) > 0) {
+        SDL_WriteIO(dst, buf, n);
+    }
+    SDL_CloseIO(src);
+    SDL_CloseIO(dst);
+
+    SDL_Log("tinyfd_openFileDialog: copied %s to %s", uri, string_buffer);
+    return 1;
+}
+
+static void SDLCALL on_open_file_result(void *userdata, const char * const *filelist, int filter) {
+	SDL_Log("on_open_file_result: %s", filelist ? *filelist : "NULL");
+    (void)userdata; (void)filter;
+    s_dialog_has_result = (filelist && *filelist && copy_content_uri_to_local(*filelist));
+	s_dialog_finished = 1;
+}
+
+char *tinyfd_openFileDialog(const char *aTitle,
+                            const char *aDefaultPathAndOrFile,
+                            int aNumOfFilterPatterns,
+                            const char * const *aFilterPatterns,
+                            const char *aSingleFilterDescription,
+                            int aAllowMultipleSelects) {
+	s_dialog_finished = 0;
+    s_dialog_has_result = 0;
+	SDL_Log("loading %s", aDefaultPathAndOrFile);
+
+    SDL_ShowOpenFileDialog(on_open_file_result, NULL, NULL, NULL, 0, NULL, aAllowMultipleSelects != 0);
+	SDL_Log("tinyfd_openFileDialog: %s", aDefaultPathAndOrFile);
+    
+	while (!s_dialog_finished) {
+        SDL_PumpEvents(); // Reads the Android surface recreation messages
+        SDL_Delay(10);    // Sleep for 10ms so you don't melt the phone's CPU
+    }
+
+    return s_dialog_has_result ? string_buffer : NULL;
+}
+
+char *tinyfd_inputBox(char const *aTitle, char const *aMessage, char const *aDefaultInput) {
+    return NULL;   // no text-entry dialog wired up yet
+}
+
+#elif !defined(__EMSCRIPTEN__)
 
 #if defined(__GNUC__) || defined(__clang__)
 #ifndef _GNU_SOURCE

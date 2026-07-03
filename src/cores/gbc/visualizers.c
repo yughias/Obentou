@@ -97,7 +97,7 @@ static void draw_color_at(int x, int y, int palette, int pal_color, u8* cram){
 }
 
 bool gb_draw_palettes(gb_t* gb){
-    int n_palette = gb->console_type == CGB_TYPE ? 8 : 1;
+    int n_palette = gb->console_type == CGB_TYPE ? 8 : (gb->console_type == DMG_ON_CGB_TYPE ? 2 : 1);
     size(4, n_palette);
 
     if(gb->console_type == DMG_TYPE || gb->console_type == MEGADUCK_TYPE){

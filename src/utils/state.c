@@ -36,7 +36,11 @@ static bool state_load(core_ctx_t* ctx, byte_vec_t* state) {
 }
 
 bool state_get_autosave() {
+    #ifdef __ANDROID__
+    return ini_getbool("STATE", "AUTOLOAD", true, argument_get_ini_path());
+    #else
     return ini_getbool("STATE", "AUTOLOAD", false, argument_get_ini_path());
+    #endif
 }
 
 void state_set_autosave(bool autosave) {
@@ -47,10 +51,13 @@ int state_get_active_slot() {
     return ini_getl("STATE", "SLOT", 0, argument_get_ini_path());
 }
 
-static void state_get_slot_path(char* slot_path, const char* rom_path, int slot) {
+static void state_get_slot_path(char* slot_path, core_ctx_t* ctx) {
+    // build state extension
+    int slot = state_get_active_slot();
     char buf[16];
     snprintf(buf, sizeof(buf), "%01d.state.bmp", slot);
-    path_set_ext(rom_path, slot_path, buf);
+
+    path_set_ext(core_get_base_path(ctx), slot_path, buf);
 }
 
 void state_set_active_slot(int* slot) {
@@ -59,11 +66,10 @@ void state_set_active_slot(int* slot) {
 }
 
 void state_save_slot(core_ctx_t* ctx) {
-    const char* rom_path = archive_get_path(ctx->rom);
-    if(!rom_path || !rom_path[0])
+    if (!ctx->emu)
         return;
     char path[FILENAME_MAX];
-    state_get_slot_path(path, rom_path, state_get_active_slot());
+    state_get_slot_path(path, ctx);
     byte_vec_t state = state_save(ctx);
     SDL_SaveBMP(getMainWindowSurface(), path);
     file_append(path, state.data, state.size);
@@ -71,8 +77,10 @@ void state_save_slot(core_ctx_t* ctx) {
 }
 
 void state_load_slot(core_ctx_t* ctx) {
+    if (!ctx->emu)
+        return;
     char path[FILENAME_MAX];
-    state_get_slot_path(path, archive_get_path(ctx->rom), state_get_active_slot());
+    state_get_slot_path(path, ctx);
     file_t file;
     file_load(&file, path, false);
     if(!file.data)

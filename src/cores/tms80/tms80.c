@@ -67,6 +67,11 @@ static TMS80_TYPE detect_type(const archive_t* rom_archive){
 }
 
 void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
+    if (detect_type(rom_archive) == COLECO && detect_type(bios_archive) != COLECO) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Bios needed", "Coleco BIOS is required", getMainWindow());
+        return NULL;
+    }
+
     tms80_t* tms80 = malloc(sizeof(tms80_t));
     memset(tms80, 0, sizeof(tms80_t));
     z80_init(&tms80->z80);
@@ -358,13 +363,7 @@ void TMS80_run_frame(tms80_t* tms80){
 }
 
 bool COLECO_detect(const archive_t* rom_archive, const archive_t* bios_archive){
-    TMS80_TYPE rom_type = detect_type(rom_archive);
-    TMS80_TYPE bios_type = detect_type(bios_archive);
-    if (rom_type == COLECO && bios_type != COLECO) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Bios needed", "Coleco BIOS is required", getMainWindow());
-        return false;
-    }
-    return (detect_type(rom_archive) == COLECO) && (detect_type(bios_archive) == COLECO);
+    return (detect_type(rom_archive) == COLECO) || (archive_is_empty(rom_archive) && detect_type(bios_archive) == COLECO);
 }
 
 bool SEGA_detect(const archive_t* rom_archive, const archive_t* bios_archive){

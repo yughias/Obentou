@@ -40,14 +40,21 @@ void file_delete(file_t* file){
     free(file->data);
 }
 
-const char* path_get_ext(const char* path){
-    const char* dot = strrchr(path, '.');
-    if(!dot) return "";
-    return dot + 1;
+const char* path_get_ext(const char* path) {
+    if (!path) return "";
+
+    const char* slash = strrchr(path, '/');
+    const char* bslash = strrchr(path, '\\');
+    const char* last_sep = slash > bslash ? slash : bslash;
+    const char* filename = last_sep ? last_sep + 1 : path;
+    const char* dot = strrchr(filename, '.');
+    return dot ? dot + 1 : path + strlen(path);
 }
 
-void path_set_ext(const char* i_path, char* o_path, const char* ext){
-    const char* dot = strrchr(i_path, '.');
-    if(!dot) return;
-    sprintf(o_path, "%.*s.%s", (int)(dot - i_path), i_path, ext);
+void path_set_ext(const char* i_path, char* o_path, const char* ext) {
+    if (!i_path || !o_path) return;
+
+    const char* cur_ext = path_get_ext(i_path);
+    int base_len = *cur_ext ? (cur_ext - 1 - i_path) : (cur_ext - i_path);
+    sprintf(o_path, "%.*s.%s", base_len, i_path, ext);
 }

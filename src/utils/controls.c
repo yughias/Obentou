@@ -1,5 +1,6 @@
 #include "utils/controls.h"
 #include "utils/argument.h"
+#include "utils/overlay.h"
 #include "core.h"
 
 #include "SDL_MAINLOOP.h"
@@ -23,6 +24,7 @@ static control_t end;
 static control_type_t begin_type;
 static control_type_t end_type;
 static control_type_t actual_type;
+static SDL_Sensor* accelerometer;
 
 static bool* pressed;
 static bool* prev_pressed;
@@ -56,7 +58,15 @@ const char controls_type_names[CONTROL_TYPE_COUNT][32] = {
     CONTROLS_TYPE_ENUM(DECLARE_CONTROL_TYPE_NAME)
 };
 
-#define LOAD_SCANCODE4(console, button, keyboard, gamepad) { \
+#define DECLARE_CONTROL_OVERLAY7(console, button, keyboard, gamepad, pos_x, pos_y, scale) [ CONTROL_ ## console ## _ ## button ] = {pos_x, pos_y, scale},
+#define DECLARE_CONTROL_OVERLAY8(console, button, val, keyboard, gamepad, pos_x, pos_y, scale) DECLARE_CONTROL_OVERLAY7(console, button, keyboard, gamepad, pos_x, pos_y, scale)
+#define DECLARE_CONTROL_OVERLAY(...) GET_MACRO_ENUM(__VA_ARGS__, DECLARE_CONTROL_OVERLAY8, DECLARE_CONTROL_OVERLAY7, _, _, _)(__VA_ARGS__)
+
+const float controls_overlays[CONTROL_COUNT][3] = {
+    CONTROLS_ENUM(DECLARE_CONTROL_OVERLAY)
+};
+
+#define LOAD_SCANCODE7(console, button, keyboard, gamepad, pos_x, pos_y, scale) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_KEY_" #button, keyboard, name, 64, argument_get_ini_path()); \
     SDL_Scancode scancode = SDL_SCANCODE_UNKNOWN; \
@@ -69,17 +79,17 @@ const char controls_type_names[CONTROL_TYPE_COUNT][32] = {
     } \
     control_scancode_maps[CONTROL_ ## console ## _ ## button] = scancode; \
 }
-#define LOAD_SCANCODE5(console, button, val, keyboard, gamepad) LOAD_SCANCODE4(console, button, keyboard, gamepad)
-#define LOAD_SCANCODE(...) GET_MACRO_ENUM(__VA_ARGS__, LOAD_SCANCODE5, LOAD_SCANCODE4, _, _, _)(__VA_ARGS__)
+#define LOAD_SCANCODE8(console, button, val, keyboard, gamepad, pos_x, pos_y, scale) LOAD_SCANCODE7(console, button, keyboard, gamepad, pos_x, pos_y, scale)
+#define LOAD_SCANCODE(...) GET_MACRO_ENUM(__VA_ARGS__, LOAD_SCANCODE8, LOAD_SCANCODE7, _, _, _)(__VA_ARGS__)
 
-#define SAVE_SCANCODE4(console, button, keyboard, gamepad) { \
+#define SAVE_SCANCODE7(console, button, keyboard, gamepad, pos_x, pos_y, scale) { \
     const char* name = SDL_GetScancodeName(control_scancode_maps[CONTROL_ ## console ## _ ## button]); \
     ini_puts(#console, "INPUT_KEY_" #button, name && name[0] ? name : "none", argument_get_ini_path()); \
 }
-#define SAVE_SCANCODE5(console, button, val, keyboard, gamepad) SAVE_SCANCODE4(console, button, keyboard, gamepad)
-#define SAVE_SCANCODE(...) GET_MACRO_ENUM(__VA_ARGS__, SAVE_SCANCODE5, SAVE_SCANCODE4, _, _, _)(__VA_ARGS__)
+#define SAVE_SCANCODE8(console, button, val, keyboard, gamepad, pos_x, pos_y, scale) SAVE_SCANCODE7(console, button, keyboard, gamepad, pos_x, pos_y, scale)
+#define SAVE_SCANCODE(...) GET_MACRO_ENUM(__VA_ARGS__, SAVE_SCANCODE8, SAVE_SCANCODE7, _, _, _)(__VA_ARGS__)
 
-#define LOAD_GAMEPAD4(console, button, keyboard, gamepad) { \
+#define LOAD_GAMEPAD7(console, button, keyboard, gamepad, pos_x, pos_y, scale) { \
     char name[64] = ""; \
     ini_gets(#console, "INPUT_GAMEPAD_" #button, gamepad, name, 64, argument_get_ini_path()); \
     SDL_GamepadButton pad_btn = SDL_GAMEPAD_BUTTON_INVALID; \
@@ -91,15 +101,15 @@ const char controls_type_names[CONTROL_TYPE_COUNT][32] = {
     } \
     control_gamepad_maps[CONTROL_ ## console ## _ ## button] = pad_btn; \
 }
-#define LOAD_GAMEPAD5(console, button, val, keyboard, gamepad) LOAD_GAMEPAD4(console, button, keyboard, gamepad)
-#define LOAD_GAMEPAD(...) GET_MACRO_ENUM(__VA_ARGS__, LOAD_GAMEPAD5, LOAD_GAMEPAD4, _, _, _)(__VA_ARGS__)
+#define LOAD_GAMEPAD8(console, button, val, keyboard, gamepad, pos_x, pos_y, scale) LOAD_GAMEPAD7(console, button, keyboard, gamepad, pos_x, pos_y, scale)
+#define LOAD_GAMEPAD(...) GET_MACRO_ENUM(__VA_ARGS__, LOAD_GAMEPAD8, LOAD_GAMEPAD7, _, _, _)(__VA_ARGS__)
 
-#define SAVE_GAMEPAD4(console, button, keyboard, gamepad) { \
+#define SAVE_GAMEPAD7(console, button, keyboard, gamepad, pos_x, pos_y, scale) { \
     const char* name = SDL_GetGamepadStringForButton(control_gamepad_maps[CONTROL_ ## console ## _ ## button]); \
     ini_puts(#console, "INPUT_GAMEPAD_" #button, name && name[0] ? name : "none", argument_get_ini_path()); \
 }
-#define SAVE_GAMEPAD5(console, button, val, keyboard, gamepad) SAVE_GAMEPAD4(console, button, keyboard, gamepad)
-#define SAVE_GAMEPAD(...) GET_MACRO_ENUM(__VA_ARGS__, SAVE_GAMEPAD5, SAVE_GAMEPAD4, _, _, _)(__VA_ARGS__)
+#define SAVE_GAMEPAD8(console, button, val, keyboard, gamepad, pos_x, pos_y, scale) SAVE_GAMEPAD7(console, button, keyboard, gamepad, pos_x, pos_y, scale)
+#define SAVE_GAMEPAD(...) GET_MACRO_ENUM(__VA_ARGS__, SAVE_GAMEPAD8, SAVE_GAMEPAD7, _, _, _)(__VA_ARGS__)
 
 const char* controls_get_scancode_name(control_t input){
     const char* name = SDL_GetScancodeName(control_scancode_maps[input]);
@@ -165,6 +175,14 @@ void controls_init(const core_t* core) {
             break;
         }
     }
+
+    int n_sensors = 0;
+    SDL_SensorID* sensors = SDL_GetSensors(&n_sensors);
+    for (int i = 0; i < n_sensors; i++) {
+        if (SDL_GetSensorTypeForID(sensors[i]) == SDL_SENSOR_ACCEL)
+            accelerometer = SDL_OpenSensor(sensors[i]);
+    }
+    SDL_free(sensors);
 }
 
 void controls_disable_illegal_input(bool disable){
@@ -181,6 +199,9 @@ void controls_free(){
             gamepads[i] = NULL;
         }
     }
+
+    if (accelerometer)
+        SDL_CloseSensor(accelerometer);
 }
 
 static bool is_gamepad_opened(SDL_JoystickID id) {
@@ -261,6 +282,8 @@ void controls_update(){
         
         pressed[ACTIVE_BUTTONS * keyboard_player + idx] |= keystate[control_scancode_maps[i]];
 
+        pressed[idx] |= overlay_pressed(i);
+
         for(int k = 0; k < MAX_GAMEPADS; k++){
             if(gamepads[k])
                 pressed[ACTIVE_BUTTONS * gamepad_players[k] + idx] |= SDL_GetGamepadButton(gamepads[k], control_gamepad_maps[i]);
@@ -327,7 +350,7 @@ bool controls_rumble(u16 low, u16 hi, u32 duration){
     return ret;
 }
 
-void controls_get_gamepad_accelerometer(float* sensors){
+void controls_get_accelerometer(float* sensors){
     sensors[0] = 0.0f;
     sensors[1] = 0.0f;
     sensors[2] = 0.0f;
@@ -336,6 +359,14 @@ void controls_get_gamepad_accelerometer(float* sensors){
             SDL_GetGamepadSensorData(gamepads[i], SDL_SENSOR_ACCEL, sensors, 3);
             return;
         }
+    }
+
+    if (accelerometer) {
+        float accel[3];
+        SDL_GetSensorData(accelerometer, accel, 3);
+        sensors[0] += accel[0];
+        sensors[1] += accel[1];
+        sensors[2] += accel[2];
     }
 }
 
