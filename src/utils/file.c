@@ -7,15 +7,15 @@
 bool file_load(file_t* file, const char* filename, bool show_msg){
     memset(file, 0, sizeof(file_t));
     strcpy(file->path, filename);
-    FILE* fptr = fopen(filename, "rb");
+    SDL_IOStream* fptr = SDL_IOFromFile(filename, "rb");
     if(!fptr)
         return false;
-    fseek(fptr, 0, SEEK_END);
-    file->size = ftell(fptr);
-    rewind(fptr);
+    SDL_SeekIO(fptr, 0, SDL_IO_SEEK_END);
+    file->size = SDL_TellIO(fptr);
+    SDL_SeekIO(fptr, 0, SDL_IO_SEEK_SET);
     file->data = malloc(file->size);
-    fread(file->data, 1, file->size, fptr);
-    fclose(fptr);
+    SDL_ReadIO(fptr, file->data, file->size);
+    SDL_CloseIO(fptr);
     if(!file->data && show_msg){
         char* buf = (char*)malloc(1024);
         snprintf(buf, 1024, "Failed to load %s", filename);
@@ -30,10 +30,10 @@ void file_save(const char* filename, u8* data, size_t size){
 }
 
 void file_append(const char* filename, u8* data, size_t size){
-    FILE* fptr = fopen(filename, "ab+");
+    SDL_IOStream* fptr = SDL_IOFromFile(filename, "ab+");
     if(!fptr) return;
-    fwrite(data, 1, size, fptr);
-    fclose(fptr);
+    SDL_WriteIO(fptr, data, size);
+    SDL_CloseIO(fptr);
 }
 
 void file_delete(file_t* file){

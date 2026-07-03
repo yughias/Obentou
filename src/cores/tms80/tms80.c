@@ -66,22 +66,6 @@ static TMS80_TYPE detect_type(const archive_t* rom_archive){
     return TMS80_UNKNOWN;
 }
 
-static void load_file(const char* filename, u8** buffer, size_t* size){
-    FILE* fptr = fopen(filename, "rb");
-    if(!fptr){
-        printf("can't open file: %s\n", filename);
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fptr, 0, SEEK_END);
-    *size = ftell(fptr);
-    rewind(fptr);
-
-    *buffer = malloc(*size);
-    fread(*buffer, 1, *size, fptr);
-    fclose(fptr);
-}
-
 void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive){
     tms80_t* tms80 = malloc(sizeof(tms80_t));
     memset(tms80, 0, sizeof(tms80_t));
