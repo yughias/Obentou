@@ -316,7 +316,7 @@ void menu_speed_check(int speed_level){
 }
 
 static void apu_mute_channel(void* audio_idx){
-    int idx = *(int*)audio_idx;
+    int idx = (uptr)audio_idx;
     sound_channel_muted[idx] ^= 1;
     tickButton(audio_channel_buttons[idx], !sound_channel_muted[idx]);
 }
