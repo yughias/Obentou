@@ -22,7 +22,7 @@ static inline void name##_free(name##_t* vec) { \
     name##_init(vec); \
 } \
 \
-static inline size_t next_pow2(size_t x) { \
+static inline size_t next_pow2(uint64_t x) { \
     x--; \
     x |= x >> 1; \
     x |= x >> 2; \
