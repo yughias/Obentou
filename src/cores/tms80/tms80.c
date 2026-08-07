@@ -370,7 +370,7 @@ bool COLECO_detect(const archive_t* rom_archive, const archive_t* bios_archive){
 bool SEGA_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     if (detect_type(rom_archive) == COLECO || detect_type(bios_archive) == COLECO)
         return false;
-    return (detect_type(rom_archive) != TMS80_UNKNOWN) || (detect_type(bios_archive) != TMS80_UNKNOWN);
+    return (detect_type(rom_archive) != TMS80_UNKNOWN) || (archive_is_empty(rom_archive) && detect_type(bios_archive) != TMS80_UNKNOWN);
 }
 
 void TMS80_close(tms80_t* tms80, const char* sav_path){

@@ -99,3 +99,7 @@ file_t* archive_get_file_by_name(const archive_t* archive, const char* name) {
     }
     return NULL;
 }
+
+bool archive_is_empty(const archive_t* archive) {
+    return !archive || !archive->path[0];
+}

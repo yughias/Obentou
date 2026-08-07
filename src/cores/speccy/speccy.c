@@ -85,7 +85,7 @@ bool SPECCY_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     out |= archive_get_file_by_ext(rom_archive, "scr") != NULL;
     out |= archive_get_file_by_ext(rom_archive, "tap") != NULL;
     out |= archive_get_file_by_ext(rom_archive, "rom") != NULL;
-    out |= archive_get_file_by_ext(bios_archive, "rom") != NULL;
+    out |= archive_is_empty(rom_archive) && archive_get_file_by_ext(bios_archive, "rom") != NULL;
     return out;
 }
 
