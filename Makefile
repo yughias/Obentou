@@ -93,11 +93,10 @@ emcc: $(GENERATED_HEADERS)
 	-sINVOKE_RUN=0 \
 	-sSTACK_SIZE=2MB \
 	-sINITIAL_MEMORY=128MB -sALLOW_MEMORY_GROWTH=1 \
-	-sASYNCIFY \
 	-lidbfs.js \
 	--preload-file base_config.ini@config.ini \
 	-sEXPORTED_FUNCTIONS="['_main', '_obentou_exit', '_notify_widget_closed']" \
-	-sEXPORTED_RUNTIME_METHODS="['FS', 'callMain']" \
+	-sEXPORTED_RUNTIME_METHODS="['FS', 'callMain', 'HEAPU8', 'HEAP32', 'HEAPU32']" \
 	-o website/obentou.js
 	cp logo.ico website/favicon.ico
 
