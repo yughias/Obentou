@@ -91,6 +91,7 @@ emcc: $(GENERATED_HEADERS)
 	emcc -Iconverted_assets -Iinclude -Iext/include $(SRC) -O3 -flto=full \
 	-sUSE_SDL=3 \
 	-sINVOKE_RUN=0 \
+	-sASYNCIFY \
 	-sSTACK_SIZE=2MB \
 	-sINITIAL_MEMORY=128MB -sALLOW_MEMORY_GROWTH=1 \
 	-lidbfs.js \

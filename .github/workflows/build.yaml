@@ -198,10 +198,9 @@ jobs:
           cp "${{ steps.sign_app.outputs.signedReleaseFile }}" android-release/obentou.apk
 
       - name: Upload Android APK Artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v6
         with:
           name: obentou-android
-          archive: false
           path: android-release/obentou.apk
 
   publish-release:
@@ -270,7 +269,7 @@ jobs:
           # Zip Windows
           cd win-dist && zip -r ../obentou-windows.zip ./* && cd ..
           
-          # Zip Linux (ensure executable permission is preserved in zip)
+          # Zip Linux
           cd linux-dist && zip -r ../obentou-linux.zip ./* && cd ..
 
           # Zip MacOS
