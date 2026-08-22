@@ -83,6 +83,9 @@ void core_save_emu(core_ctx_t* ctx);
 void core_ctx_init(core_ctx_t* ctx, const char* rom_path, const char* bios_path, const char* force_core);
 void core_ctx_run_frame(core_ctx_t* ctx);
 const char* core_get_base_path(core_ctx_t* ctx);
+void* core_get_emu_ptr();
+
+extern core_ctx_t emu_ctx;
 
 
 #endif

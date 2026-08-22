@@ -12,9 +12,6 @@
 #include "utils/archive.h"
 #include "utils/argument.h"
 
-
-extern core_ctx_t emu_ctx;
-
 static bool emu_rewind;
 
 bool android_is_rewind() {

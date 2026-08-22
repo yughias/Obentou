@@ -51,6 +51,7 @@ static bool draw_wave(void* arg){
     info->idx = 0;
 
     int range = info->max - info->min;
+    if (range == 0) range = 1; // Prevent division by zero
 
     int local_min = info->max;
     int local_max = info->min;
@@ -93,7 +94,10 @@ static bool draw_wave(void* arg){
     if(idx < 0) idx = 0;
 
     int prev_y;
-    int center_y = height - 32;
+
+    bool is_bipolar = (info->min < 0);
+    int base_y = height - 32;
+    int draw_height = base_y - 32; 
 
     for(int i = 0; i < width; i++){
         int sample_idx = idx++;
@@ -101,10 +105,10 @@ static bool draw_wave(void* arg){
             sample_idx = DISPLAY_BUFFER_SAMPLES - 1;
 
         int val = info->buffer[sample_idx];
+        int sample_y;
 
-        int offset = ((val - info->min) * (center_y - 32)) / range;
-        
-        int sample_y = center_y - offset; 
+        int offset = ((val  - (is_bipolar ? local_min : info->min)) * draw_height) / range;
+        sample_y = base_y - offset;
 
         if(i == 0) prev_y = sample_y;
 
@@ -252,4 +256,8 @@ void sound_queue_samples(const void* samples, size_t size){
     int speed = push_rate_scaled / push_rate_reload + 0.5f;
     SDL_SetAudioStreamFrequencyRatio(audio_stream, speed);
     SDL_PutAudioStreamData(audio_stream, samples, size);
+}
+
+int sound_get_cycles_until_sample(){
+    return SDL_ceilf(push_rate_counter);
 }

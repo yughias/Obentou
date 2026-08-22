@@ -11,8 +11,6 @@
 
 #include "core.h"
 
-core_ctx_t emu_ctx;
-
 void obentou_exit(bool background){
     SDL_Log("obentou exit");
     if (background) {

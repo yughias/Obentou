@@ -16,7 +16,7 @@ static bool getSweepDirection(u8);
 static u8 getSweepSlope(u8);
 static size_t getShiftCounter(u8);
 static void resetApuRegisters(apu_t* apu);
-static void apuMixer(void*, void*);
+static void apu_mixer(void*, void*);
 
 static bool waveforms[4][8] = {
     { 0, 0, 0, 0, 0, 0, 0, 1 },
@@ -205,7 +205,7 @@ void gb_emulateApu(apu_t* apu){
 
 void gb_convertAudio(apu_t* apu){
     int16_t sample[2];
-    sound_push_sample(1, 4, apu, sample, apuMixer);
+    sound_push_sample(1, 4, apu, sample, apu_mixer);
 }
 
 static size_t getWavedutyIdx(u8 reg){
@@ -252,7 +252,7 @@ static size_t getShiftCounter(u8 reg){
     return noise_divisor[r] << s;
 }
 
-static void apuMixer(void* ctx, void* s){
+static void apu_mixer(void* ctx, void* s){
     apu_t* apu = ctx;
     int16_t* samples = s;
     samples[0] = 0;
