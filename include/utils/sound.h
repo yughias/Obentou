@@ -18,6 +18,7 @@ void sound_queue_samples(const void* samples, size_t size);
 void sound_pause(bool pause);
 void sound_set_push_rate_multiplier(int multiplier);
 float sound_get_push_rate();
+int sound_get_cycles_until_sample();
 
 int sound_set_channel_sample(int sample, int channel);
 void sound_open_wave_viewer(const char* name, int min, int max, int idx);

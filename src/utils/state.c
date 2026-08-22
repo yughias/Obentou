@@ -91,6 +91,7 @@ void state_load_slot(core_ctx_t* ctx) {
     if(!ok){
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Load State Error", "Failed to load state\nremoving it...", NULL);
         remove(path);
+        core_restart(ctx);
     }
 }
 

@@ -42,20 +42,18 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     mbc_t* mbc = &gb->mbc;
     gb_detectConsoleAndMbc(gb);
     
-    file_t* sav_file = malloc(sizeof(file_t));
+    file_t sav_file;
     char sav_path[FILENAME_MAX];
     path_set_ext(archive_get_path(rom_archive), sav_path, "sav");
 
-    if(file_load(sav_file, sav_path, false)){
+    if(file_load(&sav_file, sav_path, false)){
         if(mbc->hasBattery)
-            memcpy(gb->ERAM, sav_file->data, gb->ERAM_SIZE);
+            memcpy(gb->ERAM, sav_file.data, gb->ERAM_SIZE);
         if(mbc->hasRtc)
-            gb_loadRtc(mbc->data, sav_file->data, sav_file->size);
+            gb_loadRtc(mbc->data, sav_file.data, sav_file.size);
 
-        file_delete(sav_file);
+        file_delete(&sav_file);
     }
-
-    free(sav_file);
 
     readGbFunc* readTable = gb->readTable;
     gb_fillReadTable(readTable, 0x00, 0x40, mbc->mapper_0000_3FFF);

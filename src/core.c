@@ -22,6 +22,7 @@
 #include "cores/tms80/coleco_interface.h"
 #include "cores/nes/interface.h"
 #include "cores/gbc/interface.h"
+#include "cores/gba/interface.h"
 #include "cores/chip8/interface.h"
 #include "cores/pacman/interface.h"
 #include "cores/spaceinvaders/interface.h"
@@ -62,6 +63,7 @@ const core_t cores[] = {
     LOAD_CORE(COLECO),
     LOAD_CORE(NES),
     LOAD_CORE(GBC),
+    LOAD_CORE(GBA),
     LOAD_CORE(CHIP8),
     LOAD_CORE(PACMAN),
     LOAD_CORE(SPACEINVADERS),
@@ -72,6 +74,8 @@ const core_t cores[] = {
 #undef LOAD_CORE
 
 const size_t n_cores = sizeof(cores)/sizeof(core_t);
+
+core_ctx_t emu_ctx;
 
 const char* core_get_base_path(core_ctx_t* ctx){
     const char* base_path = archive_get_path(ctx->rom);
@@ -261,4 +265,8 @@ void core_restart(core_ctx_t* ctx){
     }
 
     rewind_init();
+}
+
+void* core_get_emu_ptr() {
+    return emu_ctx.emu;
 }

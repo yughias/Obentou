@@ -42,6 +42,17 @@
     XY(GBC, LEFT, "left", "dpleft", 0.12f, 0.35f, 1.0f) \
     XY(GBC, RIGHT, END, "right", "dpright", 0.38f, 0.35f, 1.0f) \
     \
+    XY(GBA, A, BEGIN, "x", "b", 0.87f, 0.38f, 1.0f) \
+    XY(GBA, B, "z", "a", 0.71f, 0.52f, 1.0f) \
+    XY(GBA, L, "a", "leftshoulder", 0.12f, 0.10f, 1.0f) \
+    XY(GBA, R, "s", "rightshoulder", 0.88f, 0.10f, 1.0f) \
+    XY(GBA, START, "return", "start", 0.62f, 0.85f, 1.0f) \
+    XY(GBA, SELECT, "right shift", "back", 0.38f, 0.85f, 1.0f) \
+    XY(GBA, UP, "up", "dpup", 0.25f, 0.32f, 1.0f) \
+    XY(GBA, DOWN, "down", "dpdown", 0.25f, 0.58f, 1.0f) \
+    XY(GBA, LEFT, "left", "dpleft", 0.12f, 0.45f, 1.0f) \
+    XY(GBA, RIGHT, END, "right", "dpright", 0.38f, 0.45f, 1.0f) \
+    \
     XY(NES, A, BEGIN, "x", "b", 0.87f, 0.28f, 1.0f) \
     XY(NES, B, "z", "a", 0.71f, 0.42f, 1.0f) \
     XY(NES, SELECT, "right shift", "back", 0.38f, 0.85f, 1.0f) \
@@ -315,6 +326,8 @@
 
 #define CONTROLS_TYPE_ENUM(XY) \
     XY(GBC, DEFAULT, BEGIN, END) \
+    \
+    XY(GBA, DEFAULT, BEGIN, END) \
     \
     XY(NES, DEFAULT, BEGIN, END) \
     \

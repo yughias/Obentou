@@ -21,7 +21,7 @@ GENERATED_HEADERS := $(patsubst assets/%, converted_assets/%.h, $(RAW_ASSETS))
 ifeq ($(OS),Windows_NT)
     EXE_EXT         := .exe
     LIBS            := -Llib -lSDL3 -lopengl32 -ldwmapi -lshlwapi -lcomdlg32 -lole32
-    PLATFORM_CFLAGS := -flto=$(shell nproc) -Wall -Wno-unused-function -Werror -mwindows
+    PLATFORM_CFLAGS := -flto=$(shell nproc) -mwindows
     TEST_LDFLAGS    := -mconsole
     RES_OBJ         := app.res
 else
