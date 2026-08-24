@@ -6,7 +6,8 @@ void* BYTEPUSHER_init(const archive_t* rom_archive, const archive_t* bios_archiv
 bool BYTEPUSHER_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t BYTEPUSHER_savestate(void* ctx);
 bool BYTEPUSHER_loadstate(void* ctx, byte_vec_t* state);
-#define BYTEPUSHER_close NULL
+#define BYTEPUSHER_free NULL
+#define BYTEPUSHER_save NULL
 
 #define BYTEPUSHER_WIDTH 256
 #define BYTEPUSHER_HEIGHT 256

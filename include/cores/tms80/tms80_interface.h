@@ -5,7 +5,9 @@ void TMS80_run_frame(void* ctx);
 void* TMS80_init(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t TMS80_savestate(void* ctx);
 bool TMS80_loadstate(void* ctx, byte_vec_t* state);
-void TMS80_close(void* ctx, const char* sav_path);
+void TMS80_free(void* ctx);
+#define TMS80_save NULL
+
 
 #define TMS80_WIDTH 256
 #define TMS80_HEIGHT 192

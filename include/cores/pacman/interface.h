@@ -4,9 +4,10 @@
 void PACMAN_run_frame(void* ctx);
 void*PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool PACMAN_detect(const archive_t* rom_archive, const archive_t* bios_archive);
-void PACMAN_close(void* ctx, const char* sav_path);
+void PACMAN_free(void* ctx);
 byte_vec_t PACMAN_savestate(void* ctx);
 bool PACMAN_loadstate(void* ctx, byte_vec_t* state);
+#define PACMAN_save NULL
 
 #define PACMAN_WIDTH  224  /* 28 tiles × 8 px */
 #define PACMAN_HEIGHT 288  /* 36 tiles × 8 px */

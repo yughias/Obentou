@@ -6,7 +6,8 @@
 bool COLECO_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 #define COLECO_savestate TMS80_savestate
 #define COLECO_loadstate TMS80_loadstate
-#define COLECO_close TMS80_close
+#define COLECO_free TMS80_free
+#define COLECO_save TMS80_save
 
 #define COLECO_WIDTH TMS80_WIDTH
 #define COLECO_HEIGHT TMS80_HEIGHT

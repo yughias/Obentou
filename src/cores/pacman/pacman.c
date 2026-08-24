@@ -431,10 +431,8 @@ static const pacman_romset_t* find_romset(const archive_t* archive)
     return NULL;
 }
 
-void PACMAN_close(pacman_t* p, const char* sav_path)
+void PACMAN_free(pacman_t* p)
 {
-    (void)sav_path;
-    if (!p) return;
     free(p->ROM);
     free(p->colorROM);
     free(p->paletteROM);
@@ -620,7 +618,7 @@ void* PACMAN_init(const archive_t* rom_archive, const archive_t* bios_archive)
 
     if (!p->ROM || !p->colorROM || !p->paletteROM ||
         !p->tileROM || !p->spriteROM || !p->audioROM) {
-        PACMAN_close(p, NULL);
+        PACMAN_free(p);
         return NULL;
     }
 

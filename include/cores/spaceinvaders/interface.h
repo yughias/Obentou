@@ -8,8 +8,8 @@ void* SPACEINVADERS_init(const archive_t* rom_archive, const archive_t* bios_arc
 bool SPACEINVADERS_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t SPACEINVADERS_savestate(void* ctx);
 bool SPACEINVADERS_loadstate(void* ctx, byte_vec_t* state);
-
-#define SPACEINVADERS_close  NULL
+#define SPACEINVADERS_free  NULL
+#define SPACEINVADERS_save NULL
 
 #define SPACEINVADERS_WIDTH 224
 #define SPACEINVADERS_HEIGHT 256

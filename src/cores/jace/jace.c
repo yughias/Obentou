@@ -316,7 +316,7 @@ bool JACE_loadstate(jace_t* jace, byte_vec_t* state){
     return deserialize_jace_t(jace, state->data, state->data + state->size) == end;
 }
 
-void JACE_close(jace_t* jace, const char* sav_path) {
+void JACE_free(jace_t* jace) {
     if (jace->tape.wav.data)
         wav_free(&jace->tape.wav);
 }

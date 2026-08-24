@@ -7,7 +7,8 @@ bool SPECCY_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t SPECCY_savestate(void* ctx);
 bool SPECCY_loadstate(void* ctx, byte_vec_t* state);
 #define SPECCY_sound_callback NULL
-#define SPECCY_close NULL
+#define SPECCY_free NULL
+#define SPECCY_save NULL
 
 #define SPECCY_WIDTH 356
 #define SPECCY_HEIGHT 296
