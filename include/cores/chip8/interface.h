@@ -6,7 +6,8 @@ void* CHIP8_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool CHIP8_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t CHIP8_savestate(void* ctx);
 bool CHIP8_loadstate(void* ctx, byte_vec_t* state);
-#define CHIP8_close NULL
+#define CHIP8_free NULL
+#define CHIP8_save NULL
 
 #define CHIP8_WIDTH 64
 #define CHIP8_HEIGHT 32

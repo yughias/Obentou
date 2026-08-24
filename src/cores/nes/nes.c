@@ -120,7 +120,7 @@ bool NES_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return archive_get_file_by_ext(rom_archive, "nes");
 }
 
-void NES_close(nes_t* nes, const char* sav_path){
+void NES_free(nes_t* nes){
     free(nes->mapper);
     if(nes->cart.is_chr_ram)
         free(nes->cart.chr);

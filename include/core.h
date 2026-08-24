@@ -14,7 +14,8 @@
 typedef void* (*init_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
 typedef void (*run_frame_ptr)(void* ctx);
 typedef bool (*detect_ptr)(const archive_t* rom_archive, const archive_t* bios_archive);
-typedef void (*close_ptr)(void* ctx, const char* sav_path);
+typedef void (*save_ptr)(void* ctx, const char* sav_path);
+typedef void (*free_ptr)(void* ctx);
 typedef byte_vec_t (*savestate_ptr)(void* ctx);
 typedef bool (*loadstate_ptr)(void* ctx, byte_vec_t* state);
 typedef void (*audio_callback_ptr)(void* userdata, Uint8* stream, int len);
@@ -37,7 +38,8 @@ typedef struct core_t {
     detect_ptr detect;
     init_ptr init;
     run_frame_ptr run_frame;
-    close_ptr close;
+    save_ptr save;
+    free_ptr free;
     const int width, height;
     const float fps;
     const float sound_push_rate;

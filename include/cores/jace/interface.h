@@ -4,10 +4,11 @@
 void JACE_run_frame(void* ctx);
 void* JACE_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool JACE_detect(const archive_t* rom_archive, const archive_t* bios_archive);
-void JACE_close(void* ctx, const char* sav_path);
+void JACE_free(void* ctx);
 byte_vec_t JACE_savestate(void* ctx);
 bool JACE_loadstate(void* ctx, byte_vec_t* state);
 #define JACE_sound_callback NULL
+#define JACE_save NULL
 
 #define JACE_WIDTH 336
 #define JACE_HEIGHT 304

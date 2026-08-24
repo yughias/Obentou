@@ -372,7 +372,7 @@ bool SEGA_detect(const archive_t* rom_archive, const archive_t* bios_archive){
     return (detect_type(rom_archive) != TMS80_UNKNOWN) || (archive_is_empty(rom_archive) && detect_type(bios_archive) != TMS80_UNKNOWN);
 }
 
-void TMS80_close(tms80_t* tms80, const char* sav_path){
+void TMS80_free(tms80_t* tms80){
     if(tms80->no_cartridge)
         free(tms80->cartridge);
 }

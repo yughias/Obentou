@@ -7,7 +7,8 @@ bool PV1000_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 void PV1000_sound_callback(void* userdata, Uint8* stream, int len);
 byte_vec_t PV1000_savestate(void* ctx);
 bool PV1000_loadstate(void* ctx, byte_vec_t* state);
-#define PV1000_close NULL
+#define PV1000_free NULL
+#define PV1000_save NULL
 
 #define PV1000_WIDTH 224
 #define PV1000_HEIGHT 192

@@ -8,7 +8,8 @@ bool WATARA_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 void* WATARA_init(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t WATARA_savestate(void* ctx);
 bool WATARA_loadstate(void* ctx, byte_vec_t* state);
-#define WATARA_close NULL
+#define WATARA_free NULL
+#define WATARA_save NULL
 
 #define WATARA_WIDTH 160
 #define WATARA_HEIGHT 160

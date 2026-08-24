@@ -6,7 +6,8 @@
 bool SEGA_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 #define SEGA_savestate TMS80_savestate
 #define SEGA_loadstate TMS80_loadstate
-#define SEGA_close TMS80_close
+#define SEGA_free TMS80_free
+#define SEGA_save TMS80_save
 
 #define SEGA_WIDTH TMS80_WIDTH
 #define SEGA_HEIGHT TMS80_HEIGHT

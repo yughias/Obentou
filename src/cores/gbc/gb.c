@@ -102,8 +102,11 @@ bool GBC_detect(const archive_t* rom_archive, const archive_t* bios_archive)
     return valid_rom || (archive_is_empty(rom_archive) && valid_bios);
 }
 
-void GBC_close(gb_t* gb, const char* sav_path){
+void GBC_save(gb_t* gb, const char* sav_path){
     gb_saveSav(gb, sav_path);
+}
+
+void GBC_free(gb_t* gb){
     if(gb->noCart)
         free(gb->ROM);
     if(gb->mbc.hasCamera)

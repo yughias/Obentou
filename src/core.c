@@ -34,7 +34,8 @@
     .init = core##_init, \
     .detect = core##_detect, \
     .run_frame = core##_run_frame, \
-    .close = core##_close, \
+    .save = core##_save, \
+    .free = core##_free, \
     .width = core##_WIDTH, \
     .height = core##_HEIGHT, \
     .fps = core##_FPS, \
@@ -84,14 +85,14 @@ const char* core_get_base_path(core_ctx_t* ctx){
 static void save_sav(core_ctx_t* ctx){
     char sav_path[FILENAME_MAX];
     path_set_ext(core_get_base_path(ctx), sav_path, "sav");
-    ctx->core->close(ctx->emu, sav_path);
+    ctx->core->save(ctx->emu, sav_path);
 }
 
 void core_save_emu(core_ctx_t* ctx){
     if(ctx->emu){
         if(ctx->core->savestate && state_get_autosave())
             state_save_autosave(ctx);
-        if(ctx->core->close)
+        if(ctx->core->save)
             save_sav(ctx);
     }
 }
@@ -99,6 +100,8 @@ void core_save_emu(core_ctx_t* ctx){
 void core_close_emu(core_ctx_t* ctx){
     if(ctx->emu){
         core_save_emu(ctx);
+        if (ctx->core->free)
+            ctx->core->free(ctx->emu);
         free(ctx->emu);
         destroyAllWidgets();
     }

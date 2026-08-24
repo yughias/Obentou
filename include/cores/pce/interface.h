@@ -6,7 +6,8 @@ void* PCE_init(const archive_t* rom_archive, const archive_t* bios_archive);
 bool PCE_detect(const archive_t* rom_archive, const archive_t* bios_archive);
 byte_vec_t PCE_savestate(void* ctx);
 bool PCE_loadstate(void* ctx, byte_vec_t* state);
-#define PCE_close NULL
+#define PCE_free NULL
+#define PCE_save NULL
 
 #define PCE_WIDTH 256
 #define PCE_HEIGHT 242
