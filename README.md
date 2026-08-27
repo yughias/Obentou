@@ -28,6 +28,7 @@ At the moment the supported cores are:
 - [X] Space Invaders Arcade
 - [X] SPECCY (Zx Spectrum 48k)
 - [X] JACE (Jupiter Ace)
+- [X] GBA (Gameboy Advance)
 
 ## Features
 
@@ -40,19 +41,22 @@ At the moment the supported cores are:
 
 ## Screenshots
 
-| ![](imgs/sg1000.bmp) | ![](imgs/megaduck.bmp) | ![](imgs/pce.bmp)       |
-|:--------------------:|:----------------------:|:-----------------------:|
-| SG-1000              | Mega Duck              | PC Engine               |
-| ![](imgs/dmg.bmp)    | ![](imgs/bp.bmp)       | ![](imgs/gbc.bmp)       |
-| Game Boy             | Byte Pusher            | Game Boy Color          |
-| ![](imgs/pv1000.bmp) | ![](imgs/watara.bmp)   | ![](imgs/sc3000.bmp)    |
-| PV-1000              | Watara Super Vision    | SC-3000                 |
-| ![](imgs/sms.bmp)    | ![](imgs/nes.bmp)      | ![](imgs/gg.bmp)        |
-| Master System        | Famicom                | Game Gear               |
-| ![](imgs/ch8.bmp)    | ![](imgs/pacman.bmp)   | ![](imgs/invaders.bmp)  |
-| Chip 8               |  Pac-Man (Arcade)      | Space Invaders (Arcade) |
-| ![](imgs/col.bmp)    | ![](imgs/speccy.bmp)   | ![](imgs/jace.bmp)      |
-| Coleco Vision        |  Zx Spectrum 48k       | Jupiter Ace             | 
+
+| ![](imgs/gba.bmp)    | ![](imgs/gbc.bmp)        | ![](imgs/dmg.bmp)       |
+|:--------------------:|:------------------------:|:-----------------------:|
+| Game Boy Advance     | Game Boy Color           | Game Boy                |
+| ![](imgs/pce.bmp)    | ![](imgs/nes.bmp)        | ![](imgs/sms.bmp)       |
+| PC Engine            | Famicom                  | Sega Master System      |
+| ![](imgs/gg.bmp)     | ![](imgs/watara.bmp)     | ![](imgs/pv1000.bmp)    |
+| Game Gear            | Watara Super Vision      | Casio PV-1000           |
+| ![](imgs/pv1000.bmp) | ![](imgs/sg1000.bmp)     | ![](imgs/sc3000.bmp)    |
+| PV-1000              | SG-1000                  | SC-3000                 |
+| ![](imgs/speccy.bmp) | ![](imgs/bp.bmp)         | ![](imgs/jace.bmp)      |
+| Zx Spectrum 48k      | BytePusher (Fantasy CPU) | Jupiter Ace             |
+| ![](imgs/col.bmp)    | ![](imgs/pacman.bmp)     | ![](imgs/invaders.bmp)  |
+| Coleco Vision        |  Pacman (Arcade)         | Space Invaders (Arcade) | 
+| ![](imgs/ch8.bmp)    |                          |                         |
+| Chip-8               |                          |                         |
 
 ## Build Instructions
 
@@ -75,7 +79,7 @@ After a successful build, an executable named ``obentou.exe`` will be generated.
 
 ## Cores that will be supported on the future
 
-- [ ] Gameboy Advance
+- [ ] Gamate
 
 ## Next features
 
