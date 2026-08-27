@@ -42,21 +42,21 @@ At the moment the supported cores are:
 ## Screenshots
 
 
-| ![](imgs/gba.bmp)    | ![](imgs/gbc.bmp)        | ![](imgs/dmg.bmp)       |
-|:--------------------:|:------------------------:|:-----------------------:|
-| Game Boy Advance     | Game Boy Color           | Game Boy                |
-| ![](imgs/pce.bmp)    | ![](imgs/nes.bmp)        | ![](imgs/sms.bmp)       |
-| PC Engine            | Famicom                  | Sega Master System      |
-| ![](imgs/gg.bmp)     | ![](imgs/watara.bmp)     | ![](imgs/pv1000.bmp)    |
-| Game Gear            | Watara Super Vision      | Casio PV-1000           |
-| ![](imgs/pv1000.bmp) | ![](imgs/sg1000.bmp)     | ![](imgs/sc3000.bmp)    |
-| PV-1000              | SG-1000                  | SC-3000                 |
-| ![](imgs/speccy.bmp) | ![](imgs/bp.bmp)         | ![](imgs/jace.bmp)      |
-| Zx Spectrum 48k      | BytePusher (Fantasy CPU) | Jupiter Ace             |
-| ![](imgs/col.bmp)    | ![](imgs/pacman.bmp)     | ![](imgs/invaders.bmp)  |
-| Coleco Vision        |  Pacman (Arcade)         | Space Invaders (Arcade) | 
-| ![](imgs/ch8.bmp)    |                          |                         |
-| Chip-8               |                          |                         |
+| ![](imgs/gba.bmp)    | ![](imgs/gbc.bmp)        | ![](imgs/dmg.bmp)        |
+|:--------------------:|:------------------------:|:------------------------:|
+| Game Boy Advance     | Game Boy Color           | Game Boy                 |
+| ![](imgs/pce.bmp)    | ![](imgs/nes.bmp)        | ![](imgs/sms.bmp)        |
+| PC Engine            | Famicom                  | Sega Master System       |
+| ![](imgs/gg.bmp)     | ![](imgs/watara.bmp)     | ![](imgs/megaduck.bmp)   |
+| Game Gear            | Watara Super Vision      | Megaduck                 |
+| ![](imgs/pv1000.bmp) | ![](imgs/sg1000.bmp)     | ![](imgs/sc3000.bmp)     |
+| PV-1000              | SG-1000                  | SC-3000                  |
+| ![](imgs/speccy.bmp) | ![](imgs/jace.bmp)       | ![](imgs/col.bmp)        | 
+| Zx Spectrum 48k      | Jupiter Ace              | Coleco Vision            | 
+| ![](imgs/pacman.bmp) | ![](imgs/invaders.bmp)   | ![](imgs/bp.bmp)         |
+| Pacman (Arcade)      | Space Invaders (Arcade)  | BytePusher (Fantasy CPU) |
+| ![](imgs/ch8.bmp)    |                          |                          |
+| Chip-8               |                          |                          |
 
 ## Build Instructions
 
