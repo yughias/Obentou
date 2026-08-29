@@ -74,16 +74,16 @@ int lcd_compose_pixel(lcd_t* lcd, int x, int y) {
     u8 gamate_pix = lcd->swap_plane ? bit1 | (bit0 << 1) : (bit0) | (bit1 << 1);
     switch (gamate_pix) {
         case 0:
-        return color(123, 129, 17);
+        return color(127, 134, 15);
 
         case 1:
-        return color(95, 120, 66);
+        return color(87, 124, 68);
         
         case 2:
-        return color(64, 89, 74);
+        return color(54, 93, 72);
         
         case 3:
-        return color(46, 65, 57);
+        return color(42, 69, 59);
 
         default:
         break;
