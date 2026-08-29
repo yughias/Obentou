@@ -188,9 +188,13 @@ void GAMATE_run_frame(gamate_t* gamate) {
 
 byte_vec_t GAMATE_savestate(gamate_t* gamate) {
     byte_vec_t state;
+    byte_vec_init(&state);
+    serialize_gamate_t(gamate, &state);
+    byte_vec_shrink(&state);
     return state;
 }
 
 bool GAMATE_loadstate(gamate_t* gamate, byte_vec_t* state) {
-    return false;
+    const u8* end = state->data + state->size;
+    return deserialize_gamate_t(gamate, state->data, state->data + state->size) == end;
 }
