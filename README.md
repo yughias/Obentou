@@ -53,10 +53,10 @@ At the moment the supported cores are:
 | PV-1000              | SG-1000                  | SC-3000                  |
 | ![](imgs/speccy.bmp) | ![](imgs/jace.bmp)       | ![](imgs/col.bmp)        | 
 | Zx Spectrum 48k      | Jupiter Ace              | Coleco Vision            | 
-| ![](imgs/pacman.bmp) | ![](imgs/invaders.bmp)   | ![](imgs/bp.bmp)         |
-| Pacman (Arcade)      | Space Invaders (Arcade)  | BytePusher (Fantasy CPU) |
-| ![](imgs/ch8.bmp)    |                          |                          |
-| Chip-8               |                          |                          |
+| ![](imgs/pacman.bmp) | ![](imgs/invaders.bmp)   | ![](imgs/gamate.bmp)     |
+| Pacman (Arcade)      | Space Invaders (Arcade)  | Gamate                   |
+| ![](imgs/ch8.bmp)    | ![](imgs/bp.bmp)         |                          |
+| Chip-8               | BytePusher (Fantasy CPU) |                          |
 
 ## Build Instructions
 
