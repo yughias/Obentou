@@ -24,10 +24,10 @@ bool SPECCY_loadstate(void* ctx, byte_vec_t* state);
 } \
 
 #define SPECCY_sound_channels \
-{ "BEEPER", 0,    1 }, \
 { "AY CH0", 0, 8191 }, \
 { "AY CH1", 0, 8191 }, \
-{ "AY CH2", 0, 8191 }
+{ "AY CH2", 0, 8191 }, \
+{ "BEEPER", 0,    1 }
 
 #include "cores/speccy/visualizers.h"
 

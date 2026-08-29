@@ -2,6 +2,7 @@
 #define __GAMATE_H__
 
 #include "cpus/m6502.h"
+#include "cpus/ay.h"
 #include "cores/gamate/lcd.h"
 
 #include "utils/serializer.h"
@@ -9,6 +10,8 @@
 
 #define GAMATE_STRUCT(X) \
     X(m6502_t, cpu, 1, 1) \
+    X(u8, clock_divider, 1, 0) \
+    X(ay_t, ay, 1, 0) \
     X(u8*, rom, 0, 0) \
     X(u8*, bios, 0, 0) \
     X(u8, ram, 0x400, 1, 0) \

@@ -72,9 +72,7 @@ void speccy_write_io(void* ctx, uint16_t ioaddr, uint8_t byte){
     }
 
     if((ioaddr >> 14) == 0b10 && !(ioaddr & 0b10)){  
-        ay->reg[ay->selected & 0x0F] = byte;
-        if(ay->selected == AY_ENV_SHAPE)
-            speccy_ay_update_envelope(&speccy->ay);
+        ay_write_selected_port(ay, byte);
         return;
     }
 }

@@ -25,7 +25,9 @@ static void run_frame(speccy_t* speccy){
         }
 
         step_cpu(cpu);
-        speccy_ay_step(&speccy->ay);
+        if (speccy->half_divider)
+            ay_step(&speccy->ay);
+        speccy->half_divider ^= 1;
         speccy_send_audio(speccy);
         speccy_tape_step(speccy);
         
@@ -69,7 +71,7 @@ void* SPECCY_init(const archive_t* rom_archive, const archive_t* bios_archive){
     if (base_rom)
         memcpy(speccy->rom, base_rom->data, sizeof(speccy->rom));
 
-    speccy_ay_reset(&speccy->ay);
+    ay_reset(&speccy->ay);
 
     return speccy;
 }

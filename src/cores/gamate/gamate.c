@@ -1,6 +1,7 @@
 #include "cores/gamate/gamate.h"
 
 #include "utils/archive.h"
+#include "utils/sound.h"
 #include "utils/controls.h"
 
 #include <string.h>
@@ -11,6 +12,26 @@ static uint8_t COPYRIGHT_BYTE = 0x47;
 static const char COPYRIGHT_STR[] = "COPYRIGHT BIT CORPORATION";
 static size_t COPYRIGHT_STR_OFFSET = 0x05; 
 static size_t CPU_CYCLES_PER_FRAME = 36450;
+
+static void get_sample(void* ctx, void* sample_void){
+    ay_t* ay = ctx;
+    const uint16_t volume_multiplier = SDL_MAX_SINT16 / 3;
+    u16* sample = (u16*)sample_void;
+    *sample = ay_get_sample(ay, volume_multiplier);
+}
+
+static void gamate_sync(gamate_t* gamate) {
+    lcd_update_timer(&gamate->lcd);
+
+    if (gamate->clock_divider == 2) {
+         gamate->clock_divider = 0;
+        ay_step(&gamate->ay);
+    }
+    gamate->clock_divider += 1;
+    
+    u16 sample;
+    sound_push_sample(1, sizeof(u16), &gamate->ay, &sample, get_sample);
+}
 
 static u8 read_controller() {
     u8 out = 0xFF;
@@ -38,10 +59,17 @@ static bool detect_4in1(u8* rom, size_t size) {
 static void gamate_write(void* ctx, u16 addr, u8 data) {
     gamate_t* gamate = ctx;
 
-    lcd_update_timer(&gamate->lcd);
+    gamate_sync(gamate);
     
     if (addr < 0x2000) {
         gamate->ram[addr & 0x3FF] = data;
+        return;
+    }
+
+    if (addr >= 0x4000 && addr < 0x4400) {
+        ay_t* ay = &gamate->ay;
+        ay->selected = addr & 0xF;
+        ay_write_selected_port(ay, data);
         return;
     }
 
@@ -64,7 +92,7 @@ static void gamate_write(void* ctx, u16 addr, u8 data) {
 static u8 gamate_read(void* ctx, u16 addr) {
     gamate_t* gamate = ctx;
 
-    lcd_update_timer(&gamate->lcd);
+    gamate_sync(gamate);
 
     if (addr < 0x2000)
         return gamate->ram[addr & 0x3FF];
@@ -132,6 +160,7 @@ void* GAMATE_init(const archive_t* rom_archive, const archive_t* bios_archive) {
     gamate->first_bank = 0;
     gamate->second_bank = 1;
 
+    ay_reset(&gamate->ay);
 
     m6502_init(&gamate->cpu);
     gamate->cpu.ctx = gamate;
