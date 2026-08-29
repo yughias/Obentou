@@ -24,13 +24,12 @@ static void gamate_sync(gamate_t* gamate) {
     lcd_update_timer(&gamate->lcd);
 
     if (gamate->clock_divider == 2) {
-         gamate->clock_divider = 0;
+        gamate->clock_divider = 0;
         ay_step(&gamate->ay);
+        sound_push_sample(2, sizeof(u16), &gamate->ay, get_sample);
     }
     gamate->clock_divider += 1;
     
-    u16 sample;
-    sound_push_sample(1, sizeof(u16), &gamate->ay, &sample, get_sample);
 }
 
 static u8 read_controller() {

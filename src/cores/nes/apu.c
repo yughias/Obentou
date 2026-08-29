@@ -99,8 +99,7 @@ void nes_apu_sync(apu_t* apu){
 }
 
 void nes_apu_push_sample(apu_t* apu){
-    float sample;
-    sound_push_sample(1, sizeof(float), apu, &sample, nes_apu_get_sample);
+    sound_push_sample(1, sizeof(float), apu, nes_apu_get_sample);
 }
 
 void nes_apu_write_pulse_0(pulse_t* pulse, u8 byte){

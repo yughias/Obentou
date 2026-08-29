@@ -271,11 +271,10 @@ static void jace_get_sample(jace_t* jace, u8* sample){
 static void jace_step(jace_t* jace, void (*z80_step)(z80_t*)){
     size_t prev_cycles = jace->cpu.cycles;
     z80_step(&jace->cpu);
-    u8 sample;
     size_t elapsed = jace->cpu.cycles - prev_cycles;
     for (int i = 0; i < elapsed; i++)
         jace_tape_step(jace);
-    sound_push_sample(elapsed, sizeof(sample), jace, &sample, (sound_get_sample_ptr)jace_get_sample);
+    sound_push_sample(elapsed, sizeof(u8), jace, (sound_get_sample_ptr)jace_get_sample);
 }
 
 void JACE_run_frame(jace_t* jace){

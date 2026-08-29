@@ -34,8 +34,7 @@ static void sn76489_get_sample(void* ctx, void* data){
 }
 
 void tms80_sn76489_push_sample(sn76489_t* sn, int cycles){
-    sample_t sample;
-    sound_push_sample(cycles, sizeof(sample_t), sn, &sample, sn76489_get_sample);
+    sound_push_sample(cycles, sizeof(sample_t), sn, sn76489_get_sample);
 }
 
 void tms80_sn76489_update(sn76489_t* sn, int cycles){

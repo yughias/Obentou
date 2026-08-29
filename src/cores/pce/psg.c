@@ -132,8 +132,7 @@ static void psg_get_sample(void* ctx, void* data){
 }
 
 static void psg_push_sample(psg_t* psg, u32 cycles) {
-    sample_t sample;
-    sound_push_sample(cycles, sizeof(sample_t), psg, &sample, psg_get_sample);
+    sound_push_sample(cycles, sizeof(sample_t), psg, psg_get_sample);
 }
 
 void pce_psg_step(psg_t* psg, u32 cycles) {

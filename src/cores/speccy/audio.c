@@ -16,6 +16,5 @@ static void get_sample(void* ctx, void* sample_void){
 
 
 void speccy_send_audio(void* ctx){
-    u16 sample;
-    sound_push_sample(1, sizeof(sample), ctx, &sample, get_sample);
+    sound_push_sample(1, sizeof(u16), ctx, get_sample);
 }

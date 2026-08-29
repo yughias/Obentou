@@ -223,7 +223,7 @@ float sound_get_push_rate(){
     return push_rate_reload;
 }
 
-void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sound_get_sample_ptr func) {
+void sound_push_sample(int cycles, int sample_size, void* ctx, sound_get_sample_ptr func) {
     if(is_paused)
         return;
     push_rate_counter -= cycles;
@@ -235,6 +235,7 @@ void sound_push_sample(int cycles, int sample_size, void* ctx, void* sample, sou
         int free_space = AUDIO_BUFFER_SIZE - (write_pos - read_pos);
 
         if(free_space >= sample_size){
+            u8 sample[sample_size];
             func(ctx, sample);
             
             int write_idx = write_pos & AUDIO_BUFFER_MASK;

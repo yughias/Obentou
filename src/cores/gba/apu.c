@@ -294,9 +294,7 @@ static void apu_mixer(void* ctx, void* s) {
 }
 
 void gba_event_push_sample(gba_t* gba, u32 dummy){
-    sample_t sample;
-    sound_push_sample(sound_get_cycles_until_sample(), sizeof(sample), gba, &sample, apu_mixer);
-
+    sound_push_sample(sound_get_cycles_until_sample(), sizeof(sample_t), gba, apu_mixer);
     gba_scheduler_create_add_event_0_args(&gba->scheduler_head, gba->scheduler_pool, GBA_SCHEDULER_POOL_SIZE, gba_event_push_sample, sound_get_cycles_until_sample());
 }
 

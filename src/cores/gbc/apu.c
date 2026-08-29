@@ -204,8 +204,7 @@ void gb_emulateApu(apu_t* apu){
 }
 
 void gb_convertAudio(apu_t* apu){
-    int16_t sample[2];
-    sound_push_sample(1, 4, apu, sample, apu_mixer);
+    sound_push_sample(1, 2 * sizeof(i16), apu, apu_mixer);
 }
 
 static size_t getWavedutyIdx(u8 reg){

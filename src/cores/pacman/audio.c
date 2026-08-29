@@ -59,6 +59,5 @@ static void pacman_get_sample(void* userdata, void* sample_data)
 
 void PACMAN_push_sample(pacman_t* p, int cycles)
 {
-    i16 sample;
-    sound_push_sample(cycles, sizeof(sample), p, &sample, pacman_get_sample);
+    sound_push_sample(cycles, sizeof(i16), p, pacman_get_sample);
 }

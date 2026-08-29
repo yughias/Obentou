@@ -307,8 +307,7 @@ void CHIP8_run_frame(ch8_t* ch) {
         else
             ch->buzzer = 0;
 
-        u8 sample;
-        sound_push_sample(1, 1, ch, &sample, get_buzzer);
+        sound_push_sample(1, 1, ch, get_buzzer);
     }
     tick_timers(ch);
 

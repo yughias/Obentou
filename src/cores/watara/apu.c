@@ -172,6 +172,5 @@ static void apu_get_sample(void* ctx, void* data){
 }
 
 void watara_apu_push_sample(apu_t* apu, int cycles){
-    sample_t sample;
-    sound_push_sample(cycles, sizeof(sample_t), apu, &sample, apu_get_sample);
+    sound_push_sample(cycles, sizeof(sample_t), apu, apu_get_sample);
 }
