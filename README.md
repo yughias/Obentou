@@ -29,6 +29,7 @@ At the moment the supported cores are:
 - [X] SPECCY (Zx Spectrum 48k)
 - [X] JACE (Jupiter Ace)
 - [X] GBA (Gameboy Advance)
+- [X] GAMATE
 
 ## Features
 
