@@ -1,0 +1,1 @@
+bool gamate_draw_pixelmap(void* ctx);

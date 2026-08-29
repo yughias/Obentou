@@ -322,7 +322,16 @@
     XY(JACE, N, "n", "none", 0.64f, 0.70f, 0.5f) \
     XY(JACE, B, "b", "none", 0.55f, 0.70f, 0.5f) \
     XY(JACE, DELETE, "backspace", "none", 0.0f, 0.0f, 0.5f) \
-    XY(JACE, TAPE_PLAY_STOP, END, "f5", "none", 0.25f, 0.20f, 1.0f)
+    XY(JACE, TAPE_PLAY_STOP, END, "f5", "none", 0.25f, 0.20f, 1.0f) \
+    \
+    XY(GAMATE, A, BEGIN, "x", "b", 0.87f, 0.28f, 1.0f) \
+    XY(GAMATE, B, "z", "a", 0.71f, 0.42f, 1.0f) \
+    XY(GAMATE, START, "return", "start", 0.62f, 0.85f, 1.0f) \
+    XY(GAMATE, SELECT, "right shift", "back", 0.38f, 0.85f, 1.0f) \
+    XY(GAMATE, UP, "up", "dpup", 0.25f, 0.22f, 1.0f) \
+    XY(GAMATE, DOWN, "down", "dpdown", 0.25f, 0.48f, 1.0f) \
+    XY(GAMATE, LEFT, "left", "dpleft", 0.12f, 0.35f, 1.0f) \
+    XY(GAMATE, RIGHT, END, "right", "dpright", 0.38f, 0.35f, 1.0f) \
 
 #define CONTROLS_TYPE_ENUM(XY) \
     XY(GBC, DEFAULT, BEGIN, END) \
@@ -353,7 +362,9 @@
     XY(SPECCY, KEYBOARD_WITH_CURSOR) \
     XY(SPECCY, KEYBOARD_WITH_KEMPSTON, END) \
     \
-    XY(JACE, DEFAULT, BEGIN, END)
+    XY(JACE, DEFAULT, BEGIN, END) \
+    \
+    XY(GAMATE, DEFAULT, BEGIN, END)
 
     
 #define GET_MACRO_ENUM(_1, _2, _3, _4, _5, _6, _7, _8, NAME, ...) NAME

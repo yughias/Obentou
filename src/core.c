@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "cores/gamate/interface.h"
 #include "cores/watara/interface.h"
 #include "cores/pv1000/interface.h"
 #include "cores/pce/interface.h"
@@ -55,6 +56,7 @@
 }
 
 const core_t cores[] = {
+    LOAD_CORE(GAMATE),
     LOAD_CORE(WATARA),
     LOAD_CORE(PV1000),
     LOAD_CORE(PCE),
