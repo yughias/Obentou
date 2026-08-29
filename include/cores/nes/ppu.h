@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "cores/nes/ines.h"
-#include "cpus/r2A03.h"
+#include "chips/r2A03.h"
 #include "SDL_MAINLOOP.h"
 
 #include "utils/serializer.h"

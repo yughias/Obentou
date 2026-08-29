@@ -1,4 +1,4 @@
-#include "cpus/m6502.h"
+#include "chips/m6502.h"
 
 #include <stdio.h>
 #include <string.h>

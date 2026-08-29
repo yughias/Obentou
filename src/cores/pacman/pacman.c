@@ -2,7 +2,7 @@
 #include "cores/pacman/memory.h"
 #include "cores/pacman/video.h"
 #include "cores/pacman/audio.h"
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "utils/archive.h"
 #include "utils/controls.h"
 #include "SDL_MAINLOOP.h"

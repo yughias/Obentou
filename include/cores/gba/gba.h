@@ -1,7 +1,7 @@
 #ifndef __HARDWARE_H__
 #define __HARDWARE_H__
 
-#include "cpus/arm7tdmi/arm7tdmi.h"
+#include "chips/arm7tdmi/arm7tdmi.h"
 #include "cores/gba/memory.h"
 #include "cores/gba/ppu.h"
 #include "cores/gba/keypad.h"

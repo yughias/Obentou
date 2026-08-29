@@ -3,7 +3,7 @@
 
 #include "types.h"
 #include "cores/nes/ines.h"
-#include "cpus/r2A03.h"
+#include "chips/r2A03.h"
 #include "cores/nes/ppu.h"
 #include "cores/nes/memory.h"
 #include "cores/nes/joypad.h"

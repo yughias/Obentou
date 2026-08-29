@@ -1,7 +1,7 @@
-#include "cpus/arm7tdmi/arm7tdmi.h"
-#include "cpus/arm7tdmi/arm.h"
-#include "cpus/arm7tdmi/thumb.h"
-#include "cpus/arm7tdmi/arm7tdmi_util.h"
+#include "chips/arm7tdmi/arm7tdmi.h"
+#include "chips/arm7tdmi/arm.h"
+#include "chips/arm7tdmi/thumb.h"
+#include "chips/arm7tdmi/arm7tdmi_util.h"
 #include "types.h"
 
 #include "utils/serializer.h"

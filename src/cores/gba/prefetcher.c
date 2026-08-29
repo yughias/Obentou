@@ -1,6 +1,6 @@
 #include "cores/gba/prefetcher.h"
 #include "cores/gba/gamepak.h"
-#include "cpus/arm7tdmi/arm7tdmi.h"
+#include "chips/arm7tdmi/arm7tdmi.h"
 
 static void prefetch_update(prefetcher_t* prefetch, u32* elapsed,u8 wt){
     while(*elapsed >= wt + 1){

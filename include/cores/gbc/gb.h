@@ -1,7 +1,7 @@
 #ifndef __HARDWARE_H__
 #define __HARDWARE_H__
 
-#include "cpus/sm83.h"
+#include "chips/sm83.h"
 #include "cores/gbc/ppu.h"
 #include "cores/gbc/memory.h"
 #include "cores/gbc/joypad.h"

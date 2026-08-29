@@ -1,7 +1,7 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "cores/tms80/sn76489.h"
 #include "cores/tms80/vdp.h"
 

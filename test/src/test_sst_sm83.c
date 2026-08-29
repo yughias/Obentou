@@ -1,4 +1,4 @@
-#include "cpus/sm83.h"
+#include "chips/sm83.h"
 #include "types.h"
 
 #include <stdio.h>

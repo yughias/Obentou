@@ -1,7 +1,7 @@
 #ifndef __VDP_H__
 #define __VDP_H__
 
-#include "cpus/z80.h"
+#include "chips/z80.h"
 
 #include "types.h"
 #include "utils/serializer.h"

@@ -1,4 +1,4 @@
-#include "cpus/ay.h"
+#include "chips/ay.h"
 
 #include "utils/sound.h"
 

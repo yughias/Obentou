@@ -1,11 +1,11 @@
-#include "cpus/w65c02.h"
+#include "chips/w65c02.h"
 
 #include <stdio.h>
 
 #define W65C02
 #define CPU_TYPE w65c02_t
 #define CPU_VAR w
-#include "cpus/isa_65X02.h"
+#include "chips/isa_65X02.h"
 
 static opcode_t opcode_table[256] =  {
     {BRK, IMP_0}, {ORA, X_IND   }, {NOP, IMP_0}, {NOP, X_IND},	{TSB, ZPG_0}, {ORA, ZPG_0}, {ASL, ZPG_0}, {RMB0, ZPG_0}, {PHP, IMP_0}, {ORA, IMM_0,  }, {ASL, ACC_0}, {NOP, IMM_0}, {TSB, ABS_0  }, {ORA, ABS_0,  }, {ASL, ABS_0,  }, {BBR0, REL_0},

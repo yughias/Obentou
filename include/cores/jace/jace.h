@@ -6,7 +6,7 @@
 #include "utils/serializer.h"
 
 #include "cores/jace/tape.h"
-#include "cpus/z80.h"
+#include "chips/z80.h"
 
 #define MAX_RAM_SIZE ((1 << 15) | (1 << 14))
 

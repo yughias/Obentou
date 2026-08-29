@@ -1,5 +1,5 @@
-#include "cpus/arm7tdmi/arm7tdmi.h"
-#include "cpus/arm7tdmi/arm7tdmi_util.h"
+#include "chips/arm7tdmi/arm7tdmi.h"
+#include "chips/arm7tdmi/arm7tdmi_util.h"
 
 #include "types.h"
 

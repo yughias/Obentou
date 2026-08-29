@@ -1,7 +1,7 @@
 #ifndef __PACMAN_H__
 #define __PACMAN_H__
 
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "types.h"
 #include "utils/serializer.h"
 #include "utils/controls.h"

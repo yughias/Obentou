@@ -1,7 +1,7 @@
 #ifndef __PV_1000_H__
 #define __PV_1000_H__
 
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "cores/pv1000/vdp.h"
 #include "cores/pv1000/psg.h"
 #include "cores/pv1000/controller.h"

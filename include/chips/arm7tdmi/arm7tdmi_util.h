@@ -1,7 +1,7 @@
 #ifndef __ALU_H__
 #define __ALU_H__
 
-#include "cpus/arm7tdmi/arm7tdmi.h"
+#include "chips/arm7tdmi/arm7tdmi.h"
 #include "types.h"
 
 #include <stdio.h>

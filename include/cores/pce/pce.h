@@ -2,7 +2,7 @@
 #define __PCE_H__
 
 #include "cores/pce/timings.h"
-#include "cpus/h6280.h"
+#include "chips/h6280.h"
 #include "cores/pce/vce.h"
 #include "cores/pce/vdc.h"
 #include "cores/pce/tmr.h"

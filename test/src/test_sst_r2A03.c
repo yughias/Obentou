@@ -1,4 +1,4 @@
-#include "cpus/r2A03.h"
+#include "chips/r2A03.h"
 
 #include <stdio.h>
 #include <string.h>

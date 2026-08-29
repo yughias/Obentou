@@ -5,7 +5,7 @@
 
 #include "utils/serializer.h"
 
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "cores/speccy/ula.h"
 #include "cores/speccy/audio.h"
 #include "cores/speccy/memory.h"

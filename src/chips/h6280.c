@@ -1,4 +1,4 @@
-#include "cpus/h6280.h"
+#include "chips/h6280.h"
 
 #include <stdio.h>
 

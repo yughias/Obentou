@@ -2,7 +2,7 @@
 #define _SPACEINVADERS_H_
 
 #include "types.h"
-#include "cpus/i8080.h"
+#include "chips/i8080.h"
 #include "cores/spaceinvaders/memory.h"
 #include "cores/spaceinvaders/shifter.h"
 

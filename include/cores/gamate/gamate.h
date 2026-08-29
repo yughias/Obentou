@@ -1,8 +1,8 @@
 #ifndef __GAMATE_H__
 #define __GAMATE_H__
 
-#include "cpus/m6502.h"
-#include "cpus/ay.h"
+#include "chips/m6502.h"
+#include "chips/ay.h"
 #include "cores/gamate/lcd.h"
 
 #include "utils/serializer.h"

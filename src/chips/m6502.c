@@ -1,11 +1,11 @@
-#include "cpus/r2A03.h"
+#include "chips/m6502.h"
 
 #include <stdio.h>
 
-#define R2A03
-#define CPU_TYPE r2A03_t
-#define CPU_VAR r
-#include "cpus/isa_65X02.h"
+#define M6502
+#define CPU_TYPE m6502_t
+#define CPU_VAR m
+#include "chips/isa_65X02.h"
 
 static opcode_t opcode_table[256] = {
     {BRK,  IMP_0, 0}, {ORA, X_IND, 0}, {JAM,   IMP_0, 0}, {SLO, X_IND, 0},	{NOP1, ZPG_0, 0}, {ORA, ZPG_0, 0}, {ASL, ZPG_0, 0}, {SLO, ZPG_0, 0},	{PHP, IMP_0, 0}, {ORA,  IMM_0, 0}, {ASL, ACC_0, 0}, {ANC , IMM_0, 0}, {NOP1, ABS_0, 0}, {ORA, ABS_0, 0}, {ASL, ABS_0, 0}, {SLO, ABS_0, 0},
@@ -26,67 +26,67 @@ static opcode_t opcode_table[256] = {
     {BEQ,  REL_0, 0}, {SBC, IND_Y, 0}, {JAM,   IMP_0, 0}, {ISC, IND_Y, 1},	{NOP1, ZPG_X, 0}, {SBC, ZPG_X, 0}, {INC, ZPG_X, 0}, {ISC, ZPG_X, 0},	{SED, IMP_0, 0}, {SBC,  ABS_Y, 0}, {NOP, IMP_0, 0}, {ISC , ABS_Y, 1}, {NOP1, ABS_X, 0}, {SBC, ABS_X, 0}, {INC, ABS_X, 1}, {ISC, ABS_X, 1}
 };
 
-void r2A03_print(r2A03_t* r){
-    printf("pc: %04X s: %02X p: %02X a: %02X x: %02X y: %02X\n", r->pc, r->s, r->p, r->a, r->x, r->y);
-    printf("cycles: %d\n", r->cycles);
+void m6502_print(m6502_t* m){
+    printf("pc: %04X s: %02X p: %02X a: %02X x: %02X y: %02X\n", m->pc, m->s, m->p, m->a, m->x, m->y);
+    printf("cycles: %d\n", m->cycles);
     printf(
         "N: %d V: %d B: %d D: %d I: %d Z: %d C: %d\n\n",
-        (bool)(r->p & SET_N), (bool)(r->p & SET_V), (bool)(r->p & SET_B), (bool)(r->p & SET_D),
-        (bool)(r->p & SET_I), (bool)(r->p & SET_Z), (bool)(r->p & SET_C)
+        (bool)(m->p & SET_N), (bool)(m->p & SET_V), (bool)(m->p & SET_B), (bool)(m->p & SET_D),
+        (bool)(m->p & SET_I), (bool)(m->p & SET_Z), (bool)(m->p & SET_C)
     );
 }
 
-void r2A03_init(r2A03_t* r){
-    r->p = SET_D | SET_U | SET_I;
-    r->s = 0;
-    r->a = 0;
-    r->x = 0;
-    r->y = 0;
-    r->pc = 0;
+void m6502_init(m6502_t* m){
+    m->p = SET_D | SET_U | SET_I;
+    m->s = 0;
+    m->a = 0;
+    m->x = 0;
+    m->y = 0;
+    m->pc = 0;
 }
 
-void r2A03_reset(r2A03_t* r){
-    r->a = 0;
-    r->x = 0;
-    r->y = 0;
-    r->s -= 3;
+void m6502_reset(m6502_t* m){
+    m->a = 0;
+    m->x = 0;
+    m->y = 0;
+    m->s -= 3;
     u8 pc_lo = read_byte(0xFFFC);
     u8 pc_hi = read_byte(0xFFFD);
-    r->pc = pc_lo | (pc_hi << 8);
-    r->p = SET_I;
+    m->pc = pc_lo | (pc_hi << 8);
+    m->p = SET_I;
 }
 
-void r2A03_nmi(r2A03_t* r){
+void m6502_nmi(m6502_t* m){
     fetch;
     fetch;
-    r->pc -= 2;
-    push(r->pc >> 8);
-    push(r->pc & 0xFF);
-    push(r->p & CLEAR_B);
+    m->pc -= 2;
+    push(m->pc >> 8);
+    push(m->pc & 0xFF);
+    push(m->p & CLEAR_B);
     u8 lsb = read_byte(0xFFFA);
     u8 msb = read_byte(0xFFFB);
-    r->pc = lsb | (msb << 8);
-    r->p |= SET_I;
+    m->pc = lsb | (msb << 8);
+    m->p |= SET_I;
 }
 
-void r2A03_irq(r2A03_t* r){
+void m6502_irq(m6502_t* m){
     fetch;
     fetch;
-    r->pc -= 2;
-    push(r->pc >> 8);
-    push(r->pc & 0xFF);
-    push(r->p & CLEAR_B);
+    m->pc -= 2;
+    push(m->pc >> 8);
+    push(m->pc & 0xFF);
+    push(m->p & CLEAR_B);
     u8 lsb = read_byte(0xFFFE);
     u8 msb = read_byte(0xFFFF);
-    r->pc = lsb | (msb << 8);
-    r->p |= SET_I;
+    m->pc = lsb | (msb << 8);
+    m->p |= SET_I;
 }
 
-bool r2A03_interrupt_enabled(r2A03_t* r){
-    return !(r->p & SET_I);
+bool m6502_interrupt_enabled(m6502_t* m){
+    return !(m->p & SET_I);
 }
 
-void r2A03_step(r2A03_t* r){
+void m6502_step(m6502_t* m){
     u8 opcode = fetch;
 
     opcode_t op_info = opcode_table[opcode];
@@ -97,66 +97,66 @@ void r2A03_step(r2A03_t* r){
     switch (type){
         case ACC_0:
         {
-            r->in_mem = false;
-            r->op_arg = r->a;
+            m->in_mem = false;
+            m->op_arg = m->a;
         }
         break;
 
         case ABS_0:
         {
-            r->in_mem = true;
+            m->in_mem = true;
             u8 addr_lo = fetch;
             u8 addr_hi = fetch;
-            r->mem_addr = addr_lo | (addr_hi << 8);
+            m->mem_addr = addr_lo | (addr_hi << 8);
         }
         break;
 
         case ABS_X:
         {
-            r->in_mem = true;
+            m->in_mem = true;
             u8 addr_lo = fetch;
             u8 addr_hi = fetch;
-            r->mem_addr = addr_lo | (addr_hi << 8);
-            if(op_slow || (u8)r->mem_addr + r->x > 0xFF){
-                u8 tmp_lo = r->mem_addr + r->x;
-                dummy_read((r->mem_addr & 0xFF00) | tmp_lo);
+            m->mem_addr = addr_lo | (addr_hi << 8);
+            if(op_slow || (u8)m->mem_addr + m->x > 0xFF){
+                u8 tmp_lo = m->mem_addr + m->x;
+                dummy_read((m->mem_addr & 0xFF00) | tmp_lo);
             }
-            r->mem_addr += r->x;
+            m->mem_addr += m->x;
         }
         break;
 
         case ABS_Y:
         {
-            r->in_mem = true;
+            m->in_mem = true;
             u8 addr_lo = fetch;
             u8 addr_hi = fetch;
-            r->mem_addr = addr_lo | (addr_hi << 8);
-            if(op_slow || (u8)r->mem_addr + r->y > 0xFF){
-                u8 tmp_lo = r->mem_addr + r->y;
-                dummy_read((r->mem_addr & 0xFF00) | tmp_lo);
+            m->mem_addr = addr_lo | (addr_hi << 8);
+            if(op_slow || (u8)m->mem_addr + m->y > 0xFF){
+                u8 tmp_lo = m->mem_addr + m->y;
+                dummy_read((m->mem_addr & 0xFF00) | tmp_lo);
             }
-            r->mem_addr += r->y;
+            m->mem_addr += m->y;
         }
         break;
 
         case REL_0:
         {
-            r->op_arg = fetch;
+            m->op_arg = fetch;
         }
         break;
 
         case IND_Y:
         {
-            r->in_mem = true;
+            m->in_mem = true;
             u8 ll = fetch;
             u8 addr_lo = read_byte(ll);
             u8 addr_hi = read_byte((u8)(ll + 1));
-            r->mem_addr = addr_lo | (addr_hi << 8);
-            if(op_slow || (u8)r->mem_addr + r->y > 0xFF){
-                u8 tmp_lo = r->mem_addr + r->y;
-                dummy_read((r->mem_addr & 0xFF00) | tmp_lo);
+            m->mem_addr = addr_lo | (addr_hi << 8);
+            if(op_slow || (u8)m->mem_addr + m->y > 0xFF){
+                u8 tmp_lo = m->mem_addr + m->y;
+                dummy_read((m->mem_addr & 0xFF00) | tmp_lo);
             }
-            r->mem_addr += r->y;
+            m->mem_addr += m->y;
         }
         break;
 
@@ -167,58 +167,58 @@ void r2A03_step(r2A03_t* r){
 
         case IMM_0:
         {
-            r->in_mem = false;
-            r->op_arg = fetch;
+            m->in_mem = false;
+            m->op_arg = fetch;
         }
         break;
 
         case X_IND:
         {
-            r->in_mem = true;
+            m->in_mem = true;
             u8 ll = fetch;
-            u8 zpg = ll + r->x;
+            u8 zpg = ll + m->x;
             dummy_read(ll);
             u8 addr_lo = read_byte(zpg);
             u8 addr_hi = read_byte((u8)(zpg + 1));
-            r->mem_addr = addr_lo | (addr_hi << 8); 
+            m->mem_addr = addr_lo | (addr_hi << 8); 
         }
         break;
 
         case ZPG_0:
         {
-            r->in_mem = true;
-            r->mem_addr = fetch;
+            m->in_mem = true;
+            m->mem_addr = fetch;
         }
         break;
 
         case ZPG_X:
         {
-            r->in_mem = true;
-            r->mem_addr = fetch;
-            dummy_read(r->mem_addr);
-            r->mem_addr = (u8)(r->mem_addr + r->x);
+            m->in_mem = true;
+            m->mem_addr = fetch;
+            dummy_read(m->mem_addr);
+            m->mem_addr = (u8)(m->mem_addr + m->x);
         }
         break;
 
         case ZPG_Y:
         {
-            r->in_mem = true;
-            r->mem_addr = fetch;
-            dummy_read(r->mem_addr);
-            r->mem_addr = (u8)(r->mem_addr + r->y);
+            m->in_mem = true;
+            m->mem_addr = fetch;
+            dummy_read(m->mem_addr);
+            m->mem_addr = (u8)(m->mem_addr + m->y);
         }
         break;
 
         case IND_0:
         {
-            r->in_mem = true;
+            m->in_mem = true;
             u8 addr_lo = fetch;
             u8 addr_hi = fetch;
-            r->mem_addr = addr_lo | (addr_hi << 8);
-            addr_lo = read_byte(r->mem_addr);
-            r->mem_addr = (r->mem_addr & 0xFF00) | (((r->mem_addr & 0xFF) + 1) & 0xFF);
-            addr_hi = read_byte(r->mem_addr);
-            r->mem_addr = addr_lo | (addr_hi << 8);
+            m->mem_addr = addr_lo | (addr_hi << 8);
+            addr_lo = read_byte(m->mem_addr);
+            m->mem_addr = (m->mem_addr & 0xFF00) | (((m->mem_addr & 0xFF) + 1) & 0xFF);
+            addr_hi = read_byte(m->mem_addr);
+            m->mem_addr = addr_lo | (addr_hi << 8);
         }
         break;
 
@@ -227,5 +227,5 @@ void r2A03_step(r2A03_t* r){
         return;
     }
 
-    (*op_impl)(r);
+    (*op_impl)(m);
 }

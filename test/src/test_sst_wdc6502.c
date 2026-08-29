@@ -1,4 +1,4 @@
-#include "cpus/w65c02.h"
+#include "chips/w65c02.h"
 
 #include <stdio.h>
 #include <string.h>

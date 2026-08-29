@@ -1,4 +1,4 @@
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "types.h"
 
 #include <stdio.h>

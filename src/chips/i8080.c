@@ -1,4 +1,4 @@
-#include "cpus/i8080.h"
+#include "chips/i8080.h"
 
 #include "utils/vec.h"
 

@@ -1,4 +1,4 @@
-#include "cpus/z80.h"
+#include "chips/z80.h"
 #include "utils/vec.h"
 
 DEFINE_VEC(byte_vec, u8);
