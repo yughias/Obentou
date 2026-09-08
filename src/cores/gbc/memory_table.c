@@ -81,7 +81,6 @@ u8 gb_readIO(gb_t* gb, u16 address){
     gb_timer_t* tmr = &gb->timer;
     sm83_t* cpu = &gb->cpu;
     dma_t* dma = &gb->dma;
-    joypad_t* joy = &gb->joypad;
     ppu_t* ppu = &gb->ppu;
     apu_t* apu = &gb->apu;
     serial_t* serial = &gb->serial;
@@ -89,7 +88,7 @@ u8 gb_readIO(gb_t* gb, u16 address){
     goto *(read_io[address & 0xFF]);
 
     {
-        r_00: return gb_getJoypadRegister(joy);
+        r_00: return gb_read_joyp(gb);
         r_01: READ(serial->SB);
         r_02: return serial->SC_REG | 0b01111110; // fix mask for CGB
         r_03: return 0xFF;
@@ -230,7 +229,6 @@ void gb_writeIO(gb_t* gb, u16 address, u8 byte){
     sm83_t* cpu = &gb->cpu;
     gb_timer_t* tmr = &gb->timer;
     dma_t* dma = &gb->dma;
-    joypad_t* joy = &gb->joypad;
     serial_t* serial = &gb->serial;
     ppu_t* ppu = &gb->ppu;
     apu_t* apu = &gb->apu;
@@ -238,7 +236,7 @@ void gb_writeIO(gb_t* gb, u16 address, u8 byte){
     goto *(write_io[address & 0xFF]);
 
     {
-        w_00: WRITE(joy->JOYP);
+        w_00: gb_write_joyp(gb, byte); return;
         w_01: WRITE(serial->SB);
         w_02: WRITE(serial->SC);
         w_03: return;

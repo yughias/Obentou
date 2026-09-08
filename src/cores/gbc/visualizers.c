@@ -2,6 +2,11 @@
 
 #include "SDL_MAINLOOP.h"
 
+static int mono2_to_rgb(u8 mono2) {
+    int col = (3 - mono2) * 85;
+    return color(col, col, col);
+}
+
 bool gb_draw_tilemap(gb_t* gb){
     size(256, 256);
 
@@ -12,6 +17,9 @@ bool gb_draw_tilemap(gb_t* gb){
         for(int x = 0; x < 256; x++){
             bool priority;
             int col = gb_getTileMapPixelRGB(gb, bgTileMap, x, y, &priority, &priority);
+            // SGB returns 0-3 colors
+            if (gb->console_type == SGB_TYPE)
+                col = mono2_to_rgb(col);
             pixels[x + y*stride] = col;
         }
     }
@@ -46,8 +54,7 @@ bool gb_draw_tileset(gb_t* gb){
                     bool b0 = tilePtr[py * 2] & (1 << (7 - px));
                     bool b1 = tilePtr[py * 2 + 1] & (1 << (7 - px));
                     u8 col = b0 | (b1 << 1);
-                    col *= 85;
-                    pixels[(tx*8+px) + (ty*8+py) * stride] = color(col, col, col);
+                    pixels[(tx*8+px) + (ty*8+py) * stride] = mono2_to_rgb(col);
                 }
             }          
         }
@@ -72,7 +79,12 @@ static void draw_oam_at(gb_t* gb, int screenX, int screenY, u8 spriteIdx){
     for(u8 y = 0; y < height; y++)
         for(u8 x = 0; x < 8; x++){
             bool transparent;
-            pixels[(screenX + x) + (screenY + y)*width] = gb_getSpritePixelRGB(gb, tilePtr, x, y, obp_n, palette, flipX, flipY, height, &transparent);
+            int col = gb_getSpritePixelRGB(gb, tilePtr, x, y, obp_n, palette, flipX, flipY, height, &transparent);
+            if (gb->console_type == SGB_TYPE)
+                col = mono2_to_rgb(col);
+            if (transparent)
+                col = color(255, 0, 255);
+            pixels[(screenX + x) + (screenY + y)*width] = col;
         }
 }
 
@@ -97,10 +109,36 @@ static void draw_color_at(int x, int y, int palette, int pal_color, u8* cram){
 }
 
 bool gb_draw_palettes(gb_t* gb){
-    int n_palette = gb->console_type == CGB_TYPE ? 8 : (gb->console_type == DMG_ON_CGB_TYPE ? 2 : 1);
+    int n_palette = 1;
+    
+    switch (gb->console_type){
+        case CGB_TYPE:
+        n_palette = 8;
+        break;
+        case SGB_TYPE:
+        n_palette = 4;
+        break;
+        case DMG_ON_CGB_TYPE:
+        n_palette = 2;
+        break;
+    }
+
     size(4, n_palette);
 
-    if(gb->console_type == DMG_TYPE || gb->console_type == MEGADUCK_TYPE){
+    if(gb->console_type == SGB_TYPE) {
+        for (int pal = 0; pal < 4; pal++) {
+            for (int idx = 0; idx < 4; idx++) {
+                u16 col = gb->sgb.colors[idx + pal * 4];
+                u8 b = (col >> 10) & 0x1F;
+                u8 g = (col >> 5) & 0x1F;
+                u8 r = col & 0x1F;
+                b = (b << 3) | (b >> 2);
+                g = (g << 3) | (g >> 2);
+                r = (r << 3) | (r >> 2);
+                pixels[idx + pal * stride] = color(r, g, b);
+            }
+        }
+    } else if(gb->console_type == DMG_TYPE || gb->console_type == MEGADUCK_TYPE){
         const ppu_t* ppu = &gb->ppu;
         for(int i = 0; i < 4; i++){
             pixels[i] = ppu->dmgColors[i];
@@ -137,6 +175,8 @@ bool gb_draw_window(gb_t* gb){
         for(int x = 0; x < w; x++){
             bool priority;
             int col = gb_getTileMapPixelRGB(gb, winTileMap, x, y, &priority, &priority);
+            if (gb->console_type == SGB_TYPE)
+                col = mono2_to_rgb(col);
             pixels[x + y*stride] = col;
         }
     }

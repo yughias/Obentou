@@ -2,6 +2,8 @@
 
 #include "utils/archive.h"
 
+#include "SDL_MAINLOOP.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,6 +21,9 @@ void GBC_run_frame(gb_t* gb){
 
     gb->startFrame_clock += cpu->cycles;
     cpu->cycles -= CYCLES_PER_FRAME;
+
+    if (gb->console_type == SGB_TYPE)
+        sgb_show_to_screen(gb);
 }
 
 static void tickHardware(void* ctx, int ticks){
@@ -62,7 +67,17 @@ void* GBC_init(const archive_t* rom_archive, const archive_t* bios_archive){
     gb_initSerial();
     gb_initLcdcMasks(gb);
     gb_initColorPalette(gb);
-    gb_renderLcdOff(&gb->ppu);
+
+    if (gb->console_type == SGB_TYPE) {
+        gb->sgb.ready_for_pulse = true;
+        gb->sgb.fade_enabled = gb_has_sgb_functionality(gb->ROM);
+        gb->ppu.screen = gb->sgb.gameboy_window;
+        size(SGB_WIDTH, SGB_HEIGHT);
+    } else {
+        gb->ppu.screen = pixels;
+    }
+
+    gb_renderLcdOff(gb);
 
     return gb;
 }
@@ -119,8 +134,14 @@ byte_vec_t GBC_savestate(gb_t* gb){
     byte_vec_t state;
     byte_vec_init(&state);
     serialize_gb_t(gb, &state);
-    if(gb->mbc.dataSize)
+    if (gb->mbc.dataSize)
         byte_vec_push_array(&state, (u8*)gb->mbc.data, gb->mbc.dataSize);
+    if (gb->console_type == SGB_TYPE) {
+        if (gb->sgb.vram_transfer)
+            byte_vec_push_array(&state, (u8*)gb->sgb.screen, sizeof(gb->sgb.screen));
+        else
+            byte_vec_push_empty_array(&state, sizeof(gb->sgb.screen));
+    }
     byte_vec_shrink(&state);
     return state;
 }
@@ -130,18 +151,28 @@ bool GBC_loadstate(gb_t* gb, byte_vec_t* state){
     u8* data = deserialize_gb_t(gb, state->data, state->data + state->size);
     if(!data) return false;
 
-    if(gb->mbc.dataSize){
+    if (gb->mbc.dataSize){
         if(end - data < gb->mbc.dataSize)
             return false;
         memcpy(gb->mbc.data, data, gb->mbc.dataSize);
         data += gb->mbc.dataSize;
     }
+
+    if(gb->console_type == SGB_TYPE){
+        if(end - data < sizeof(gb->sgb.screen))
+            return false;
+        if (gb->sgb.vram_transfer)
+            memcpy(gb->sgb.screen, data, sizeof(gb->sgb.screen));
+        data += sizeof(gb->sgb.screen);
+    }
+
     if(gb->BOOTROM_ENABLED){
         gb_fillReadTable(gb->readTable, 0x00, 0x00, gb_readBootrom);
         gb_fillReadTable(gb->readTable, 0x02, 0x09, gb_readBootrom);
     } else {
         gb_fillReadTable(gb->readTable, 0x00, 0x09, gb->mbc.mapper_0000_3FFF);
     }
+
     gb->ppu.frameSkip = true;
     gb->ppu.lastFrameOn = false;
 

@@ -5,6 +5,7 @@ typedef struct gb_t gb_t;
 
 void gb_skipDmgBootrom(gb_t*);
 void gb_skipCgbBootrom(gb_t*);
+void gb_skipSgbBootrom(gb_t*);
 void gb_hleDmgColorization(gb_t*);
 
 #endif

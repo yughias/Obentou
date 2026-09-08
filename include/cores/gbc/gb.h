@@ -10,6 +10,7 @@
 #include "cores/gbc/apu.h"
 #include "cores/gbc/gb_timer.h"
 #include "cores/gbc/serial.h"
+#include "cores/gbc/sgb.h"
 
 #include "utils/serializer.h"
 
@@ -19,7 +20,7 @@
 #define DIV_INCREMENT_RATE 256
 #define REFRESH_RATE 59.727500569606 
 
-typedef enum {DMG_TYPE, CGB_TYPE, MEGADUCK_TYPE, DMG_ON_CGB_TYPE} CONSOLE_TYPE;
+typedef enum {DMG_TYPE, CGB_TYPE, MEGADUCK_TYPE, DMG_ON_CGB_TYPE, SGB_TYPE} CONSOLE_TYPE;
 
 #define GB_STRUCT(X) \
     X(CONSOLE_TYPE, console_type, 1, 0) \
@@ -27,9 +28,9 @@ typedef enum {DMG_TYPE, CGB_TYPE, MEGADUCK_TYPE, DMG_ON_CGB_TYPE} CONSOLE_TYPE;
     X(uint64_t, startFrame_clock, 1, 0) \
     X(gb_timer_t, timer, 1, 0) \
     X(dma_t, dma, 1, 0) \
-    X(joypad_t, joypad, 1, 0) \
+    X(u8, JOYP_REG, 1, 0) \
     X(serial_t, serial, 1, 0) \
-    X(ppu_t, ppu, 1, 0) \
+    X(ppu_t, ppu, 1, 1) \
     X(apu_t, apu, 1, 0) \
     X(mbc_t, mbc, 1, 1) \
     X(readGbFunc, readTable[0x100], 0, 0) \
@@ -51,7 +52,8 @@ typedef enum {DMG_TYPE, CGB_TYPE, MEGADUCK_TYPE, DMG_ON_CGB_TYPE} CONSOLE_TYPE;
     X(u8, SVBK_REG, 1, 0) \
     X(u8, VBK_REG, 1, 0) \
     X(u8, KEY0_REG, 1, 0) \
-    X(u8, KEY1_REG, 1, 0)
+    X(u8, KEY1_REG, 1, 0) \
+    X(sgb_t, sgb, 1, 1)
 
 DECLARE_SERIALIZABLE_STRUCT(gb, GB_STRUCT)
 

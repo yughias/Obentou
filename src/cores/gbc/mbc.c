@@ -49,9 +49,8 @@ void gb_detectConsoleAndMbc(gb_t* gb){
     if(gb->noCart)
         return;
 
-    // TODO
-    //if(config_force_dmg_when_possible &&gb->ROM[0x143] != 0xC0)
-    //    gb->console_type = DMG_TYPE;
+    if (gb_has_sgb_functionality(gb->ROM) && gb->ROM[0x143] != 0xC0 && gb->ROM[0x143] != 0x80)
+        gb->console_type = SGB_TYPE;
 
     // MBC for megaduck
     if(!gb_containNintendoLogo(gb->ROM)){

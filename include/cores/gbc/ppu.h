@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#include "utils/serializer.h"
+
 #define LCD_WIDTH 160
 #define LCD_HEIGHT 144
 #define SCANLINE_NUMBER 154
@@ -48,43 +50,41 @@ typedef struct gb_t gb_t;
 
 typedef enum {HBLANK_MODE = 0, VBLANK_MODE, OAM_SCAN_MODE, DRAW_MODE} PPU_MODE;
 
-typedef struct ppu_t {
-    u8 LCD_ENABLE_MASK;            
-    u8 WIN_TILE_MAP_AREA_MASK;   
-    u8 WIN_ENABLE_MASK;    
-    u8 BG_WIN_TILE_DATA_AREA_MASK;
-    u8 BG_TILE_MAP_AREA_MASK;
-    u8 OBJ_SIZE_MASK;     
-    u8 OBJ_ENABLE_MASK;            
-    u8 BG_WIN_ENABLE_MASK;         
+#define PPU_STRUCT(X) \
+    X(u8, LCD_ENABLE_MASK, 1, 0) \
+    X(u8, WIN_TILE_MAP_AREA_MASK, 1, 0) \
+    X(u8, WIN_ENABLE_MASK, 1, 0) \
+    X(u8, BG_WIN_TILE_DATA_AREA_MASK, 1, 0) \
+    X(u8, BG_TILE_MAP_AREA_MASK, 1, 0) \
+    X(u8, OBJ_SIZE_MASK, 1, 0) \
+    X(u8, OBJ_ENABLE_MASK, 1, 0) \
+    X(u8, BG_WIN_ENABLE_MASK, 1, 0) \
+    X(u8, LY_REG, 1, 0) \
+    X(u8, LYC_REG, 1, 0) \
+    X(u8, LCDC_REG, 1, 0) \
+    X(u8, STAT_REG, 1, 0) \
+    X(u8, SCX_REG, 1, 0) \
+    X(u8, SCY_REG, 1, 0) \
+    X(u8, BGP_REG, 1, 0) \
+    X(u8, OBP0_REG, 1, 0) \
+    X(u8, OBP1_REG, 1, 0) \
+    X(u8, WX_REG, 1, 0) \
+    X(u8, WY_REG, 1, 0) \
+    X(u8, BCPS_REG, 1, 0) \
+    X(u8, OCPS_REG, 1, 0) \
+    X(PPU_MODE, mode, 1, 0) \
+    X(bool, lyc_compare, 1, 0) \
+    X(size_t, counter, 1, 0) \
+    X(u8, windowY_counter, 1, 0) \
+    X(bool, stat_irq, 1, 0) \
+    X(u8, internal_ly, 1, 0) \
+    X(int, dmgColors[4], 0, 0) \
+    X(int, backgroundColor, 0, 0) \
+    X(bool, frameSkip, 0, 0) \
+    X(bool, lastFrameOn, 0, 0) \
+    X(int*, screen, 0, 0)
 
-    u8 LY_REG;
-    u8 LYC_REG;
-    u8 LCDC_REG;
-    u8 STAT_REG;
-    u8 SCX_REG;
-    u8 SCY_REG;
-    u8 BGP_REG;
-    u8 OBP0_REG;
-    u8 OBP1_REG;
-    u8 WX_REG;
-    u8 WY_REG;
-
-    u8 BCPS_REG;
-    u8 OCPS_REG;
-
-    PPU_MODE mode;
-    bool lyc_compare;
-    size_t counter;
-    bool stat_irq;
-    u8 internal_ly;
-
-    int dmgColors[4];
-    int backgroundColor;
-    u8 windowY_counter;
-    bool frameSkip;
-    bool lastFrameOn;
-} ppu_t;
+DECLARE_SERIALIZABLE_STRUCT(ppu, PPU_STRUCT);
 
 void gb_initColorPalette(gb_t*);
 void gb_copyDefaultCgbPalette(gb_t*);
@@ -94,7 +94,7 @@ int gb_getSpritePixelRGB(gb_t*, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palette,
 void gb_getSpriteAttribute(gb_t*, u8* spriteData, bool* flipX, bool* flipY, bool* backgroundOver, bool* obp_n, u8* palette, u8** tilePtr);
 int CgbToRgb(u8, u8);
 
-void gb_renderLcdOff(ppu_t*);
+void gb_renderLcdOff(gb_t*);
 void gb_initLcdcMasks(gb_t*);
 void gb_updatePPU(gb_t*);
 u8 gb_getStatRegister(ppu_t*);

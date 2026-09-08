@@ -308,6 +308,8 @@ bool controls_pressed(control_t control, int port){
         return true;
     if(control == CONTROL_NONE)
         return false;
+    if (port >= MAX_PLAYERS)
+        return false;
 
     if(port == CONTROLS_BOTH)
         return controls_pressed(control, 0) || controls_pressed(control, 1);
@@ -319,6 +321,8 @@ bool controls_released(control_t control, int port){
     if(control == CONTROL_ALWAYS)
         return true;
     if(control == CONTROL_NONE)
+        return false;
+    if (port >= MAX_PLAYERS)
         return false;
 
     if(port == CONTROLS_BOTH)

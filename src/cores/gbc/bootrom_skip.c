@@ -3,6 +3,10 @@
 #include "cores/gbc/info.h"
 #include "string.h"
 
+#include "sgb_border_map.bin.h"
+#include "sgb_border_tiles.bin.h"
+#include "sgb_border_palettes.bin.h"
+
 typedef struct {
     u8 hash;
     char forth_char;
@@ -194,7 +198,7 @@ void gb_skipCgbBootrom(gb_t* gb){
     cpu->IME = false;
     cpu->EI_DELAY = false;
 
-    gb->joypad.JOYP_REG = 0xC7;
+    gb->JOYP_REG = 0xC7;
     serial_t* serial = &gb->serial;
     serial->SB_REG = 0x00;
     serial->SC_REG = 0x7E;
@@ -260,7 +264,85 @@ void gb_skipCgbBootrom(gb_t* gb){
     }
 }
 
-u8 getCgbTitleHash(const char* rom_name){
+void gb_skipSgbBootrom(gb_t* gb) {
+    sm83_t* cpu = &gb->cpu;
+    cpu->AF = 0x0180;
+    cpu->BC = 0x0014;
+    cpu->DE = 0x0000;
+    cpu->HL = 0xC060;
+    cpu->SP = 0xFFFE;
+    cpu->PC = 0x0100;
+    
+    cpu->Z_FLAG = true;
+    cpu->N_FLAG = false;
+    cpu->H_FLAG = false;
+    cpu->C_FLAG = false;
+
+    cpu->HALTED = false;
+    cpu->IME = false;
+    cpu->EI_DELAY = false;
+    
+    serial_t* serial = &gb->serial;
+    serial->SB_REG = 0x00;
+    serial->SC_REG = 0x7E;
+    
+    gb_timer_t* tmr = &gb->timer;
+    tmr->div = 0xAB;
+    tmr->TIMA_REG = 0x00;
+    tmr->TMA_REG = 0x00;
+    tmr->TAC_REG = 0xF8;
+    
+    cpu->IF = 0xE1;
+    
+    apu_t* apu = &gb->apu;
+    apu->NR10_REG = 0x80;
+    apu->NR11_REG = 0xBF;
+    apu->NR12_REG = 0xF3;
+    apu->NR13_REG = 0xFF;
+    apu->NR14_REG = 0xBF;
+    apu->NR21_REG = 0x3F;
+    apu->NR22_REG = 0x00;
+    apu->NR23_REG = 0xFF;
+    apu->NR24_REG = 0xBF;
+    apu->NR30_REG = 0x7F;
+    apu->NR31_REG = 0xFF;
+    apu->NR32_REG = 0x9F;
+    apu->NR33_REG = 0xFF;
+    apu->NR34_REG = 0xBF;
+    apu->NR41_REG = 0xFF;
+    apu->NR42_REG = 0x00;
+    apu->NR43_REG = 0x00;
+    apu->NR44_REG = 0xBF;
+    apu->NR50_REG = 0x77;
+    apu->NR51_REG = 0xF3;
+    apu->NR52_REG = 0xF0;
+    
+    ppu_t* ppu = &gb->ppu;
+    ppu->LCDC_REG = 0x91;
+    ppu->STAT_REG = 0x85;
+    ppu->SCY_REG    = 0x00;
+    ppu->SCX_REG    = 0x00;
+    ppu->LY_REG = 0x00;
+    ppu->LYC_REG    = 0x00;
+    ppu->BGP_REG = 0xFC;
+    ppu->OBP0_REG = 0x00;
+    ppu->OBP1_REG = 0x00;
+    ppu->WY_REG = 0x00;
+    ppu->WX_REG = 0x00;
+    
+    dma_t* dma = &gb->dma;
+    dma->DMA_REG = 0xFF;
+    
+    cpu->IE = 0x00;
+
+    sgb_init_palettes(&gb->sgb, &gb->ROM[0x134]);
+
+    memcpy(gb->sgb.tile_ram, assets_sgb_border_tiles_bin, sizeof(assets_sgb_border_tiles_bin));
+    memcpy(gb->sgb.tilemap, assets_sgb_border_map_bin, sizeof(assets_sgb_border_map_bin));
+    memcpy(gb->sgb.tilemap + 0x800, assets_sgb_border_palettes_bin, sizeof(assets_sgb_border_palettes_bin));
+}
+
+static u8 getCgbTitleHash(const char* rom_name){
     u8 hash = 0;
     while(*rom_name){
         hash += *rom_name;

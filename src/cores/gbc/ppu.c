@@ -88,6 +88,8 @@ void gb_initColorPalette(gb_t* gb){
 
     if(gb->console_type == CGB_TYPE || gb->console_type == DMG_ON_CGB_TYPE)
         ppu->backgroundColor = color(255, 255, 255);
+    else if(gb->console_type == SGB_TYPE)
+        ppu->backgroundColor = 0;
     else
         ppu->backgroundColor = ppu->dmgColors[0];
 }
@@ -132,13 +134,23 @@ static u8* getTileData(gb_t* gb, u8 tileIdx){
     }
 }
 
+static int getColorRGB(gb_t* gb, u8 colorGB, u8 colorREG, u8* cram_palette){
+    switch (gb->console_type){
+        case CGB_TYPE:
+        return convertCGB2RGB(gb, colorGB, colorREG, cram_palette);
+
+        case SGB_TYPE:
+        return (colorREG >> (2 * colorGB)) & 0b11;
+
+        default:
+        return convertDMG2RGB(gb, colorGB, colorREG, cram_palette);
+    }
+}
+
 static int getColorFromTileDataRGB(gb_t* gb, u8* tilePtr, u8 tilePX, u8 tilePY, u8 colorREG){
     u8 colorGB = getColorGb(tilePtr, tilePX, tilePY);
 
-    if(gb->console_type == CGB_TYPE)
-        return convertCGB2RGB(gb, colorGB, colorREG, gb->BGP_CRAM);
-    else
-        return convertDMG2RGB(gb, colorGB, colorREG, gb->BGP_CRAM);
+    return getColorRGB(gb, colorGB, colorREG, gb->BGP_CRAM);
 }
 
 static u8 getColorGb(u8* tilePtr, u8 tilePX, u8 tilePY){
@@ -210,7 +222,7 @@ static void renderLine(gb_t* gb, u8 y){
         else
             col = gb_getTileMapPixelRGB(gb, bgTileMap, (ppu->SCX_REG + x) % 256, (ppu->SCY_REG + y) % 256, &dmgPrio[x], &cgbPrio[x]);
         
-        pixels[x + y * LCD_WIDTH] = col;
+        ppu->screen[x + y * LCD_WIDTH] = col;
     }
 
     if(gb->console_type == MEGADUCK_TYPE)
@@ -223,7 +235,7 @@ static void renderLine(gb_t* gb, u8 y){
             if(winX < LCD_WIDTH){
                 for(int offX = 0; winX < LCD_WIDTH; offX = (offX + 1) % 256){
                     if(winX >= 0)
-                        pixels[winX + y * LCD_WIDTH] = gb_getTileMapPixelRGB(gb, winTileMap, offX % 256, ppu->windowY_counter % 256, &dmgPrio[winX], &cgbPrio[winX]);
+                        ppu->screen[winX + y * LCD_WIDTH] = gb_getTileMapPixelRGB(gb, winTileMap, offX % 256, ppu->windowY_counter % 256, &dmgPrio[winX], &cgbPrio[winX]);
                     winX++;
                 }
                 ppu->windowY_counter++;
@@ -294,7 +306,7 @@ static void renderLine(gb_t* gb, u8 y){
                         // cgb priority condition
                         (gb->console_type != CGB_TYPE || !cgbPrio[screenX] || !bg_win_enabled)
                     )
-                        pixels[screenX + y * LCD_WIDTH] = col;
+                        ppu->screen[screenX + y * LCD_WIDTH] = col;
 
                 screenX++;
                 spriteX++;
@@ -343,10 +355,7 @@ int gb_getSpritePixelRGB(gb_t* gb, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palet
         *transparent = false;
     }
 
-    if(gb->console_type == CGB_TYPE)
-        return convertCGB2RGB(gb, colorGB, palette, gb->OBP_CRAM);
-    else
-        return convertDMG2RGB(gb, colorGB, palette, gb->OBP_CRAM);
+    return getColorRGB(gb, colorGB, palette, gb->OBP_CRAM);
 }
 
 static int getSpriteRealX(gb_t* gb, u8 spriteIdx){
@@ -368,6 +377,21 @@ u8 gb_getStatRegister(ppu_t* ppu){
     return output_val;
 }
 
+static void gb_render(gb_t* gb) {
+    if (gb->console_type == SGB_TYPE)
+        sgb_render(&gb->sgb);
+    else {
+        renderPixels();
+        gb->ppu.screen = pixels;
+    }
+}
+
+void gb_renderLcdOff(gb_t* gb){
+    for(int i = 0; i < LCD_WIDTH * LCD_HEIGHT; i++)
+        gb->ppu.screen[i] = gb->ppu.backgroundColor;
+    gb_render(gb);
+}
+
 void gb_updatePPU(gb_t* gb){
     ppu_t* ppu = &gb->ppu;
     if(!(ppu->LCDC_REG & ppu->LCD_ENABLE_MASK)){
@@ -379,7 +403,7 @@ void gb_updatePPU(gb_t* gb){
         ppu->frameSkip = true;
 
         if(ppu->lastFrameOn)
-            gb_renderLcdOff(ppu);
+            gb_renderLcdOff(gb);
 
         ppu->lastFrameOn = false;
         return;
@@ -401,7 +425,7 @@ void gb_updatePPU(gb_t* gb){
             ppu->stat_irq = true;
 
         if(!ppu->frameSkip)
-            renderPixels();
+            gb_render(gb);
 
         ppu->windowY_counter = 0;
         ppu->frameSkip = false;
@@ -448,10 +472,4 @@ void gb_updatePPU(gb_t* gb){
         ppu->counter = 0;
     }   else
         ppu->counter++;
-}
-
-void gb_renderLcdOff(ppu_t* ppu){
-    for(int i = 0; i < width*height; i++)
-        pixels[i] = ppu->backgroundColor;
-    renderPixels();
 }

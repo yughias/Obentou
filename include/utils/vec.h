@@ -53,6 +53,13 @@ static inline void name##_push_empty(name##_t* vec) { \
     vec->size++; \
 } \
 \
+static inline void name##_push_empty_array(name##_t* vec, size_t count) { \
+    if (count == 0) return; \
+    size_t old_size = vec->size; \
+    name##_ensure_capacity(vec, vec->size + count); \
+    memset(vec->data + old_size, 0, sizeof(type) * count); \
+    vec->size += count; \
+} \
 static inline void name##_push_array(name##_t* vec, const type* values, size_t count) { \
     if (count == 0) return; \
     size_t old_size = vec->size; \

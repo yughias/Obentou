@@ -19,7 +19,7 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
     ppu->stat_irq = false;
     ppu->BCPS_REG = 0x00;
     ppu->OCPS_REG = 0x00;
-    gb->joypad.JOYP_REG = 0xFF;
+    gb->JOYP_REG = 0xFF;
     gb->SVBK_REG = 0x00;
     gb->VBK_REG = 0x00;
     gb->KEY0_REG = 0x00;
@@ -86,6 +86,8 @@ void gb_initMemory(gb_t* gb, const archive_t* rom_archive, const archive_t* bios
         } else {
             if(gb->console_type == CGB_TYPE){
                 gb_skipCgbBootrom(gb);
+            } else if (gb->console_type == SGB_TYPE) {
+                gb_skipSgbBootrom(gb);
             } else {
                 gb_skipDmgBootrom(gb);
             }
