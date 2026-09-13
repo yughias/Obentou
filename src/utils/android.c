@@ -6,6 +6,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <SDL3/SDL.h>
+
 #include "minIni.h"
 
 #include "core.h"
@@ -133,9 +135,49 @@ Java_launcher_BiosActivity_setSystemBios(JNIEnv *env, jobject thiz, jstring conf
     (*env)->ReleaseStringUTFChars(env, system_name, c_system_name);
 }
 
+bool android_rumble(u16 amp, u32 duration) {
+    JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+    if (!env) return false;
+
+    jobject activity = (jobject)SDL_GetAndroidActivity();
+    if (!activity) return false;
+
+    static jmethodID method_id = NULL;
+
+    if (!method_id) {
+        jclass clazz = (*env)->GetObjectClass(env, activity);
+        if (clazz) {
+            method_id = (*env)->GetMethodID(env, clazz, "triggerDeviceVibration", "(II)V");
+            (*env)->DeleteLocalRef(env, clazz);
+        }
+    }
+
+    if (method_id) {
+        int amplitude = (amp * 255) / 65535;
+        if (amplitude == 0 && amp > 0) amplitude = 1;
+        
+        jint j_duration = (jint)duration;
+
+        (*env)->CallVoidMethod(env, activity, method_id, j_duration, (jint)amplitude);
+
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            method_id = NULL;
+        }
+    }
+
+    (*env)->DeleteLocalRef(env, activity);
+    return true;
+}
+
+
 #else
 
 bool android_is_rewind() {
+    return false;
+}
+
+bool android_rumble(u16 amp, u32 duration) {
     return false;
 }
 

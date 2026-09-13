@@ -8,6 +8,8 @@
 #include "minIni.h"
 #include "tinyfiledialogs.h"
 
+#include "android.h"
+
 #include <stdlib.h>
 
 #ifdef _WIN32
@@ -347,6 +349,7 @@ bool controls_rumble(u16 low, u16 hi, u32 duration){
         if(gamepads[i] && SDL_RumbleGamepad(gamepads[i], low, hi, duration))
             ret = true;
     }
+    ret |= android_rumble((low + hi) / 2, duration);
     return ret;
 }
 

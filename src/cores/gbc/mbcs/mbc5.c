@@ -54,7 +54,7 @@ void gb_mbc5_registers(gb_t* gb, u16 addr, u8 byte){
         mbc->REG_3000_3FFF = byte;
     else if(addr < 0x6000) {
         mbc->REG_4000_5FFF = byte;
-        if(mbc->hasRumble && controls_gamepad_connected()){
+        if(mbc->hasRumble){
             if(byte & 0b1000){
                 controls_rumble(-1, -1, -1);
                 rumbleTime = gb->startFrame_clock + gb->cpu.cycles;

@@ -7,6 +7,10 @@ import android.view.KeyEvent;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.os.Build;
+import android.content.Context;
 
 public class MainActivity extends SDLActivity {
 
@@ -99,6 +103,30 @@ public class MainActivity extends SDLActivity {
 
     public int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
+    public void triggerDeviceVibration(int durationMs, int amplitude) {
+        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        if (v != null && v.hasVibrator()) {
+
+            if (amplitude <= 0) {
+                v.cancel();
+                return;
+            }
+
+            if (durationMs == -1) {
+                durationMs = 60000; 
+            } else if (durationMs <= 0) {
+                return;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                int validAmp = (amplitude > 0 && amplitude <= 255) ? amplitude : VibrationEffect.DEFAULT_AMPLITUDE;
+                v.vibrate(VibrationEffect.createOneShot(durationMs, validAmp));
+            } else {
+                v.vibrate(durationMs);
+            }
+        }
     }
 
     public Object javaMenuGetRoot() { return menuController.getRoot(); }
