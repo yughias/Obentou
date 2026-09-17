@@ -7,10 +7,10 @@ typedef u8 (*dma_read)(void* ctx, u16 addr);
 typedef void (*dma_write)(void* ctx, u16 addr, u8 byte);
 
 typedef struct dma_t {
-    u8 src_lo;
-    u8 src_hi;
-    u8 dst_lo;
-    u8 dst_hi;
+    u8 cbus_lo;
+    u8 cbus_hi;
+    u8 vbus_lo;
+    u8 vbus_hi;
     u8 len;
 
     dma_read read;

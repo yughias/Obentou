@@ -50,9 +50,17 @@ static u8 watara_read(void* ctx, u16 addr){
         return w->lcd.vram[addr - 0x4000];
 
     if(addr >= 0x8000){
-        u8 bank = addr & (1 << 14) ? 0b111 : (w->apu.ch3.dma_active ? (w->apu.ch3.ctrl >> 4) & 0b111 :w->ctrl >> 5);
-        u32 rom_addr = addr & ((1 << 14) - 1);
-        rom_addr |= bank << 14;
+        u8 base_bank = addr & (1 << 14) ? 0b111 : (w->apu.ch3.dma_active ? (w->apu.ch3.ctrl >> 4) & 0b111 : (w->ctrl >> 5) & 0b111);
+
+        u32 rom_addr;
+        if(w->rom_size > 0x20000){
+            u8 top4  = (base_bank & 0b100) ? 0xF : (w->link & 0xF);
+            u8 bit14 = base_bank & 1;
+            rom_addr  = (top4 << 15) | (bit14 << 14) | (addr & 0x3FFF);
+        } else {
+            rom_addr = (0b11 << 17) | (base_bank << 14) | (addr & 0x3FFF);
+        }
+
         return w->rom[rom_addr % w->rom_size];
     }
 
@@ -97,22 +105,22 @@ static void watara_write(void* ctx, u16 addr, u8 byte){
     }
 
     if(addr == 0x2008){
-        w->dma.src_lo = byte;
+        w->dma.cbus_lo = byte;
         return;
     }
 
     if(addr == 0x2009){
-        w->dma.src_hi = byte;
+        w->dma.cbus_hi = byte;
         return;
     }
 
     if(addr == 0x200A){
-        w->dma.dst_lo = byte;
+        w->dma.vbus_lo = byte;
         return;
     }
 
     if(addr == 0x200B){
-        w->dma.dst_hi = byte;
+        w->dma.vbus_hi = byte;
         return;
     }
 
@@ -126,8 +134,6 @@ static void watara_write(void* ctx, u16 addr, u8 byte){
             watara_dma_trigger(&w->dma);
         return;
     }
-
-    if(addr)
 
     if(addr == 0x2010){
         w->apu.waves[0].flow = byte;
@@ -195,12 +201,12 @@ static void watara_write(void* ctx, u16 addr, u8 byte){
     }
 
     if(addr == 0x2021){
-        w->ddr = byte & 0xF;
+        w->link = byte & 0xF;
         return;
     }
 
     if(addr == 0x2022){
-        w->link = byte & 0xF;
+        w->ddr = byte & 0xF;
         return;
     }
 

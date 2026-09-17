@@ -1,18 +1,26 @@
 #include "cores/watara/dma.h"
 
 void watara_dma_trigger(dma_t* dma){
-    u16 src = dma->src_lo | (dma->src_hi << 8);
-    u16 dst = dma->dst_lo | (dma->dst_hi << 8);
+    bool dma_dir = dma->vbus_hi & 0x40;
+    u16 cbus_addr = dma->cbus_lo | (dma->cbus_hi << 8);
+    u16 vbus_addr = dma->vbus_lo | ((dma->vbus_hi & 0x1F) << 8);
+    vbus_addr += 0x4000;
+    
     u16 len = (dma->len ? dma->len : 0x100) << 4;
 
     for(int i = 0; i < len; i++){
-        u8 byte = dma->read(dma->ctx, src++);
-        dma->write(dma->ctx, dst++, byte);
+        if (dma_dir) {
+            u8 byte = dma->read(dma->ctx, cbus_addr++);
+            dma->write(dma->ctx, vbus_addr++, byte);
+        } else {
+            u8 byte = dma->read(dma->ctx, vbus_addr++);
+            dma->write(dma->ctx, cbus_addr++, byte);
+        }
     }
 
     dma->len = 0;
-    dma->src_lo = src & 0xFF;
-    dma->src_hi = src >> 8;
-    dma->dst_lo = dst & 0xFF;
-    dma->dst_hi = dst >> 8;
+    dma->cbus_lo = cbus_addr & 0xFF;
+    dma->cbus_hi = cbus_addr >> 8;
+    dma->vbus_lo = vbus_addr & 0xFF;
+    dma->vbus_hi = (dma->vbus_hi & 0xE0) | ((vbus_addr >> 8) & 0x1F);
 }
