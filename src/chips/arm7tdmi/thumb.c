@@ -419,7 +419,8 @@ static void thumb_multiple_load_store(arm7tdmi_t* cpu, u32 opcode) {
     if (l)
         cpu->cycles += I_CYCLES;
 
-    cpu->r[base_idx] = base;
+    if (!l || !(opcode & (1 << base_idx)))
+        cpu->r[base_idx] = base;
 }
 
 static void thumb_push_pop(arm7tdmi_t* cpu, u32 opcode) {
