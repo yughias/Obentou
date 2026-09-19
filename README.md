@@ -15,7 +15,7 @@ Releases can be found [here](https://github.com/yughias/Obentou/releases/).
 At the moment the supported cores are:
 
 - [X] Bytepusher (Fantasy 1 Opcode machine)
-- [X] GBC (dmg/gbc/mega duck)
+- [X] GBC (dmg/gbc/mega duck/sgb colorization)
 - [X] NES
 - [X] PCE (PC-Engine)
 - [X] PV1000 (Casio PV-1000)
@@ -48,16 +48,16 @@ At the moment the supported cores are:
 | Game Boy Advance     | Game Boy Color           | Game Boy                 |
 | ![](imgs/pce.bmp)    | ![](imgs/nes.bmp)        | ![](imgs/sms.bmp)        |
 | PC Engine            | Famicom                  | Sega Master System       |
-| ![](imgs/gg.bmp)     | ![](imgs/watara.bmp)     | ![](imgs/megaduck.bmp)   |
-| Game Gear            | Watara Super Vision      | Megaduck                 |
+| ![](imgs/sgb.bmp)    | ![](imgs/gg.bmp)         | ![](imgs/megaduck.bmp)   |
+| Super Game Boy       | Game Gear                | Megaduck                 |
 | ![](imgs/pv1000.bmp) | ![](imgs/sg1000.bmp)     | ![](imgs/sc3000.bmp)     |
 | PV-1000              | SG-1000                  | SC-3000                  |
 | ![](imgs/speccy.bmp) | ![](imgs/jace.bmp)       | ![](imgs/col.bmp)        | 
 | Zx Spectrum 48k      | Jupiter Ace              | Coleco Vision            | 
 | ![](imgs/pacman.bmp) | ![](imgs/invaders.bmp)   | ![](imgs/gamate.bmp)     |
 | Pacman (Arcade)      | Space Invaders (Arcade)  | Gamate                   |
-| ![](imgs/ch8.bmp)    | ![](imgs/bp.bmp)         |                          |
-| Chip-8               | BytePusher (Fantasy CPU) |                          |
+| ![](imgs/watara.bmp) | ![](imgs/ch8.bmp)        | ![](imgs/bp.bmp)         | 
+| Watara Supervision   | Chip-8                   | BytePusher (Fantasy CPU) | 
 
 ## Build Instructions
 
@@ -80,7 +80,7 @@ After a successful build, an executable named ``obentou.exe`` will be generated.
 
 ## Cores that will be supported on the future
 
-- [ ] Gamate
+No future cores are currently planned.
 
 ## Next features
 
