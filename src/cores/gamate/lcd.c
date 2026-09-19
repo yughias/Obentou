@@ -22,8 +22,6 @@ void lcd_write_reg(lcd_t* lcd, u8 addr, u8 data) {
         lcd->swap_plane = data & (1 << 4);
         lcd->window_mode = data & (1 << 5);
         lcd->increment = data & (1 << 6) ? 32 : 1;
-        if (data & (1 << 7))
-            memset(lcd->vram, 0, sizeof(lcd->vram));
         break;
 
         case 2:
