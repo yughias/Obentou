@@ -304,20 +304,20 @@ public class LauncherActivity extends Activity {
 
             File destFile = new File(romDir, filename);
             InputStream is = getContentResolver().openInputStream(uri);
-            OutputStream os = new FileOutputStream(destFile);
+            FileOutputStream os = new FileOutputStream(destFile);
             
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[65536];
             int length;
             while ((length = is.read(buffer)) > 0) {
                 os.write(buffer, 0, length);
             }
             
             os.flush();
+            os.getFD().sync();
             os.close();
             is.close();
 
             Toast.makeText(this, "Added: " + filename, Toast.LENGTH_SHORT).show();
-            loadRoms();
 
         } catch (Exception e) {
             e.printStackTrace();
