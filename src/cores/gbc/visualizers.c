@@ -183,3 +183,209 @@ bool gb_draw_window(gb_t* gb){
 
     return true;
 }
+
+
+// ============================================================================
+// POKEMON MEMORY MACROS
+// (WRAM Addresses below are for Yellow. For Red/Blue, add +1 to all WRAM addresses)
+// ============================================================================
+#define Y_WRAM(gb, addr)             ((gb)->WRAM[(addr) - 0xC000])
+#define Y_ROM(gb, bank, ptr)         ((gb)->ROM[(bank) * 0x4000 + ((ptr) & 0x3FFF)]) 
+#define Y_ROM_ABS(gb, absolute_addr) ((gb)->ROM[absolute_addr])
+
+// WRAM Map State
+#define Y_ADDR_MAP_LAYOUT     0xC6E8
+#define Y_ADDR_TILESET_ID     0xD366
+#define Y_ADDR_MAP_HEIGHT     0xD367
+#define Y_ADDR_MAP_WIDTH      0xD368
+#define Y_ADDR_PLAYER_Y       0xD360
+#define Y_ADDR_PLAYER_X       0xD361
+
+#define EXTENDED_WIDTH        800
+#define EXTENDED_HEIGHT       600
+
+// Sprite WRAM Addresses
+#define Y_ADDR_SPRITE_DATA_1  0xC100
+#define Y_ADDR_SPRITE_DATA_2  0xC200
+
+// ROM Tables
+#define Y_ROM_TILESETS_TABLE  ((0x03 * 0x4000) + (0x4558 - 0x4000))
+#define Y_ROM_SPRITE_TABLE    ((0x05 * 0x4000) + (0x42a9 - 0x4000))
+
+extern SDL_Surface* getMainWindowSurface();
+
+bool gb_draw_yellow_revamped(gb_t* gb) {
+    size(EXTENDED_WIDTH, EXTENDED_HEIGHT);
+    
+    // Clear background
+    for(int i = 0; i < EXTENDED_WIDTH * EXTENDED_HEIGHT; i++) {
+        pixels[i] = color(30, 30, 30);
+    }
+
+    // 1. Read Map Metadata
+    u8 tileset_id = Y_WRAM(gb, Y_ADDR_TILESET_ID);
+    u8 map_height = Y_WRAM(gb, Y_ADDR_MAP_HEIGHT);
+    u8 map_width  = Y_WRAM(gb, Y_ADDR_MAP_WIDTH);
+    u8 player_x   = Y_WRAM(gb, Y_ADDR_PLAYER_X);
+    u8 player_y   = Y_WRAM(gb, Y_ADDR_PLAYER_Y);
+
+    // 2. Resolve ROM Pointers (CORRECTED: Blocks and Gfx share the same bank)
+    int header_offset = Y_ROM_TILESETS_TABLE + (tileset_id * 12);
+    u8 rom_bank   = Y_ROM_ABS(gb, header_offset + 0);
+    u16 block_ptr = Y_ROM_ABS(gb, header_offset + 1) | (Y_ROM_ABS(gb, header_offset + 2) << 8);
+    u16 gfx_ptr   = Y_ROM_ABS(gb, header_offset + 3) | (Y_ROM_ABS(gb, header_offset + 4) << 8);
+
+    // 3. Camera Anchor
+    int gb_screen_canvas_x = (EXTENDED_WIDTH - LCD_WIDTH) / 2;
+    int gb_screen_canvas_y = (EXTENDED_HEIGHT - LCD_HEIGHT) / 2;
+
+    // Calculate the base camera anchor (Player logical coordinate)
+    int base_camera_x = (player_x * 16) - 72;
+    int base_camera_y = (player_y * 16) - 64;
+
+    // MAGIC TRICK: Compare our logical anchor against the hardware scroll registers.
+    // Casting to int8_t handles the 0-255 hardware wrap-around flawlessly!
+    int8_t subpixel_scroll_x = (int8_t)(gb->ppu.SCX_REG - (base_camera_x & 0xFF));
+    int8_t subpixel_scroll_y = (int8_t)(gb->ppu.SCY_REG - (base_camera_y & 0xFF));
+
+    // Apply the hardware scroll delta to our final map camera
+    int map_offset_x = base_camera_x + subpixel_scroll_x - gb_screen_canvas_x;
+    int map_offset_y = base_camera_y + subpixel_scroll_y - gb_screen_canvas_y;
+
+    map_offset_x += 16;
+    map_offset_y += 32;
+
+
+    // ========================================================================
+    // 4. Draw Background Map (With Padding Subtraction)
+    // ========================================================================
+    int memory_width = map_width + 6; 
+    int memory_height = map_height + 6;
+
+    for (int by = 0; by < memory_height; by++) {
+        for (int bx = 0; bx < memory_width; bx++) {
+            
+            u8 block_id = Y_WRAM(gb, Y_ADDR_MAP_LAYOUT + bx + (by * memory_width));
+            
+            for (int ty = 0; ty < 4; ty++) {
+                for (int tx = 0; tx < 4; tx++) {
+                    u8 tile_id = Y_ROM(gb, rom_bank, block_ptr + (block_id * 16) + (ty * 4) + tx);
+                    
+                    for (int py = 0; py < 8; py++) {
+                        u8 row_byte1 = Y_ROM(gb, rom_bank, gfx_ptr + (tile_id * 16) + (py * 2) + 0);
+                        u8 row_byte2 = Y_ROM(gb, rom_bank, gfx_ptr + (tile_id * 16) + (py * 2) + 1);
+                        
+                        for (int px = 0; px < 8; px++) {
+                            
+                            // THE FIX: Subtract 96 pixels (3 blocks of padding) so the 
+                            // playable map properly aligns at 0,0!
+                            int absolute_px = (bx * 32) + (tx * 8) + px - 96;
+                            int absolute_py = (by * 32) + (ty * 8) + py - 96;
+
+                            int draw_x = absolute_px - map_offset_x;
+                            int draw_y = absolute_py - map_offset_y;
+                            
+                            // Culling
+                            if (draw_x < 0 || draw_x >= EXTENDED_WIDTH || 
+                                draw_y < 0 || draw_y >= EXTENDED_HEIGHT) {
+                                continue;
+                            }
+                            
+                            int bit_index = 7 - px;
+                            u8 b0 = (row_byte1 >> bit_index) & 1;
+                            u8 b1 = (row_byte2 >> bit_index) & 1;
+                            u8 col_idx = b0 | (b1 << 1);
+                            
+                            pixels[draw_x + draw_y * stride] = mono2_to_rgb(col_idx);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. Draw Sprites (Player & NPCs)
+    for (int slot = 0; slot < 16; slot++) {
+        // Picture ID 0 means the slot is empty
+        u8 picture_id = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 0);
+        if (picture_id == 0) continue;
+
+        // Logical coordinates have a +4 mathematical pad
+        int npc_y = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 4) - 4;
+        int npc_x = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 5) - 4;
+
+        // Smooth movement deltas (cast to signed 8-bit)
+        int delta_y = (int8_t)Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 3);
+        int delta_x = (int8_t)Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 4);
+
+        int draw_base_x = (npc_x * 16) + delta_x - map_offset_x;
+        int draw_base_y = (npc_y * 16) + delta_y - map_offset_y;
+
+        // Culling
+        if (draw_base_x < -16 || draw_base_x >= EXTENDED_WIDTH || 
+            draw_base_y < -16 || draw_base_y >= EXTENDED_HEIGHT) {
+            continue;
+        }
+
+        // Get ROM pointer from SpriteSheetPointerTable
+        // Each entry is 4 bytes: [PtrLow] [PtrHigh] [Size] [Bank]
+        int entry = Y_ROM_SPRITE_TABLE + ((picture_id - 1) * 4);
+        u16 sprite_ptr = Y_ROM_ABS(gb, entry + 0) | (Y_ROM_ABS(gb, entry + 1) << 8);
+        u8 sprite_bank = Y_ROM_ABS(gb, entry + 3);
+
+        // A 16x16 Sprite is made of 4 tiles (Top-Left, Bottom-Left, Top-Right, Bottom-Right)
+        for (int tile = 0; tile < 4; tile++) {
+            int tile_offset_x = (tile >= 2) ? 8 : 0;
+            int tile_offset_y = (tile % 2 == 1) ? 8 : 0;
+
+            for (int py = 0; py < 8; py++) {
+                u8 row_byte1 = Y_ROM(gb, sprite_bank, sprite_ptr + (tile * 16) + (py * 2) + 0);
+                u8 row_byte2 = Y_ROM(gb, sprite_bank, sprite_ptr + (tile * 16) + (py * 2) + 1);
+
+                for (int px = 0; px < 8; px++) {
+                    int draw_x = draw_base_x + tile_offset_x + px;
+                    int draw_y = draw_base_y + tile_offset_y + py;
+
+                    int bit_index = 7 - px;
+                    u8 b0 = (row_byte1 >> bit_index) & 1;
+                    u8 b1 = (row_byte2 >> bit_index) & 1;
+                    u8 col_idx = b0 | (b1 << 1);
+
+                    // Index 0 is completely transparent for sprites!
+                    if (col_idx == 0) continue;
+
+                    if (draw_x >= 0 && draw_x < EXTENDED_WIDTH && draw_y >= 0 && draw_y < EXTENDED_HEIGHT) {
+                        pixels[draw_x + draw_y * stride] = mono2_to_rgb(col_idx);
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. Overlay the emulator's native render in the center
+    SDL_Surface* main_surf = getMainWindowSurface();
+    if (main_surf && main_surf->pixels) {
+        u32* main_pixels = (u32*)main_surf->pixels;
+        int main_pitch = main_surf->pitch / 4; 
+        
+        for (int y = 0; y < LCD_HEIGHT; y++) {
+            for (int x = 0; x < LCD_WIDTH; x++) {
+                int dest_x = gb_screen_canvas_x + x;
+                int dest_y = gb_screen_canvas_y + y;
+                pixels[dest_x + dest_y * stride] = main_pixels[x + y * main_pitch];
+            }
+        }
+    }
+    
+    // 7. Draw Red Bounds Check
+    for (int i = 0; i < LCD_WIDTH; i++) {
+        pixels[(gb_screen_canvas_x + i) + (gb_screen_canvas_y) * stride] = color(255, 0, 0);
+        pixels[(gb_screen_canvas_x + i) + (gb_screen_canvas_y + LCD_HEIGHT - 1) * stride] = color(255, 0, 0);
+    }
+    for (int i = 0; i < LCD_HEIGHT; i++) {
+        pixels[(gb_screen_canvas_x) + (gb_screen_canvas_y + i) * stride] = color(255, 0, 0);
+        pixels[(gb_screen_canvas_x + LCD_WIDTH - 1) + (gb_screen_canvas_y + i) * stride] = color(255, 0, 0);
+    }
+
+    return true;
+}

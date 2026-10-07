@@ -36,6 +36,7 @@ void GBC_save(void* ctx, const char* sav_path);
 { "Tileset", gb_draw_tileset }, \
 { "Sprites", gb_draw_sprites }, \
 { "Palettes", gb_draw_palettes }, \
-{ "Window", gb_draw_window }
+{ "Window", gb_draw_window }, \
+{ "Yellow Revamped", gb_draw_yellow_revamped }
 
 #endif
