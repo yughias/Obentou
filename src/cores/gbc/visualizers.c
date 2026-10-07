@@ -200,6 +200,14 @@ bool gb_draw_window(gb_t* gb){
 #define Y_ADDR_MAP_WIDTH      0xD368
 #define Y_ADDR_PLAYER_Y       0xD360
 #define Y_ADDR_PLAYER_X       0xD361
+#define Y_ADDR_PLAYER_VEC_X   0xC105
+#define Y_ADDR_PLAYER_VEC_Y   0xC103
+#define Y_ADDR_PLAYER_ANIM_INTRA_FRAME_COUNTER 0xC107
+#define Y_ADDR_PLAYER_ANIM_FRAME_COUNTER 0xC108
+#define Y_ADDR_PLAYER_FACING_DIR 0xC109
+#define Y_ADDR_PLAYER_COLLISION 0xC10C
+#define Y_ADDR_PLAYER_X_ADJUSTED 0xC10B
+#define Y_ADDR_PLAYER_Y_ADJUSTED 0xC10A
 
 #define EXTENDED_WIDTH        800
 #define EXTENDED_HEIGHT       600
@@ -239,21 +247,25 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     int gb_screen_canvas_x = (EXTENDED_WIDTH - LCD_WIDTH) / 2;
     int gb_screen_canvas_y = (EXTENDED_HEIGHT - LCD_HEIGHT) / 2;
 
-    // Calculate the base camera anchor (Player logical coordinate)
-    int base_camera_x = (player_x * 16) - 72;
-    int base_camera_y = (player_y * 16) - 64;
+    // The player's logical coordinate mapped to pixel space
+    int player_px = player_x * 16;
+    int player_py = player_y * 16;
 
-    // MAGIC TRICK: Compare our logical anchor against the hardware scroll registers.
-    // Casting to int8_t handles the 0-255 hardware wrap-around flawlessly!
-    int8_t subpixel_scroll_x = (int8_t)(gb->ppu.SCX_REG - (base_camera_x & 0xFF));
-    int8_t subpixel_scroll_y = (int8_t)(gb->ppu.SCY_REG - (base_camera_y & 0xFF));
+    int facing_dir = Y_WRAM(gb, Y_ADDR_PLAYER_FACING_DIR);
+    int frame_counter = Y_WRAM(gb, Y_ADDR_PLAYER_ANIM_INTRA_FRAME_COUNTER) | (Y_WRAM(gb, Y_ADDR_PLAYER_ANIM_FRAME_COUNTER) << 2);
+    i8 player_vec_x = Y_WRAM(gb, Y_ADDR_PLAYER_VEC_X);
+    i8 player_vec_y = Y_WRAM(gb, Y_ADDR_PLAYER_VEC_Y);
 
-    // Apply the hardware scroll delta to our final map camera
-    int map_offset_x = base_camera_x + subpixel_scroll_x - gb_screen_canvas_x;
-    int map_offset_y = base_camera_y + subpixel_scroll_y - gb_screen_canvas_y;
+    int subpixel_scroll_x = 0;//gb->ppu.SCX_REG & 0xF;
+    int subpixel_scroll_y = 0;//gb->ppu.SCY_REG & 0xF;
 
-    map_offset_x += 16;
-    map_offset_y += 32;
+    // The absolute camera coordinate (top-left of the screen in the unpadded map)
+    int camera_x = player_px - 64 + subpixel_scroll_x;
+    int camera_y = player_py - 64 + subpixel_scroll_y;
+
+    // The offset to apply when drawing the map to place it on the extended canvas
+    int map_offset_x = camera_x - gb_screen_canvas_x;
+    int map_offset_y = camera_y - gb_screen_canvas_y;
 
 
     // ========================================================================
@@ -314,12 +326,22 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         int npc_y = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 4) - 4;
         int npc_x = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 5) - 4;
 
-        // Smooth movement deltas (cast to signed 8-bit)
-        int delta_y = (int8_t)Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 3);
-        int delta_x = (int8_t)Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 4);
+        // Calculate expected screen coordinates if there were no subpixel movement
+        int expected_screen_y = npc_y * 16 - camera_y;
+        int expected_screen_x = npc_x * 16 - camera_x;
 
-        int draw_base_x = (npc_x * 16) + delta_x - map_offset_x;
-        int draw_base_y = (npc_y * 16) + delta_y - map_offset_y;
+        // Read the actual OAM pixels (which include subpixel movement but are modulo 256)
+        u8 y_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 4);
+        u8 x_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 6);
+
+        // Calculate the true subpixel delta by unwrapping the 8-bit position
+        // OAM Y is ScreenY + 16, OAM X is ScreenX + 8
+        int8_t delta_y = (int8_t)(y_pixels - (expected_screen_y & 0xFF));
+        int8_t delta_x = (int8_t)(x_pixels  - (expected_screen_x & 0xFF));
+
+        // Calculate final drawing coordinates on the extended canvas
+        int draw_base_y = gb_screen_canvas_y + expected_screen_y + delta_y;
+        int draw_base_x = gb_screen_canvas_x + expected_screen_x + delta_x;
 
         // Culling
         if (draw_base_x < -16 || draw_base_x >= EXTENDED_WIDTH || 
@@ -335,8 +357,8 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
 
         // A 16x16 Sprite is made of 4 tiles (Top-Left, Bottom-Left, Top-Right, Bottom-Right)
         for (int tile = 0; tile < 4; tile++) {
-            int tile_offset_x = (tile >= 2) ? 8 : 0;
-            int tile_offset_y = (tile % 2 == 1) ? 8 : 0;
+            int tile_offset_x = (tile % 2 == 1) ? 8 : 0;
+            int tile_offset_y = (tile >= 2) ? 8 : 0;
 
             for (int py = 0; py < 8; py++) {
                 u8 row_byte1 = Y_ROM(gb, sprite_bank, sprite_ptr + (tile * 16) + (py * 2) + 0);
