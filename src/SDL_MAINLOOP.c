@@ -743,6 +743,14 @@ void mainloop(){
     int tmp_stride = stride;
     for(int i = 0; i < MAX_WIDGETS; i++){
         if(widgets[i].valid){
+            #if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+            int real_w, real_h;
+            SDL_GetWindowSizeInPixels(widgets[i].window, &real_w, &real_h);
+            if(real_w != widgets[i].width || real_h != widgets[i].height){
+                current_widget = &widgets[i];
+                size(real_w, real_h);
+            }
+            #endif
             width = widgets[i].width;
             height = widgets[i].height;
             current_widget = &widgets[i];

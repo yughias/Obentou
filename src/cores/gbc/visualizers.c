@@ -215,8 +215,8 @@ bool gb_draw_window(gb_t* gb){
 #define Y_ADDR_PLAYER_X_ADJUSTED 0xC10B
 #define Y_ADDR_PLAYER_Y_ADJUSTED 0xC10A
 
-#define EXTENDED_WIDTH        1920
-#define EXTENDED_HEIGHT       1400
+
+
 #define YELLOW_MAP_RECURSION_DEPTH 2
 #define YELLOW_MAP_BORDER_BLOCKS 3
 #define YELLOW_BLOCK_PX 32
@@ -601,7 +601,7 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
     bool use_vram, bool only_sentinel, int sentinel, const u8* bgp) {
     int screen_x0 = world_px - map_offset_x;
     int screen_y0 = world_py - map_offset_y;
-    if (screen_x0 >= EXTENDED_WIDTH || screen_y0 >= EXTENDED_HEIGHT ||
+    if (screen_x0 >= width || screen_y0 >= height ||
         screen_x0 + YELLOW_BLOCK_PX <= 0 || screen_y0 + YELLOW_BLOCK_PX <= 0)
         return;
 
@@ -641,8 +641,8 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
                 for (int px = 0; px < 8; px++) {
                     int draw_x = world_px + tx * 8 + px - map_offset_x;
                     int draw_y = world_py + ty * 8 + py - map_offset_y;
-                    if (draw_x < 0 || draw_x >= EXTENDED_WIDTH ||
-                        draw_y < 0 || draw_y >= EXTENDED_HEIGHT)
+                    if (draw_x < 0 || draw_x >= width ||
+                        draw_y < 0 || draw_y >= height)
                         continue;
 
                     int pixel_i = draw_x + draw_y * stride;
@@ -665,8 +665,8 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
     const u8* obp, int tile_base, bool flip_x) {
     if (picture_id == 0 || picture_id > Y_SPRITE_PICTURE_ID_MAX)
         return;
-    if (draw_base_x < -16 || draw_base_x >= EXTENDED_WIDTH ||
-        draw_base_y < -16 || draw_base_y >= EXTENDED_HEIGHT)
+    if (draw_base_x < -16 || draw_base_x >= width ||
+        draw_base_y < -16 || draw_base_y >= height)
         return;
 
     int entry = Y_ROM_SPRITE_TABLE + ((picture_id - 1) * 4);
@@ -694,8 +694,8 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
                 int local_x = tile_col * 8 + px;
                 int draw_x = draw_base_x + (flip_x ? 15 - local_x : local_x);
                 int draw_y = draw_base_y + tile_row * 8 + py;
-                if (draw_x < 0 || draw_x >= EXTENDED_WIDTH ||
-                    draw_y < 0 || draw_y >= EXTENDED_HEIGHT)
+                if (draw_x < 0 || draw_x >= width ||
+                    draw_y < 0 || draw_y >= height)
                     continue;
 
                 int bit_index = 7 - px;
@@ -891,8 +891,8 @@ static void yellow_fill_outside(gb_t* gb, const yellow_map_list* list,
 
     int bx0 = yellow_floor_div(map_offset_x, YELLOW_BLOCK_PX);
     int by0 = yellow_floor_div(map_offset_y, YELLOW_BLOCK_PX);
-    int bx1 = yellow_floor_div(map_offset_x + EXTENDED_WIDTH - 1, YELLOW_BLOCK_PX);
-    int by1 = yellow_floor_div(map_offset_y + EXTENDED_HEIGHT - 1, YELLOW_BLOCK_PX);
+    int bx1 = yellow_floor_div(map_offset_x + width - 1, YELLOW_BLOCK_PX);
+    int by1 = yellow_floor_div(map_offset_y + height - 1, YELLOW_BLOCK_PX);
 
     for (int by = by0; by <= by1; by++) {
         for (int bx = bx0; bx <= bx1; bx++) {
@@ -902,7 +902,7 @@ static void yellow_fill_outside(gb_t* gb, const yellow_map_list* list,
                 sample_x = 0;
             if (sample_y < 0)
                 sample_y = 0;
-            if (sample_x >= EXTENDED_WIDTH || sample_y >= EXTENDED_HEIGHT)
+            if (sample_x >= width || sample_y >= height)
                 continue;
             if (pixels[sample_x + sample_y * stride] != sentinel)
                 continue;
@@ -957,7 +957,7 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
             int map_x1 = map_x0 + (int)hdr.width * YELLOW_BLOCK_PX;
             int map_y1 = map_y0 + (int)hdr.height * YELLOW_BLOCK_PX;
             bool on_screen = map_x1 > 0 && map_y1 > 0 &&
-                map_x0 < EXTENDED_WIDTH && map_y0 < EXTENDED_HEIGHT;
+                map_x0 < width && map_y0 < height;
             if (on_screen) {
                 bool use_vram = hdr.tileset_id == current_tileset;
                 u8 bg_pal[8], ob_pal[8];
@@ -1052,11 +1052,11 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         !yellow_wram_blocks_ready(gb, &cur_hdr, map_width, map_height))
         return false;
 
-    size(EXTENDED_WIDTH, EXTENDED_HEIGHT);
-
     int sentinel = color(30, 30, 30);
-    for(int i = 0; i < EXTENDED_WIDTH * EXTENDED_HEIGHT; i++) {
-        pixels[i] = sentinel;
+    for(int y = 0; y < height; y++) {
+        for(int x = 0; x < width; x++) {
+            pixels[x + y * stride] = sentinel;
+        }
     }
 
     u8 tileset_id = Y_WRAM(gb, Y_ADDR_TILESET_ID);
@@ -1066,8 +1066,8 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     yellow_tileset_ctx tileset;
     bool have_tileset = yellow_load_tileset(gb, tileset_id, &tileset);
 
-    int gb_screen_canvas_x = (EXTENDED_WIDTH - LCD_WIDTH) / 2;
-    int gb_screen_canvas_y = (EXTENDED_HEIGHT - LCD_HEIGHT) / 2;
+    int gb_screen_canvas_x = (width - LCD_WIDTH) / 2;
+    int gb_screen_canvas_y = (height - LCD_HEIGHT) / 2;
 
     int player_px = player_x * 16;
     int player_py = player_y * 16;
