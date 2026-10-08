@@ -377,7 +377,12 @@ u8 gb_getStatRegister(ppu_t* ppu){
     return output_val;
 }
 
+int scx_reg;
+int scy_reg;
+
 static void gb_render(gb_t* gb) {
+    scx_reg = gb->ppu.SCX_REG;
+    scy_reg = gb->ppu.SCY_REG;
     if (gb->console_type == SGB_TYPE)
         sgb_render(&gb->sgb);
     else {

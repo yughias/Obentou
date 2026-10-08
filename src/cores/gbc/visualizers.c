@@ -212,42 +212,36 @@ bool gb_draw_window(gb_t* gb){
 #define EXTENDED_WIDTH        800
 #define EXTENDED_HEIGHT       600
 
-// Sprite WRAM Addresses
 #define Y_ADDR_SPRITE_DATA_1  0xC100
 #define Y_ADDR_SPRITE_DATA_2  0xC200
 
-// ROM Tables
 #define Y_ROM_TILESETS_TABLE  ((0x03 * 0x4000) + (0x4558 - 0x4000))
 #define Y_ROM_SPRITE_TABLE    ((0x05 * 0x4000) + (0x42a9 - 0x4000))
 
-extern SDL_Surface* getMainWindowSurface();
+extern int scx_reg;
+extern int scy_reg;
 
 bool gb_draw_yellow_revamped(gb_t* gb) {
     size(EXTENDED_WIDTH, EXTENDED_HEIGHT);
     
-    // Clear background
     for(int i = 0; i < EXTENDED_WIDTH * EXTENDED_HEIGHT; i++) {
         pixels[i] = color(30, 30, 30);
     }
 
-    // 1. Read Map Metadata
     u8 tileset_id = Y_WRAM(gb, Y_ADDR_TILESET_ID);
     u8 map_height = Y_WRAM(gb, Y_ADDR_MAP_HEIGHT);
     u8 map_width  = Y_WRAM(gb, Y_ADDR_MAP_WIDTH);
     u8 player_x   = Y_WRAM(gb, Y_ADDR_PLAYER_X);
     u8 player_y   = Y_WRAM(gb, Y_ADDR_PLAYER_Y);
 
-    // 2. Resolve ROM Pointers (CORRECTED: Blocks and Gfx share the same bank)
     int header_offset = Y_ROM_TILESETS_TABLE + (tileset_id * 12);
     u8 rom_bank   = Y_ROM_ABS(gb, header_offset + 0);
     u16 block_ptr = Y_ROM_ABS(gb, header_offset + 1) | (Y_ROM_ABS(gb, header_offset + 2) << 8);
     u16 gfx_ptr   = Y_ROM_ABS(gb, header_offset + 3) | (Y_ROM_ABS(gb, header_offset + 4) << 8);
 
-    // 3. Camera Anchor
     int gb_screen_canvas_x = (EXTENDED_WIDTH - LCD_WIDTH) / 2;
     int gb_screen_canvas_y = (EXTENDED_HEIGHT - LCD_HEIGHT) / 2;
 
-    // The player's logical coordinate mapped to pixel space
     int player_px = player_x * 16;
     int player_py = player_y * 16;
 
@@ -259,18 +253,13 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     int subpixel_scroll_x = 0;//gb->ppu.SCX_REG & 0xF;
     int subpixel_scroll_y = 0;//gb->ppu.SCY_REG & 0xF;
 
-    // The absolute camera coordinate (top-left of the screen in the unpadded map)
     int camera_x = player_px - 64 + subpixel_scroll_x;
     int camera_y = player_py - 64 + subpixel_scroll_y;
 
-    // The offset to apply when drawing the map to place it on the extended canvas
     int map_offset_x = camera_x - gb_screen_canvas_x;
     int map_offset_y = camera_y - gb_screen_canvas_y;
 
 
-    // ========================================================================
-    // 4. Draw Background Map (With Padding Subtraction)
-    // ========================================================================
     int memory_width = map_width + 6; 
     int memory_height = map_height + 6;
 
@@ -289,8 +278,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
                         
                         for (int px = 0; px < 8; px++) {
                             
-                            // THE FIX: Subtract 96 pixels (3 blocks of padding) so the 
-                            // playable map properly aligns at 0,0!
                             int absolute_px = (bx * 32) + (tx * 8) + px - 96;
                             int absolute_py = (by * 32) + (ty * 8) + py - 96;
 
@@ -316,30 +303,22 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         }
     }
 
-    // 5. Draw Sprites (Player & NPCs)
     for (int slot = 0; slot < 16; slot++) {
-        // Picture ID 0 means the slot is empty
         u8 picture_id = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 0);
-        if (picture_id == 0) continue;
+        if (picture_id == 0 || picture_id == 0xFF) continue;
 
-        // Logical coordinates have a +4 mathematical pad
         int npc_y = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 4) - 4;
         int npc_x = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 5) - 4;
 
-        // Calculate expected screen coordinates if there were no subpixel movement
         int expected_screen_y = npc_y * 16 - camera_y;
         int expected_screen_x = npc_x * 16 - camera_x;
 
-        // Read the actual OAM pixels (which include subpixel movement but are modulo 256)
         u8 y_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 4);
         u8 x_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 6);
 
-        // Calculate the true subpixel delta by unwrapping the 8-bit position
-        // OAM Y is ScreenY + 16, OAM X is ScreenX + 8
         int8_t delta_y = (int8_t)(y_pixels - (expected_screen_y & 0xFF));
         int8_t delta_x = (int8_t)(x_pixels  - (expected_screen_x & 0xFF));
 
-        // Calculate final drawing coordinates on the extended canvas
         int draw_base_y = gb_screen_canvas_y + expected_screen_y + delta_y;
         int draw_base_x = gb_screen_canvas_x + expected_screen_x + delta_x;
 
@@ -349,13 +328,10 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
             continue;
         }
 
-        // Get ROM pointer from SpriteSheetPointerTable
-        // Each entry is 4 bytes: [PtrLow] [PtrHigh] [Size] [Bank]
         int entry = Y_ROM_SPRITE_TABLE + ((picture_id - 1) * 4);
         u16 sprite_ptr = Y_ROM_ABS(gb, entry + 0) | (Y_ROM_ABS(gb, entry + 1) << 8);
         u8 sprite_bank = Y_ROM_ABS(gb, entry + 3);
 
-        // A 16x16 Sprite is made of 4 tiles (Top-Left, Bottom-Left, Top-Right, Bottom-Right)
         for (int tile = 0; tile < 4; tile++) {
             int tile_offset_x = (tile % 2 == 1) ? 8 : 0;
             int tile_offset_y = (tile >= 2) ? 8 : 0;
@@ -373,7 +349,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
                     u8 b1 = (row_byte2 >> bit_index) & 1;
                     u8 col_idx = b0 | (b1 << 1);
 
-                    // Index 0 is completely transparent for sprites!
                     if (col_idx == 0) continue;
 
                     if (draw_x >= 0 && draw_x < EXTENDED_WIDTH && draw_y >= 0 && draw_y < EXTENDED_HEIGHT) {
@@ -384,7 +359,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         }
     }
 
-    // 6. Overlay the emulator's native render in the center
     SDL_Surface* main_surf = getMainWindowSurface();
     if (main_surf && main_surf->pixels) {
         u32* main_pixels = (u32*)main_surf->pixels;
@@ -399,7 +373,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         }
     }
     
-    // 7. Draw Red Bounds Check
     for (int i = 0; i < LCD_WIDTH; i++) {
         pixels[(gb_screen_canvas_x + i) + (gb_screen_canvas_y) * stride] = color(255, 0, 0);
         pixels[(gb_screen_canvas_x + i) + (gb_screen_canvas_y + LCD_HEIGHT - 1) * stride] = color(255, 0, 0);
