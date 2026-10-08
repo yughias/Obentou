@@ -608,6 +608,12 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
         screen_x0 + YELLOW_BLOCK_PX <= 0 || screen_y0 + YELLOW_BLOCK_PX <= 0)
         return;
 
+    const u8* pal = bgp ? bgp : gb->BGP_CRAM;
+    int colors[4];
+    for (int i = 0; i < 4; i++) {
+        colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+    }
+
     for (int ty = 0; ty < 4; ty++) {
         for (int tx = 0; tx < 4; tx++) {
             u8 tile_id;
@@ -630,6 +636,10 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
             }
 
             for (int py = 0; py < 8; py++) {
+                int draw_y = world_py + ty * 8 + py - map_offset_y;
+                bool y_valid = draw_y >= 0 && draw_y < height;
+                int row_offset = draw_y * stride;
+                
                 u8 row_byte1, row_byte2;
                 if (tile_gfx) {
                     row_byte1 = tile_gfx[(py * 2) + 0];
@@ -641,14 +651,16 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
                         continue;
                 }
 
+                if (!y_valid)
+                    continue;
+
+                int base_draw_x = world_px + tx * 8 - map_offset_x;
                 for (int px = 0; px < 8; px++) {
-                    int draw_x = world_px + tx * 8 + px - map_offset_x;
-                    int draw_y = world_py + ty * 8 + py - map_offset_y;
-                    if (draw_x < 0 || draw_x >= width ||
-                        draw_y < 0 || draw_y >= height)
+                    int draw_x = base_draw_x + px;
+                    if (draw_x < 0 || draw_x >= width)
                         continue;
 
-                    int pixel_i = draw_x + draw_y * stride;
+                    int pixel_i = draw_x + row_offset;
                     if (only_sentinel && pixels[pixel_i] != sentinel)
                         continue;
 
@@ -656,8 +668,7 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
                     u8 b0 = (row_byte1 >> bit_index) & 1;
                     u8 b1 = (row_byte2 >> bit_index) & 1;
                     u8 col_idx = b0 | (b1 << 1);
-                    const u8* pal = bgp ? bgp : gb->BGP_CRAM;
-                    pixels[pixel_i] = CgbToRgb(pal[col_idx << 1], pal[(col_idx << 1) | 1]);
+                    pixels[pixel_i] = colors[col_idx];
                 }
             }
         }
@@ -680,6 +691,10 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
         return;
     u16 sprite_ptr = (u16)lo | ((u16)hi << 8);
     const u8* pal = obp ? obp : gb->OBP_CRAM;
+    int colors[4];
+    for (int i = 0; i < 4; i++) {
+        colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+    }
 
     for (int tile = 0; tile < 4; tile++) {
         int tile_col = tile % 2;
@@ -687,18 +702,23 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
         int tile_index = tile_base + tile_row * 2 + tile_col;
 
         for (int py = 0; py < 8; py++) {
+            int draw_y = draw_base_y + tile_row * 8 + py;
+            bool y_valid = draw_y >= 0 && draw_y < height;
+            int row_offset = draw_y * stride;
+
             u8 row_byte1, row_byte2;
             u16 row_addr = (u16)(sprite_ptr + (u16)(tile_index * 16 + py * 2));
             if (!yellow_rom_byte(gb, sprite_bank, row_addr, &row_byte1) ||
                 !yellow_rom_byte(gb, sprite_bank, (u16)(row_addr + 1), &row_byte2))
                 continue;
 
+            if (!y_valid)
+                continue;
+
             for (int px = 0; px < 8; px++) {
                 int local_x = tile_col * 8 + px;
                 int draw_x = draw_base_x + (flip_x ? 15 - local_x : local_x);
-                int draw_y = draw_base_y + tile_row * 8 + py;
-                if (draw_x < 0 || draw_x >= width ||
-                    draw_y < 0 || draw_y >= height)
+                if (draw_x < 0 || draw_x >= width)
                     continue;
 
                 int bit_index = 7 - px;
@@ -707,7 +727,7 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
                 u8 col_idx = b0 | (b1 << 1);
                 if (col_idx == 0)
                     continue;
-                pixels[draw_x + draw_y * stride] = CgbToRgb(pal[col_idx << 1], pal[(col_idx << 1) | 1]);
+                pixels[draw_x + row_offset] = colors[col_idx];
             }
         }
     }
@@ -1013,9 +1033,10 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         return false;
 
     int sentinel = color(30, 30, 30);
-    for(int y = 0; y < height; y++) {
-        for(int x = 0; x < width; x++) {
-            pixels[x + y * stride] = sentinel;
+    for (int y = 0; y < height; y++) {
+        int offset = y * stride;
+        for (int x = 0; x < width; x++) {
+            pixels[offset + x] = sentinel;
         }
     }
 
