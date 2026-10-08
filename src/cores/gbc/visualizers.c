@@ -221,6 +221,40 @@ bool gb_draw_window(gb_t* gb){
 extern int scx_reg;
 extern int scy_reg;
 
+// Missable Objects (Toggleable Sprites) Memory Addresses
+#define Y_ADDR_MISSABLE_OBJ_FLAGS 0xD5A5
+#define Y_ADDR_MISSABLE_OBJ_LIST  0xD5CD
+
+// Checks if a specific sprite slot (0-15) is flagged as hidden
+bool is_sprite_hidden(gb_t* gb, int slot) {
+    if (slot == 0) return false; // Slot 0 is the player, never hidden this way
+    
+    int list_ptr = Y_ADDR_MISSABLE_OBJ_LIST;
+    
+    while (true) {
+        // Read object ID from the list
+        u8 obj_id = Y_WRAM(gb, list_ptr++);
+        
+        // 0xFF marks the end of the toggleable object list
+        if (obj_id == 0xFF) {
+            return false; // Not in the list -> not hidden
+        }
+        
+        // Read the corresponding flag ID
+        u8 flag_id = Y_WRAM(gb, list_ptr++);
+        
+        // If the object ID matches our current sprite slot...
+        if (obj_id == slot) {
+            // Check the specific bit in the Missable Object Flags array
+            u8 flag_byte = Y_WRAM(gb, Y_ADDR_MISSABLE_OBJ_FLAGS + (flag_id / 8));
+            u8 flag_bit = flag_id % 8;
+            
+            // If the bit is 1, the object is hidden
+            return (flag_byte & (1 << flag_bit)) != 0;
+        }
+    }
+}
+
 bool gb_draw_yellow_revamped(gb_t* gb) {
     size(EXTENDED_WIDTH, EXTENDED_HEIGHT);
     
@@ -295,7 +329,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
                             u8 b1 = (row_byte2 >> bit_index) & 1;
                             u8 col_idx = b0 | (b1 << 1);
                             
-                            pixels[draw_x + draw_y * stride] = mono2_to_rgb(col_idx);
+                            pixels[draw_x + draw_y * stride] = CgbToRgb(gb->BGP_CRAM[col_idx << 1], gb->BGP_CRAM[(col_idx << 1) | 1]);
                         }
                     }
                 }
@@ -305,10 +339,14 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
 
     for (int slot = 0; slot < 16; slot++) {
         u8 picture_id = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 0);
-        if (picture_id == 0 || picture_id == 0xFF) continue;
+        if (picture_id == 0) continue;
+
+        if (is_sprite_hidden(gb, slot)) continue;
 
         int npc_y = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 4) - 4;
         int npc_x = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 5) - 4;
+
+        if (npc_x < 0 || npc_y < 0) continue;
 
         int expected_screen_y = npc_y * 16 - camera_y;
         int expected_screen_x = npc_x * 16 - camera_x;
@@ -352,7 +390,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
                     if (col_idx == 0) continue;
 
                     if (draw_x >= 0 && draw_x < EXTENDED_WIDTH && draw_y >= 0 && draw_y < EXTENDED_HEIGHT) {
-                        pixels[draw_x + draw_y * stride] = mono2_to_rgb(col_idx);
+                        pixels[draw_x + draw_y * stride] = CgbToRgb(gb->OBP_CRAM[col_idx << 1], gb->OBP_CRAM[(col_idx << 1) | 1]);
                     }
                 }
             }
