@@ -1288,7 +1288,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
             draw_base_y = gb_screen_canvas_y + expected_screen_y + delta_y;
         } else {
             draw_base_x = gb_screen_canvas_x + expected_screen_x;
-            draw_base_y = gb_screen_canvas_y + expected_screen_y;
+            draw_base_y = gb_screen_canvas_y + expected_screen_y - 4;
         }
 
         yellow_draw_picture(gb, picture_id, draw_base_x, draw_base_y, active_ob_pal, 0, false);
