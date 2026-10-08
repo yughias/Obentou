@@ -1,6 +1,14 @@
 #include "cores/gbc/gb.h"
-
+#include <string.h>
 #include "SDL_MAINLOOP.h"
+
+
+static int sgb_to_rgb(u16 snes_col) {
+    int r = (snes_col & 0x1F) * 255 / 31;
+    int g = ((snes_col >> 5) & 0x1F) * 255 / 31;
+    int b = ((snes_col >> 10) & 0x1F) * 255 / 31;
+    return color(r, g, b);
+}
 
 static int mono2_to_rgb(u8 mono2) {
     int col = (3 - mono2) * 85;
@@ -193,47 +201,190 @@ bool gb_draw_window(gb_t* gb){
 #define Y_ROM(gb, bank, ptr)         ((gb)->ROM[(bank) * 0x4000 + ((ptr) & 0x3FFF)]) 
 #define Y_ROM_ABS(gb, absolute_addr) ((gb)->ROM[absolute_addr])
 
+
+typedef struct {
+    u16 wOverworldMap;
+    u16 wCurMapTileset;
+    u16 wMapHeight;
+    u16 wMapWidth;
+    u16 wYCoord;
+    u16 wXCoord;
+    u16 wCurMap;
+    u16 wWalkCounter;
+    u16 wIsInBattle;
+    u16 wNumSprites;
+    u16 wPikachuOWFlags;
+    u16 wPlayerAnimIntraFrameCounter;
+    u16 wPlayerAnimFrameCounter;
+    u16 wPlayerFacingDir;
+    u16 wPlayerCollision;
+    u16 wPlayerXAdjusted;
+    u16 wPlayerYAdjusted;
+    u16 wLastMap;
+    u16 wSpriteStateData1;
+    u16 wSpriteStateData2;
+    u16 wMissableObjectFlags;
+    u16 wMissableObjectList;
+
+    size_t MapHeaderBanks;
+    size_t MapHeaderPointers;
+    size_t CgbBasePals;
+    size_t Tilesets;
+    size_t SpriteSheetPointerTable;
+    size_t ToggleableObjectMapPointers;
+    u16 ToggleableObjectStatesPtr;
+
+    u8 NUM_MAPS;
+    u8 NUM_CITY_MAPS;
+    u8 NUM_CGB_PALS;
+    
+    bool is_yellow;
+} game_info_t;
+
+static game_info_t g_info_storage;
+static game_info_t* g_info = NULL;
+
+static void init_game_info(gb_t* gb) {
+    if (g_info) return;
+    
+    char title[17] = {0};
+    for(int i = 0; i < 16; i++) {
+        title[i] = gb->ROM[0x0134 + i];
+    }
+    
+    if (strstr(title, "YELLOW")) {
+        g_info_storage.wOverworldMap = 0xC6E8;
+        g_info_storage.wCurMapTileset = 0xD366;
+        g_info_storage.wMapHeight = 0xD367;
+        g_info_storage.wMapWidth = 0xD368;
+        g_info_storage.wYCoord = 0xD360;
+        g_info_storage.wXCoord = 0xD361;
+        g_info_storage.wCurMap = 0xD35D;
+        g_info_storage.wWalkCounter = 0xCFC4;
+        g_info_storage.wIsInBattle = 0xD056;
+        g_info_storage.wNumSprites = 0xD4E0;
+        g_info_storage.wPikachuOWFlags = 0xD42F;
+        g_info_storage.wPlayerAnimIntraFrameCounter = 0xC107;
+        g_info_storage.wPlayerAnimFrameCounter = 0xC108;
+        g_info_storage.wPlayerFacingDir = 0xC109;
+        g_info_storage.wPlayerCollision = 0xC10C;
+        g_info_storage.wPlayerXAdjusted = 0xC10B;
+        g_info_storage.wPlayerYAdjusted = 0xC10A;
+        g_info_storage.wLastMap = 0xD364;
+        g_info_storage.wSpriteStateData1 = 0xC100;
+        g_info_storage.wSpriteStateData2 = 0xC200;
+        g_info_storage.wMissableObjectFlags = 0xD5A5;
+        g_info_storage.wMissableObjectList = 0xD5CD;
+
+        g_info_storage.MapHeaderBanks = ((0x3F * 0x4000) + (0x43E4 - 0x4000));
+        g_info_storage.MapHeaderPointers = ((0x3F * 0x4000) + (0x41F2 - 0x4000));
+        g_info_storage.CgbBasePals = ((0x1C * 0x4000) + (0x6AF9 - 0x4000));
+        g_info_storage.Tilesets = ((0x03 * 0x4000) + (0x4558 - 0x4000));
+        g_info_storage.SpriteSheetPointerTable = ((0x05 * 0x4000) + (0x42a9 - 0x4000));
+        g_info_storage.ToggleableObjectMapPointers = ((0x03 * 0x4000) + (0x469B - 0x4000));
+        g_info_storage.ToggleableObjectStatesPtr = 0x4892;
+
+        g_info_storage.NUM_MAPS = 249;
+        g_info_storage.NUM_CITY_MAPS = 0x0B;
+        g_info_storage.NUM_CGB_PALS = 0x28;
+        
+        g_info_storage.is_yellow = true;
+    } else {
+        g_info_storage.wOverworldMap = 0xC6E8;
+        g_info_storage.wCurMapTileset = 0xD367;
+        g_info_storage.wMapHeight = 0xD368;
+        g_info_storage.wMapWidth = 0xD369;
+        g_info_storage.wYCoord = 0xD361;
+        g_info_storage.wXCoord = 0xD362;
+        g_info_storage.wCurMap = 0xD35E;
+        g_info_storage.wWalkCounter = 0xCFC5;
+        g_info_storage.wIsInBattle = 0xD057;
+        g_info_storage.wNumSprites = 0xD4E1;
+        g_info_storage.wPikachuOWFlags = 0;
+        g_info_storage.wPlayerAnimIntraFrameCounter = 0xC107;
+        g_info_storage.wPlayerAnimFrameCounter = 0xC108;
+        g_info_storage.wPlayerFacingDir = 0xC109;
+        g_info_storage.wPlayerCollision = 0xC10C;
+        g_info_storage.wPlayerXAdjusted = 0xC10B;
+        g_info_storage.wPlayerYAdjusted = 0xC10A;
+        g_info_storage.wLastMap = 0xD365;
+        g_info_storage.wSpriteStateData1 = 0xC100;
+        g_info_storage.wSpriteStateData2 = 0xC200;
+        g_info_storage.wMissableObjectFlags = 0xD5A6;
+        g_info_storage.wMissableObjectList = 0xD5CE;
+
+        g_info_storage.MapHeaderBanks = 0x0C23D;
+        g_info_storage.MapHeaderPointers = 0x001AE;
+        g_info_storage.CgbBasePals = ((0x1C * 0x4000) + (0x6660 - 0x4000)); // SuperPalettes in Red/Blue
+        g_info_storage.Tilesets = 0x0C7BE;
+        g_info_storage.SpriteSheetPointerTable = 0x17B27;
+        g_info_storage.ToggleableObjectMapPointers = 0x0C8F5;
+        g_info_storage.ToggleableObjectStatesPtr = 0x4AEA;
+
+        g_info_storage.NUM_MAPS = 248;
+        g_info_storage.NUM_CITY_MAPS = 11;
+        g_info_storage.NUM_CGB_PALS = 0x24; // PAL_CAVE + 1
+        
+        g_info_storage.is_yellow = false;
+    }
+    
+    g_info = &g_info_storage;
+}
+
+#define Y_ADDR_MAP_LAYOUT     g_info->wOverworldMap
+#define Y_ADDR_TILESET_ID     g_info->wCurMapTileset
+#define Y_ADDR_MAP_HEIGHT     g_info->wMapHeight
+#define Y_ADDR_MAP_WIDTH      g_info->wMapWidth
+#define Y_ADDR_PLAYER_Y       g_info->wYCoord
+#define Y_ADDR_PLAYER_X       g_info->wXCoord
+#define Y_ADDR_CUR_MAP        g_info->wCurMap
+#define Y_ADDR_WALK_COUNTER   g_info->wWalkCounter
+#define Y_ADDR_IS_IN_BATTLE   g_info->wIsInBattle
+#define Y_ADDR_NUM_SPRITES    g_info->wNumSprites
+#define Y_ADDR_PIKACHU_OW_FLAGS g_info->wPikachuOWFlags
+#define Y_ADDR_PLAYER_ANIM_INTRA_FRAME_COUNTER g_info->wPlayerAnimIntraFrameCounter
+#define Y_ADDR_PLAYER_ANIM_FRAME_COUNTER g_info->wPlayerAnimFrameCounter
+#define Y_ADDR_PLAYER_FACING_DIR g_info->wPlayerFacingDir
+#define Y_ADDR_PLAYER_COLLISION g_info->wPlayerCollision
+#define Y_ADDR_PLAYER_X_ADJUSTED g_info->wPlayerXAdjusted
+#define Y_ADDR_PLAYER_Y_ADJUSTED g_info->wPlayerYAdjusted
+#define Y_ADDR_LAST_MAP g_info->wLastMap
+#define Y_ADDR_SPRITE_DATA_1  g_info->wSpriteStateData1
+#define Y_ADDR_SPRITE_DATA_2  g_info->wSpriteStateData2
+#define Y_ADDR_MISSABLE_OBJ_FLAGS g_info->wMissableObjectFlags
+#define Y_ADDR_MISSABLE_OBJ_LIST  g_info->wMissableObjectList
+
+#define Y_ROM_MAP_HEADER_BANKS g_info->MapHeaderBanks
+#define Y_ROM_MAP_HEADER_PTRS  g_info->MapHeaderPointers
+#define Y_ROM_CGB_BASE_PALS    g_info->CgbBasePals
+#define Y_ROM_TILESETS_TABLE   g_info->Tilesets
+#define Y_ROM_SPRITE_TABLE     g_info->SpriteSheetPointerTable
+#define Y_ROM_TOGGLE_MAP_PTRS  g_info->ToggleableObjectMapPointers
+
+#define Y_NUM_MAPS g_info->NUM_MAPS
+#define Y_NUM_CITY_MAPS g_info->NUM_CITY_MAPS
+#define Y_NUM_CGB_PALS g_info->NUM_CGB_PALS
+
+
 // WRAM Map State
-#define Y_ADDR_MAP_LAYOUT     0xC6E8
-#define Y_ADDR_TILESET_ID     0xD366
-#define Y_ADDR_MAP_HEIGHT     0xD367
-#define Y_ADDR_MAP_WIDTH      0xD368
-#define Y_ADDR_PLAYER_Y       0xD360
-#define Y_ADDR_PLAYER_X       0xD361
-#define Y_ADDR_CUR_MAP        0xD35D
-#define Y_ADDR_WALK_COUNTER   0xCFC4
-#define Y_ADDR_IS_IN_BATTLE   0xD056
-#define Y_ADDR_NUM_SPRITES    0xD4E0
-#define Y_ADDR_PIKACHU_OW_FLAGS 0xD42F
 #define Y_PIKACHU_HIDE_MASK   ((1 << 5) | (1 << 7))
 #define Y_PIKACHU_SPRITE_SLOT 15
 #define Y_SPRITE_PICTURE_ID_MAX 0x52
-#define Y_ADDR_PLAYER_ANIM_INTRA_FRAME_COUNTER 0xC107
-#define Y_ADDR_PLAYER_ANIM_FRAME_COUNTER 0xC108
-#define Y_ADDR_PLAYER_FACING_DIR 0xC109
-#define Y_ADDR_PLAYER_COLLISION 0xC10C
-#define Y_ADDR_PLAYER_X_ADJUSTED 0xC10B
-#define Y_ADDR_PLAYER_Y_ADJUSTED 0xC10A
 
 
 
-#define YELLOW_MAP_RECURSION_DEPTH 2
+#define YELLOW_MAP_RECURSION_DEPTH 4
 #define YELLOW_MAP_BORDER_BLOCKS 3
 #define YELLOW_BLOCK_PX 32
 // Route 17 and Route 23 are 72 blocks tall. A lower cap drops those headers,
 // so the road up to Victory Road is replaced by the border tile.
 #define YELLOW_MAX_MAP_BLOCKS 80
 
-#define Y_ROM_MAP_HEADER_BANKS ((0x3F * 0x4000) + (0x43E4 - 0x4000))
-#define Y_ROM_MAP_HEADER_PTRS  ((0x3F * 0x4000) + (0x41F2 - 0x4000))
 #define Y_CONN_EAST  1
 #define Y_CONN_WEST  2
 #define Y_CONN_SOUTH 4
 #define Y_CONN_NORTH 8
 #define Y_CONN_STRUCT_SIZE 11
-#define Y_NUM_MAPS 249
-#define Y_ADDR_LAST_MAP 0xD364
-#define Y_NUM_CITY_MAPS 0x0B
 #define Y_FIRST_INDOOR_MAP 0x25
 #define Y_TILESET_CEMETERY 15
 #define Y_TILESET_CAVERN 17
@@ -245,8 +396,6 @@ bool gb_draw_window(gb_t* gb){
 #define Y_MAP_BRUNO 0xF6
 #define Y_PAL_GRAYMON 0x19
 #define Y_PAL_CAVE 0x23
-#define Y_ROM_CGB_BASE_PALS ((0x1C * 0x4000) + (0x6AF9 - 0x4000))
-#define Y_NUM_CGB_PALS 0x28
 #define Y_OBJ_TRAINER 0x40
 #define Y_OBJ_ITEM 0x80
 #define Y_MOVE_WALK 0xFE
@@ -259,20 +408,12 @@ bool gb_draw_window(gb_t* gb){
 #define Y_DIR_RIGHT 0xD3
 #define YELLOW_MAX_DRAWN_MAPS 48
 
-#define Y_ADDR_SPRITE_DATA_1  0xC100
-#define Y_ADDR_SPRITE_DATA_2  0xC200
 
-#define Y_ROM_TILESETS_TABLE  ((0x03 * 0x4000) + (0x4558 - 0x4000))
-#define Y_ROM_SPRITE_TABLE    ((0x05 * 0x4000) + (0x42a9 - 0x4000))
 
 extern int scx_reg;
 extern int scy_reg;
 
 // Missable Objects (Toggleable Sprites) Memory Addresses
-#define Y_ADDR_MISSABLE_OBJ_FLAGS 0xD5A5
-#define Y_ADDR_MISSABLE_OBJ_LIST  0xD5CD
-#define Y_ROM_TOGGLE_MAP_PTRS ((0x03 * 0x4000) + (0x469B - 0x4000))
-#define Y_TOGGLE_STATES_PTR   0x4892
 #define Y_TOGGLE_BANK         0x03
 
 #define Y_SPRITE1_IMAGE_INDEX 2
@@ -286,6 +427,7 @@ static bool yellow_event_flag_set(gb_t* gb, int flag_id) {
 }
 
 static bool yellow_pikachu_is_out(gb_t* gb) {
+    if (!g_info->is_yellow) return false;
     u8 flags = Y_WRAM(gb, Y_ADDR_PIKACHU_OW_FLAGS);
     return (flags & Y_PIKACHU_HIDE_MASK) == 0;
 }
@@ -459,7 +601,7 @@ static bool yellow_rom_object_hidden(gb_t* gb, u8 map_id, int sprite_slot) {
         return false;
 
     u16 ptr = (u16)lo | ((u16)hi << 8);
-    int diff = (int)ptr - Y_TOGGLE_STATES_PTR;
+    int diff = (int)ptr - g_info->ToggleableObjectStatesPtr;
     if (diff < 0 || (diff % 3) != 0)
         return false;
 
@@ -608,10 +750,23 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
         screen_x0 + YELLOW_BLOCK_PX <= 0 || screen_y0 + YELLOW_BLOCK_PX <= 0)
         return;
 
-    const u8* pal = bgp ? bgp : gb->BGP_CRAM;
     int colors[4];
-    for (int i = 0; i < 4; i++) {
-        colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+    if (bgp || gb->console_type == CGB_TYPE) {
+        const u8* pal = bgp ? bgp : gb->BGP_CRAM;
+        for (int i = 0; i < 4; i++) {
+            colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+        }
+    } else {
+        u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
+        u8 reg = in_battle ? 0xE4 : gb->ppu.BGP_REG;
+        for (int i = 0; i < 4; i++) {
+            int mono = (reg >> (i * 2)) & 3;
+            if (gb->console_type == SGB_TYPE) {
+                colors[i] = sgb_to_rgb(gb->sgb.colors[mono]);
+            } else {
+                colors[i] = mono2_to_rgb(mono);
+            }
+        }
     }
 
     for (int ty = 0; ty < 4; ty++) {
@@ -690,10 +845,23 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
         !yellow_rom_abs(gb, (size_t)entry + 3, &sprite_bank))
         return;
     u16 sprite_ptr = (u16)lo | ((u16)hi << 8);
-    const u8* pal = obp ? obp : gb->OBP_CRAM;
     int colors[4];
-    for (int i = 0; i < 4; i++) {
-        colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+    if (obp || gb->console_type == CGB_TYPE) {
+        const u8* pal = obp ? obp : gb->OBP_CRAM;
+        for (int i = 0; i < 4; i++) {
+            colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+        }
+    } else {
+        u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
+        u8 reg = in_battle ? 0xD0 : gb->ppu.OBP0_REG;
+        for (int i = 0; i < 4; i++) {
+            int mono = (reg >> (i * 2)) & 3;
+            if (gb->console_type == SGB_TYPE) {
+                colors[i] = sgb_to_rgb(gb->sgb.colors[mono]);
+            } else {
+                colors[i] = mono2_to_rgb(mono);
+            }
+        }
     }
 
     for (int tile = 0; tile < 4; tile++) {
@@ -1025,6 +1193,7 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
 
 
 bool gb_draw_yellow_revamped(gb_t* gb) {
+    init_game_info(gb);
     u8 map_height = Y_WRAM(gb, Y_ADDR_MAP_HEIGHT);
     u8 map_width  = Y_WRAM(gb, Y_ADDR_MAP_WIDTH);
     u8 cur_map    = Y_WRAM(gb, Y_ADDR_CUR_MAP);
@@ -1130,11 +1299,14 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         u32* main_pixels = (u32*)main_surf->pixels;
         int main_pitch = main_surf->pitch / 4; 
         
+        int src_offset_x = (gb->console_type == SGB_TYPE) ? 48 : 0;
+        int src_offset_y = (gb->console_type == SGB_TYPE) ? 40 : 0;
+        
         for (int y = 0; y < LCD_HEIGHT; y++) {
             for (int x = 0; x < LCD_WIDTH; x++) {
                 int dest_x = gb_screen_canvas_x + x;
                 int dest_y = gb_screen_canvas_y + y;
-                pixels[dest_x + dest_y * stride] = main_pixels[x + y * main_pitch];
+                pixels[dest_x + dest_y * stride] = main_pixels[(src_offset_x + x) + (src_offset_y + y) * main_pitch];
             }
         }
     }
