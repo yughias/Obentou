@@ -591,8 +591,11 @@ static bool yellow_load_map_pals(gb_t* gb, u8 map_id, u8 tileset_id, u8 bg[8], u
         if (!yellow_rom_abs(gb, addr + i, &base[i]))
             return false;
     }
-    yellow_apply_dmg_pal(base, gb->ppu.BGP_REG, bg);
-    yellow_apply_dmg_pal(base, gb->ppu.OBP0_REG, ob);
+    u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
+    u8 bgp_reg = in_battle ? 0xE4 : gb->ppu.BGP_REG;
+    u8 obp_reg = in_battle ? 0xD0 : gb->ppu.OBP0_REG;
+    yellow_apply_dmg_pal(base, bgp_reg, bg);
+    yellow_apply_dmg_pal(base, obp_reg, ob);
     return true;
 }
 
@@ -1052,6 +1055,11 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     }
 
     u8 num_sprites = Y_WRAM(gb, Y_ADDR_NUM_SPRITES);
+    u8 bg_pal[8], ob_pal[8];
+    const u8* active_ob_pal = NULL;
+    if (yellow_load_map_pals(gb, cur_map, tileset_id, bg_pal, ob_pal)) {
+        active_ob_pal = ob_pal;
+    }
 
     for (int slot = 1; slot < 16; slot++) {
         if (slot == Y_PIKACHU_SPRITE_SLOT) {
@@ -1093,7 +1101,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
             draw_base_y = gb_screen_canvas_y + expected_screen_y;
         }
 
-        yellow_draw_picture(gb, picture_id, draw_base_x, draw_base_y, NULL, 0, false);
+        yellow_draw_picture(gb, picture_id, draw_base_x, draw_base_y, active_ob_pal, 0, false);
     }
 
     SDL_Surface* main_surf = getMainWindowSurface();
