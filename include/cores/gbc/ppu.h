@@ -89,6 +89,7 @@ DECLARE_SERIALIZABLE_STRUCT(ppu, PPU_STRUCT);
 void gb_initColorPalette(gb_t*);
 void gb_copyDefaultCgbPalette(gb_t*);
 u8* gb_getTileMap(gb_t*, bool);
+u8* gb_getTileGfx(gb_t*, u8 tileIdx);
 int gb_getTileMapPixelRGB(gb_t*, u8* tileMapPtr, u8 x, u8 y, bool* dmgPrio, bool* cgbPrio);
 int gb_getSpritePixelRGB(gb_t*, u8* tilePtr, u8 x, u8 y, bool obp_n, u8 palette, bool flipX, bool flipY, bool bigSprite, bool* transparent);
 void gb_getSpriteAttribute(gb_t*, u8* spriteData, bool* flipX, bool* flipY, bool* backgroundOver, bool* obp_n, u8* palette, u8** tilePtr);

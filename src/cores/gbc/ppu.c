@@ -125,13 +125,17 @@ u8* gb_getTileMap(gb_t* gb, bool addressMode){
     return addressMode ? gb->VRAM + 0x1C00 : gb->VRAM + 0x1800;
 }
 
-static u8* getTileData(gb_t* gb, u8 tileIdx){
+u8* gb_getTileGfx(gb_t* gb, u8 tileIdx){
     ppu_t* ppu = &gb->ppu;
     if(ppu->LCDC_REG & ppu->BG_WIN_TILE_DATA_AREA_MASK){
         return gb->VRAM + (tileIdx*16);
     } else {
         return gb->VRAM + 0x1000 + ((int8_t)tileIdx)*16;
     }
+}
+
+static u8* getTileData(gb_t* gb, u8 tileIdx){
+    return gb_getTileGfx(gb, tileIdx);
 }
 
 static int getColorRGB(gb_t* gb, u8 colorGB, u8 colorREG, u8* cram_palette){
