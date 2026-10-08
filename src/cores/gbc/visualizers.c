@@ -215,9 +215,9 @@ bool gb_draw_window(gb_t* gb){
 #define Y_ADDR_PLAYER_X_ADJUSTED 0xC10B
 #define Y_ADDR_PLAYER_Y_ADJUSTED 0xC10A
 
-#define EXTENDED_WIDTH        2560
-#define EXTENDED_HEIGHT       1600
-#define YELLOW_MAP_RECURSION_DEPTH 5
+#define EXTENDED_WIDTH        1920
+#define EXTENDED_HEIGHT       1400
+#define YELLOW_MAP_RECURSION_DEPTH 2
 #define YELLOW_MAP_BORDER_BLOCKS 3
 #define YELLOW_BLOCK_PX 32
 // Route 17 and Route 23 are 72 blocks tall. A lower cap drops those headers,
@@ -1155,15 +1155,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
                 pixels[dest_x + dest_y * stride] = main_pixels[x + y * main_pitch];
             }
         }
-    }
-    
-    for (int i = 0; i < LCD_WIDTH; i++) {
-        pixels[(gb_screen_canvas_x + i) + (gb_screen_canvas_y) * stride] = color(255, 0, 0);
-        pixels[(gb_screen_canvas_x + i) + (gb_screen_canvas_y + LCD_HEIGHT - 1) * stride] = color(255, 0, 0);
-    }
-    for (int i = 0; i < LCD_HEIGHT; i++) {
-        pixels[(gb_screen_canvas_x) + (gb_screen_canvas_y + i) * stride] = color(255, 0, 0);
-        pixels[(gb_screen_canvas_x + LCD_WIDTH - 1) + (gb_screen_canvas_y + i) * stride] = color(255, 0, 0);
     }
 
     return true;

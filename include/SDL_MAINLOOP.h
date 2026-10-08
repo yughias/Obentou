@@ -53,7 +53,9 @@ float millis();
 void fullScreen();
 void background(int);
 bool isGrabbed();
-int color(int, int, int);
+static inline int color(int red, int green, int blue){
+    return (red << 16) | (green << 8) | blue;
+}
 void getRGB(int, Uint8*, Uint8*, Uint8*);
 void rect(int, int, int, int, int);
 void loadWindowIcon(const char*);

@@ -476,6 +476,7 @@ typedef struct widget_t {
     SDL_Window* window;
     SDL_Texture* texture;
     SDL_Renderer* renderer;
+    SDL_Surface* surface;
     #else
     int* sw_pixels;
     #endif
@@ -765,15 +766,16 @@ void mainloop(){
                 #endif
             }
             #else
-            SDL_Surface* surface;
             SDL_RenderClear(widgets[i].renderer);
-            SDL_LockTextureToSurface(widgets[i].texture, NULL, &surface);
-            SDL_FillSurfaceRect(surface, NULL, 0);
-            stride = surface->pitch / sizeof(Uint32);
-            pixels = (int*)surface->pixels;
+            SDL_FillSurfaceRect(widgets[i].surface, NULL, 0);
+            stride = widgets[i].surface->pitch / sizeof(Uint32);
+            pixels = (int*)widgets[i].surface->pixels;
+            float t0 = SDL_GetPerformanceCounter() / (float)SDL_GetPerformanceFrequency();
             bool res = widgets[i].callback(widgets[i].data);
-            SDL_UnlockTexture(widgets[i].texture);
+            float t1 = SDL_GetPerformanceCounter() / (float)SDL_GetPerformanceFrequency();
+            printf("Widget %d (%s) took %f ms\n", i, widgets[i].name, (t1-t0)*1000.0f);
             if(res){
+                SDL_UpdateTexture(widgets[i].texture, NULL, widgets[i].surface->pixels, widgets[i].surface->pitch);
                 SDL_RenderTexture(widgets[i].renderer, widgets[i].texture, NULL, NULL);
                 SDL_RenderPresent(widgets[i].renderer);
             }
@@ -819,15 +821,14 @@ void size(int w, int h){
         stride = w;
         
         #else
-        SDL_UnlockTexture(current_widget->texture);
         SDL_DestroyTexture(current_widget->texture);
+        if(current_widget->surface) SDL_DestroySurface(current_widget->surface);
         current_widget->texture = SDL_CreateTexture(current_widget->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+        current_widget->surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_XRGB8888);
         SDL_SetTextureScaleMode(current_widget->texture, SDL_SCALEMODE_NEAREST);
         SDL_SetRenderLogicalPresentation(current_widget->renderer, w, h, SDL_LOGICAL_PRESENTATION_LETTERBOX);
-        SDL_Surface* s;
-        SDL_LockTextureToSurface(current_widget->texture, NULL, &s);
-        stride = s->pitch / sizeof(Uint32);
-        pixels = (int*)s->pixels;
+        stride = current_widget->surface->pitch / sizeof(Uint32);
+        pixels = (int*)current_widget->surface->pixels;
         #endif
         return;
     }
@@ -888,9 +889,7 @@ void background(int col){
     SDL_FillSurfaceRect(back_surface, NULL, col);
 }
 
-int color(int red, int green, int blue){
-    return SDL_MapSurfaceRGB(front_surface, red, green, blue);
-}
+
 
 void getRGB(int pixel, Uint8* r, Uint8* g, Uint8* b){
         SDL_GetRGBA(pixel, SDL_GetPixelFormatDetails(front_surface->format), SDL_GetSurfacePalette(front_surface), r, g, b, NULL);
@@ -1328,11 +1327,12 @@ void createWidget(const char* name, int w, int h, bool (*callback)(void*), void*
         
     #else
         wid->window = SDL_CreateWindow(name, w, h, SDL_WINDOW_RESIZABLE);
-        wid->renderer = SDL_CreateRenderer(wid->window, NULL);
+        wid->renderer = SDL_CreateRenderer(wid->window, "software");
         wid->texture = SDL_CreateTexture(wid->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
         SDL_SetTextureScaleMode(wid->texture, SDL_SCALEMODE_NEAREST);
         SDL_SetRenderLogicalPresentation(wid->renderer, w, h, SDL_LOGICAL_PRESENTATION_LETTERBOX);
         SDL_SetWindowMinimumSize(wid->window, SDL_max(w, 512), SDL_max(h, 512));
+        wid->surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_XRGB8888);
     #endif
 }
 
@@ -1350,6 +1350,7 @@ static void destroyWidget(int i){
         #else
             SDL_DestroyWindow(w->window);
             SDL_DestroyTexture(w->texture);
+            if(w->surface) SDL_DestroySurface(w->surface);
             SDL_DestroyRenderer(w->renderer);
         #endif
         memset(w, 0, sizeof(widget_t));

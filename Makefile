@@ -3,7 +3,7 @@ OBJ := $(patsubst %.c, obj/%.o, $(SRC))
 DEP := $(OBJ:.o=.d)
 
 CC := gcc
-CFLAGS_COMMON := -Iconverted_assets -Iinclude -Iext/include -O3
+CFLAGS_COMMON := -Iconverted_assets -Iinclude -Iext/include -O3 -march=native
 DEBUG_FLAGS := -pg -no-pie
 
 OBJ_LIB := $(filter-out obj/src/SDL_MAINLOOP.o, $(OBJ))
