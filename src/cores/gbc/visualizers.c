@@ -792,32 +792,7 @@ typedef struct {
     int count;
 } yellow_map_list;
 
-// CheckMapConnections stores the new map id and player coords, then fades music,
-// and only afterwards copies blocks into wOverworldMap. A frame in between
-// would draw the previous map's blocks with the new map's size and camera.
-static bool yellow_wram_blocks_ready(gb_t* gb, const yellow_map_header* hdr, u8 map_width, u8 map_height) {
-    if (hdr->width != map_width || hdr->height != map_height)
-        return false;
 
-    int memory_width = map_width + YELLOW_MAP_BORDER_BLOCKS * 2;
-    int samples = 0;
-    int mismatches = 0;
-    for (int by = 0; by < map_height; by++) {
-        for (int bx = 0; bx < map_width; bx++) {
-            u8 rom_block;
-            u16 addr = (u16)(hdr->blocks_ptr + (u16)(by * map_width + bx));
-            if (!yellow_rom_byte(gb, hdr->bank, addr, &rom_block))
-                return false;
-            int wx = bx + YELLOW_MAP_BORDER_BLOCKS;
-            int wy = by + YELLOW_MAP_BORDER_BLOCKS;
-            u8 wram_block = Y_WRAM(gb, Y_ADDR_MAP_LAYOUT + wx + wy * memory_width);
-            samples++;
-            if (wram_block != rom_block)
-                mismatches++;
-        }
-    }
-    return samples > 0 && mismatches * 5 <= samples;
-}
 
 static void yellow_record_map(gb_t* gb, yellow_map_list* list, u8 map_id, const yellow_map_header* hdr,
     const yellow_tileset_ctx* ts, int origin_bx, int origin_by, u8 current_tileset, bool current_map) {
@@ -979,8 +954,11 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
                             map_offset_x, map_offset_y, use_vram, false, 0, bgp);
                     }
                 }
-                yellow_draw_rom_objects(gb, map_id, &hdr, origin_bx, origin_by,
-                    map_offset_x, map_offset_y, obp);
+                u8 active_map = Y_WRAM(gb, Y_ADDR_CUR_MAP);
+                if (map_id != active_map) {
+                    yellow_draw_rom_objects(gb, map_id, &hdr, origin_bx, origin_by,
+                        map_offset_x, map_offset_y, obp);
+                }
             }
         }
     }
@@ -1021,35 +999,14 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
     }
 }
 
-static void yellow_draw_wram_map(gb_t* gb, const yellow_tileset_ctx* ts, u8 map_width, u8 map_height,
-    int map_offset_x, int map_offset_y, bool border, bool only_sentinel, int sentinel) {
-    int memory_width = map_width + YELLOW_MAP_BORDER_BLOCKS * 2;
-    int memory_height = map_height + YELLOW_MAP_BORDER_BLOCKS * 2;
 
-    for (int by = 0; by < memory_height; by++) {
-        for (int bx = 0; bx < memory_width; bx++) {
-            bool is_border = bx < YELLOW_MAP_BORDER_BLOCKS || by < YELLOW_MAP_BORDER_BLOCKS ||
-                bx >= map_width + YELLOW_MAP_BORDER_BLOCKS ||
-                by >= map_height + YELLOW_MAP_BORDER_BLOCKS;
-            if (is_border != border)
-                continue;
-
-            u8 block_id = Y_WRAM(gb, Y_ADDR_MAP_LAYOUT + bx + (by * memory_width));
-            yellow_draw_block(gb, block_id, ts,
-                bx * YELLOW_BLOCK_PX - YELLOW_MAP_BORDER_BLOCKS * YELLOW_BLOCK_PX,
-                by * YELLOW_BLOCK_PX - YELLOW_MAP_BORDER_BLOCKS * YELLOW_BLOCK_PX,
-                map_offset_x, map_offset_y, true, only_sentinel, sentinel, NULL);
-        }
-    }
-}
 
 bool gb_draw_yellow_revamped(gb_t* gb) {
     u8 map_height = Y_WRAM(gb, Y_ADDR_MAP_HEIGHT);
     u8 map_width  = Y_WRAM(gb, Y_ADDR_MAP_WIDTH);
     u8 cur_map    = Y_WRAM(gb, Y_ADDR_CUR_MAP);
     yellow_map_header cur_hdr;
-    if (!yellow_read_map_header(gb, cur_map, &cur_hdr) ||
-        !yellow_wram_blocks_ready(gb, &cur_hdr, map_width, map_height))
+    if (!yellow_read_map_header(gb, cur_map, &cur_hdr))
         return false;
 
     int sentinel = color(30, 30, 30);
@@ -1082,19 +1039,15 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     int map_offset_x = camera_x - gb_screen_canvas_x;
     int map_offset_y = camera_y - gb_screen_canvas_y;
 
+    u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
+    u8 safe_tileset_id = in_battle ? 0xFF : tileset_id;
+
     if (have_tileset) {
-        yellow_draw_wram_map(gb, &tileset, map_width, map_height,
-            map_offset_x, map_offset_y, false, false, sentinel);
-
         bool visited[256] = {0};
-        visited[cur_map] = true;
         yellow_map_list drawn = {0};
-        yellow_record_map(gb, &drawn, cur_map, &cur_hdr, &tileset, 0, 0, tileset_id, true);
         yellow_draw_rom_map(gb, cur_map, 0, 0, YELLOW_MAP_RECURSION_DEPTH, visited,
-            tileset_id, map_offset_x, map_offset_y, &drawn);
+            safe_tileset_id, map_offset_x, map_offset_y, &drawn);
 
-        yellow_draw_wram_map(gb, &tileset, map_width, map_height,
-            map_offset_x, map_offset_y, true, true, sentinel);
         yellow_fill_outside(gb, &drawn, map_offset_x, map_offset_y, sentinel);
     }
 
