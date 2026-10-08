@@ -713,6 +713,21 @@ static u8 yellow_overworld_pal_id(gb_t* gb, u8 map_id, u8 tileset_id) {
     return (u8)(pal + 1);
 }
 
+
+static int visualizer_rgb15(gb_t* gb, u8 lo, u8 hi) {
+    if (gb->console_type == SGB_TYPE) {
+        u8 red = lo & 0x1F;
+        u8 green = (lo >> 5) | ((hi & 0b11) << 3);
+        u8 blue = (hi >> 2) & 0x1F;
+        red = (red << 3) | (red >> 2);
+        green = (green << 3) | (green >> 2);
+        blue = (blue << 3) | (blue >> 2);
+        return color(red, green, blue);
+    } else {
+        return CgbToRgb(lo, hi);
+    }
+}
+
 static void yellow_apply_dmg_pal(const u8 base[8], u8 dmg_reg, u8 out[8]) {
     if (dmg_reg == 0)
         dmg_reg = 0xE4;
@@ -728,10 +743,18 @@ static bool yellow_load_map_pals(gb_t* gb, u8 map_id, u8 tileset_id, u8 bg[8], u
     if (pal_id >= Y_NUM_CGB_PALS)
         return false;
     u8 base[8];
-    size_t addr = (size_t)Y_ROM_CGB_BASE_PALS + (size_t)pal_id * 8;
-    for (int i = 0; i < 8; i++) {
-        if (!yellow_rom_abs(gb, addr + i, &base[i]))
-            return false;
+    if (gb->console_type == SGB_TYPE) {
+        for (int i = 0; i < 4; i++) {
+            u16 color = gb->sgb.pal_ram[pal_id * 4 + i];
+            base[i * 2] = color & 0xFF;
+            base[i * 2 + 1] = color >> 8;
+        }
+    } else {
+        size_t addr = (size_t)Y_ROM_CGB_BASE_PALS + (size_t)pal_id * 8;
+        for (int i = 0; i < 8; i++) {
+            if (!yellow_rom_abs(gb, addr + i, &base[i]))
+                return false;
+        }
     }
     u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
     u8 bgp_reg = in_battle ? 0xE4 : gb->ppu.BGP_REG;
@@ -754,7 +777,7 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
     if (bgp || gb->console_type == CGB_TYPE) {
         const u8* pal = bgp ? bgp : gb->BGP_CRAM;
         for (int i = 0; i < 4; i++) {
-            colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+            colors[i] = visualizer_rgb15(gb, pal[i * 2], pal[i * 2 + 1]);
         }
     } else {
         u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
@@ -849,7 +872,7 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
     if (obp || gb->console_type == CGB_TYPE) {
         const u8* pal = obp ? obp : gb->OBP_CRAM;
         for (int i = 0; i < 4; i++) {
-            colors[i] = CgbToRgb(pal[i * 2], pal[i * 2 + 1]);
+            colors[i] = visualizer_rgb15(gb, pal[i * 2], pal[i * 2 + 1]);
         }
     } else {
         u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);

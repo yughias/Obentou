@@ -1335,7 +1335,7 @@ void createWidget(const char* name, int w, int h, bool (*callback)(void*), void*
         
     #else
         wid->window = SDL_CreateWindow(name, w, h, SDL_WINDOW_RESIZABLE);
-        wid->renderer = SDL_CreateRenderer(wid->window, "software");
+        wid->renderer = SDL_CreateRenderer(wid->window, NULL);
         wid->texture = SDL_CreateTexture(wid->renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
         SDL_SetTextureScaleMode(wid->texture, SDL_SCALEMODE_NEAREST);
         SDL_SetRenderLogicalPresentation(wid->renderer, w, h, SDL_LOGICAL_PRESENTATION_LETTERBOX);
