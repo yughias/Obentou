@@ -767,7 +767,7 @@ static bool yellow_load_map_pals(gb_t* gb, u8 map_id, u8 tileset_id, u8 bg[8], u
 
 static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* ts,
     int world_px, int world_py, int map_offset_x, int map_offset_y,
-    bool use_vram, bool only_sentinel, int sentinel, const u8* bgp) {
+    bool only_sentinel, int sentinel, const u8* bgp) {
     int screen_x0 = world_px - map_offset_x;
     int screen_y0 = world_py - map_offset_y;
     if (screen_x0 >= width || screen_y0 >= height ||
@@ -800,35 +800,16 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
             if (!yellow_rom_byte(gb, ts->rom_bank, tile_addr, &tile_id))
                 continue;
 
-            u8* tile_gfx = NULL;
-            if (use_vram) {
-                u8* vram = gb_getTileGfx(gb, tile_id);
-                bool tile_empty = true;
-                for (int t = 0; t < 16; t++) {
-                    if (vram[t] != 0) {
-                        tile_empty = false;
-                        break;
-                    }
-                }
-                if (!tile_empty)
-                    tile_gfx = vram;
-            }
-
             for (int py = 0; py < 8; py++) {
                 int draw_y = world_py + ty * 8 + py - map_offset_y;
                 bool y_valid = draw_y >= 0 && draw_y < height;
                 int row_offset = draw_y * stride;
                 
                 u8 row_byte1, row_byte2;
-                if (tile_gfx) {
-                    row_byte1 = tile_gfx[(py * 2) + 0];
-                    row_byte2 = tile_gfx[(py * 2) + 1];
-                } else {
-                    u16 gfx_addr = (u16)(ts->gfx_ptr + (u16)tile_id * 16 + (u16)(py * 2));
-                    if (!yellow_rom_byte(gb, ts->rom_bank, gfx_addr, &row_byte1) ||
-                        !yellow_rom_byte(gb, ts->rom_bank, (u16)(gfx_addr + 1), &row_byte2))
-                        continue;
-                }
+                u16 gfx_addr = (u16)(ts->gfx_ptr + (u16)tile_id * 16 + (u16)(py * 2));
+                if (!yellow_rom_byte(gb, ts->rom_bank, gfx_addr, &row_byte1) ||
+                    !yellow_rom_byte(gb, ts->rom_bank, (u16)(gfx_addr + 1), &row_byte2))
+                    continue;
 
                 if (!y_valid)
                     continue;
@@ -1055,7 +1036,6 @@ typedef struct {
     u8 height;
     u8 border_block;
     u8 conn_mask;
-    bool use_vram;
     bool has_pal;
     u8 bg_pal[8];
     yellow_tileset_ctx ts;
@@ -1069,7 +1049,7 @@ typedef struct {
 
 
 static void yellow_record_map(gb_t* gb, yellow_map_list* list, u8 map_id, const yellow_map_header* hdr,
-    const yellow_tileset_ctx* ts, int origin_bx, int origin_by, u8 current_tileset, bool current_map) {
+    const yellow_tileset_ctx* ts, int origin_bx, int origin_by) {
     if (list->count >= YELLOW_MAX_DRAWN_MAPS)
         return;
     u8 border;
@@ -1086,12 +1066,8 @@ static void yellow_record_map(gb_t* gb, yellow_map_list* list, u8 map_id, const 
     for (int i = 0; i < hdr->n_conns; i++)
         m->conn_mask |= hdr->conns[i].dir;
     m->ts = *ts;
-    m->use_vram = hdr->tileset_id == current_tileset;
-    m->has_pal = false;
-    if (!current_map) {
-        u8 ob_pal[8];
-        m->has_pal = yellow_load_map_pals(gb, map_id, hdr->tileset_id, m->bg_pal, ob_pal);
-    }
+    u8 ob_pal[8];
+    m->has_pal = yellow_load_map_pals(gb, map_id, hdr->tileset_id, m->bg_pal, ob_pal);
 }
 
 static int yellow_floor_div(int n, int d) {
@@ -1181,14 +1157,14 @@ static void yellow_fill_outside(gb_t* gb, const yellow_map_list* list,
                 continue;
             yellow_draw_block(gb, chosen->border_block, &chosen->ts,
                 bx * YELLOW_BLOCK_PX, by * YELLOW_BLOCK_PX,
-                map_offset_x, map_offset_y, chosen->use_vram, true, sentinel,
+                map_offset_x, map_offset_y, true, sentinel,
                 chosen->has_pal ? chosen->bg_pal : NULL);
         }
     }
 }
 
 static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_by, int depth,
-    bool visited[256], u8 current_tileset, int map_offset_x, int map_offset_y, yellow_map_list* list) {
+    bool visited[256], int map_offset_x, int map_offset_y, yellow_map_list* list) {
     yellow_map_header hdr;
     if (!yellow_read_map_header(gb, map_id, &hdr))
         return;
@@ -1199,8 +1175,7 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
     if (first_visit) {
         yellow_tileset_ctx ts;
         if (yellow_load_tileset(gb, hdr.tileset_id, &ts)) {
-            yellow_record_map(gb, list, map_id, &hdr, &ts, origin_bx, origin_by,
-                current_tileset, false);
+            yellow_record_map(gb, list, map_id, &hdr, &ts, origin_bx, origin_by);
             int map_x0 = origin_bx * YELLOW_BLOCK_PX - map_offset_x;
             int map_y0 = origin_by * YELLOW_BLOCK_PX - map_offset_y;
             int map_x1 = map_x0 + (int)hdr.width * YELLOW_BLOCK_PX;
@@ -1208,7 +1183,6 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
             bool on_screen = map_x1 > 0 && map_y1 > 0 &&
                 map_x0 < width && map_y0 < height;
             if (on_screen) {
-                bool use_vram = hdr.tileset_id == current_tileset;
                 u8 bg_pal[8], ob_pal[8];
                 const u8* bgp = NULL;
                 const u8* obp = NULL;
@@ -1225,7 +1199,7 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
                         yellow_draw_block(gb, block_id, &ts,
                             (origin_bx + bx) * YELLOW_BLOCK_PX,
                             (origin_by + by) * YELLOW_BLOCK_PX,
-                            map_offset_x, map_offset_y, use_vram, false, 0, bgp);
+                            map_offset_x, map_offset_y, false, 0, bgp);
                     }
                 }
                 u8 active_map = Y_WRAM(gb, Y_ADDR_CUR_MAP);
@@ -1269,7 +1243,7 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
         }
 
         yellow_draw_rom_map(gb, c->map_id, origin_bx + dx, origin_by + dy, depth - 1,
-            visited, current_tileset, map_offset_x, map_offset_y, list);
+            visited, map_offset_x, map_offset_y, list);
     }
 }
 
@@ -1301,7 +1275,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         }
     }
 
-    u8 tileset_id = Y_WRAM(gb, Y_ADDR_TILESET_ID);
+    u8 tileset_id = cur_hdr.tileset_id;
     u8 player_x   = Y_WRAM(gb, Y_ADDR_PLAYER_X);
     u8 player_y   = Y_WRAM(gb, Y_ADDR_PLAYER_Y);
 
@@ -1342,14 +1316,11 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     int map_offset_x = camera_x - gb_screen_canvas_x;
     int map_offset_y = camera_y - gb_screen_canvas_y;
 
-    u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
-    u8 safe_tileset_id = in_battle ? 0xFF : tileset_id;
-
     if (have_tileset) {
         bool visited[256] = {0};
         yellow_map_list drawn = {0};
         yellow_draw_rom_map(gb, cur_map, 0, 0, YELLOW_MAP_RECURSION_DEPTH, visited,
-            safe_tileset_id, map_offset_x, map_offset_y, &drawn);
+            map_offset_x, map_offset_y, &drawn);
 
         yellow_fill_outside(gb, &drawn, map_offset_x, map_offset_y, sentinel);
     }
