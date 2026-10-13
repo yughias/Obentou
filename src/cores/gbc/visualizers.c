@@ -374,8 +374,9 @@ static void init_game_info(gb_t* gb) {
 
 
 // WRAM Map State
-#define Y_PIKACHU_HIDE_MASK   ((1 << 5) | (1 << 7))
+#define Y_PIKACHU_HIDE_MASK   ((1 << 3) | (1 << 5) | (1 << 7))
 #define Y_PIKACHU_SPRITE_SLOT 15
+#define Y_SPRITE_PIKACHU      0x3D
 #define Y_FIRST_STILL_SPRITE    g_info->FIRST_STILL_SPRITE
 #define Y_SPRITE_PICTURE_ID_MAX g_info->NUM_SPRITES
 
@@ -842,6 +843,25 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
     }
 }
 
+static bool is_screen_pixel_menu_or_box(gb_t* gb, int sx, int sy) {
+    if (sx < 0 || sx >= LCD_WIDTH || sy < 0 || sy >= LCD_HEIGHT)
+        return false;
+    // Check Game Boy hardware Window layer
+    if ((gb->ppu.LCDC_REG & (1 << 5)) != 0) {
+        int win_y = gb->ppu.WY_REG;
+        int win_x = gb->ppu.WX_REG - 7;
+        if (win_y < LCD_HEIGHT && sy >= win_y && sx >= win_x)
+            return true;
+    }
+    // Check wTileMap (0xC3A0) for textbox / menu tiles (tile_id >= 0x60)
+    int tile_col = sx / 8;
+    int tile_row = sy / 8;
+    u8 tile_id = Y_WRAM(gb, 0xC3A0 + tile_row * 20 + tile_col);
+    if (tile_id >= 0x60)
+        return true;
+    return false;
+}
+
 static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int draw_base_y,
     const u8* obp, int tile_base, bool flip_x) {
     if (picture_id == 0 || picture_id > Y_SPRITE_PICTURE_ID_MAX)
@@ -854,6 +874,9 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
         tile_base = 0;
         flip_x = false;
     }
+
+    int gb_screen_canvas_x = (width - LCD_WIDTH) / 2;
+    int gb_screen_canvas_y = (height - LCD_HEIGHT) / 2;
 
     int entry = Y_ROM_SPRITE_TABLE + ((picture_id - 1) * 4);
     u8 lo, hi, sprite_bank;
@@ -912,6 +935,12 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
                 u8 col_idx = b0 | (b1 << 1);
                 if (col_idx == 0)
                     continue;
+
+                int screen_x = draw_x - gb_screen_canvas_x;
+                int screen_y = draw_y - gb_screen_canvas_y;
+                if (is_screen_pixel_menu_or_box(gb, screen_x, screen_y))
+                    continue;
+
                 pixels[draw_x + row_offset] = colors[col_idx];
             }
         }
@@ -1336,6 +1365,26 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         yellow_fill_outside(gb, &drawn, map_offset_x, map_offset_y, sentinel);
     }
 
+    SDL_Surface* main_surf = getMainWindowSurface();
+    if (main_surf && main_surf->pixels) {
+        u32* main_pixels = (u32*)main_surf->pixels;
+        int main_pitch = main_surf->pitch / 4; 
+        
+        int src_offset_x = (gb->console_type == SGB_TYPE) ? 48 : 0;
+        int src_offset_y = (gb->console_type == SGB_TYPE) ? 40 : 0;
+        
+        for (int y = 0; y < LCD_HEIGHT; y++) {
+            for (int x = 0; x < LCD_WIDTH; x++) {
+                int dest_x = gb_screen_canvas_x + x;
+                int dest_y = gb_screen_canvas_y + y;
+                pixels[dest_x + dest_y * stride] = main_pixels[(src_offset_x + x) + (src_offset_y + y) * main_pitch];
+            }
+        }
+    }
+
+    u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
+    if (in_battle != 0) return true;
+
     u8 num_sprites = Y_WRAM(gb, Y_ADDR_NUM_SPRITES);
     u8 bg_pal[8], ob_pal[8];
     const u8* active_ob_pal = NULL;
@@ -1344,7 +1393,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     }
 
     for (int slot = 1; slot < 16; slot++) {
-        if (slot == Y_PIKACHU_SPRITE_SLOT) {
+        if (g_info->is_yellow && slot == Y_PIKACHU_SPRITE_SLOT) {
             if (!yellow_pikachu_is_out(gb))
                 continue;
         } else if (slot > num_sprites) {
@@ -1352,6 +1401,9 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         }
 
         u8 picture_id = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 0);
+        if (g_info->is_yellow && slot == Y_PIKACHU_SPRITE_SLOT) {
+            picture_id = Y_SPRITE_PIKACHU;
+        }
         if (picture_id == 0 || picture_id > Y_SPRITE_PICTURE_ID_MAX) continue;
 
         u8 movement_status = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + Y_SPRITE1_MOVEMENT_STATUS);
@@ -1369,9 +1421,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         int expected_screen_y = npc_y * 16 - camera_y;
 
         u8 image_index = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + Y_SPRITE1_IMAGE_INDEX);
-        int draw_base_x;
-        int draw_base_y;
-
         u8 facing_dir = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 9);
 
         // Se lo sprite si trova nella viewport, o ha una direzione non nulla (girato),
@@ -1382,19 +1431,34 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
             yellow_sprite_history.seen[slot] = true;
         }
 
-        if (image_index != 0xff) {
-            // Sprite vicino al giocatore: usa i pixel offset della RAM per il movimento fluido
-            u8 y_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 4);
-            u8 x_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 6);
-            int delta_x = (i8)(u8)(x_pixels - (u8)expected_screen_x);
-            int delta_y = (i8)(u8)(y_pixels - (u8)expected_screen_y);
-            draw_base_x = gb_screen_canvas_x + expected_screen_x + delta_x;
-            draw_base_y = gb_screen_canvas_y + expected_screen_y + delta_y;
-        } else {
-            // Sprite lontano dal giocatore: calcola le coordinate esatte basandoti sulla griglia della RAM
-            // (Preserva qualsiasi movimento fatto finora dallo sprite!)
-            draw_base_x = gb_screen_canvas_x + expected_screen_x;
-            draw_base_y = gb_screen_canvas_y + expected_screen_y - 4;
+        int walk_dx = 0;
+        int walk_dy = 0;
+        if (movement_status == 3 || movement_status == 4) {
+            u8 walk_counter = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 0);
+            i8 step_y = (i8)Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 3);
+            i8 step_x = (i8)Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 5);
+            int speed = (movement_status == 4) ? 2 : 1;
+            if (walk_counter * speed <= 16) {
+                walk_dx = -((int)step_x * (int)walk_counter * speed);
+                walk_dy = -((int)step_y * (int)walk_counter * speed);
+            }
+        }
+
+        int draw_base_x = gb_screen_canvas_x + expected_screen_x + walk_dx;
+        int draw_base_y = gb_screen_canvas_y + expected_screen_y - 4 + walk_dy;
+
+        int screen_rel_x = draw_base_x - gb_screen_canvas_x;
+        int screen_rel_y = draw_base_y - gb_screen_canvas_y;
+        bool is_fully_inside = (screen_rel_x >= 0 && screen_rel_x + 16 <= LCD_WIDTH &&
+                                screen_rel_y >= 0 && screen_rel_y + 16 <= LCD_HEIGHT);
+
+        if (is_fully_inside) {
+            if (g_info->is_yellow && slot == Y_PIKACHU_SPRITE_SLOT) {
+                continue;
+            }
+            if (image_index != 0xff) {
+                continue;
+            }
         }
 
         // ==========================================
@@ -1425,23 +1489,6 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         }
 
         yellow_draw_picture(gb, picture_id, draw_base_x, draw_base_y, active_ob_pal, tile_base, flip_x);
-    }
-
-    SDL_Surface* main_surf = getMainWindowSurface();
-    if (main_surf && main_surf->pixels) {
-        u32* main_pixels = (u32*)main_surf->pixels;
-        int main_pitch = main_surf->pitch / 4; 
-        
-        int src_offset_x = (gb->console_type == SGB_TYPE) ? 48 : 0;
-        int src_offset_y = (gb->console_type == SGB_TYPE) ? 40 : 0;
-        
-        for (int y = 0; y < LCD_HEIGHT; y++) {
-            for (int x = 0; x < LCD_WIDTH; x++) {
-                int dest_x = gb_screen_canvas_x + x;
-                int dest_y = gb_screen_canvas_y + y;
-                pixels[dest_x + dest_y * stride] = main_pixels[(src_offset_x + x) + (src_offset_y + y) * main_pitch];
-            }
-        }
     }
 
     return true;
