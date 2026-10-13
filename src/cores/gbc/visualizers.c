@@ -374,7 +374,7 @@ static void init_game_info(gb_t* gb) {
 
 
 
-#define YELLOW_MAP_RECURSION_DEPTH 4
+#define YELLOW_MAP_RECURSION_DEPTH 5
 #define YELLOW_MAP_BORDER_BLOCKS 3
 #define YELLOW_BLOCK_PX 32
 // Route 17 and Route 23 are 72 blocks tall. A lower cap drops those headers,
@@ -471,8 +471,8 @@ static struct {
     u8 prev_player_y;
     u8 prev_map;
     u8 prev_tileset_id;
-    int sub_x;
-    int sub_y;
+    int camera_x;
+    int camera_y;
 } yellow_scroll;
 
 static void yellow_scroll_reseed(u8 player_x, u8 player_y, u8 cur_map, u8 tileset_id) {
@@ -482,64 +482,59 @@ static void yellow_scroll_reseed(u8 player_x, u8 player_y, u8 cur_map, u8 tilese
     yellow_scroll.prev_player_y = player_y;
     yellow_scroll.prev_map = cur_map;
     yellow_scroll.prev_tileset_id = tileset_id;
-    yellow_scroll.sub_x = 0;
-    yellow_scroll.sub_y = 0;
+    yellow_scroll.camera_x = (int)player_x * 16 - 64;
+    yellow_scroll.camera_y = (int)player_y * 16 - 64;
     yellow_scroll.initialized = true;
 }
 
-static bool yellow_scroll_warp_discontinuity(u8 cur_map, u8 tileset_id) {
-    if (cur_map != yellow_scroll.prev_map)
-        return true;
-    if (tileset_id != yellow_scroll.prev_tileset_id)
-        return true;
-    return false;
-}
-
-static void update_scroll_tracking(gb_t* gb, u8 player_x, u8 player_y, u8 tileset_id, int* out_sub_x, int* out_sub_y) {
+static void update_scroll_tracking(gb_t* gb, u8 player_x, u8 player_y, u8 tileset_id, int* out_camera_x, int* out_camera_y) {
     u8 cur_map = Y_WRAM(gb, Y_ADDR_CUR_MAP);
-
-    if (!yellow_scroll.initialized) {
-        yellow_scroll_reseed(player_x, player_y, cur_map, tileset_id);
-        *out_sub_x = 0;
-        *out_sub_y = 0;
-        return;
-    }
-
-    if (yellow_scroll_warp_discontinuity(cur_map, tileset_id)) {
-        yellow_scroll_reseed(player_x, player_y, cur_map, tileset_id);
-        *out_sub_x = 0;
-        *out_sub_y = 0;
-        return;
-    }
-
-    u8 walk_counter = Y_WRAM(gb, Y_ADDR_WALK_COUNTER);
     u8 in_battle = Y_WRAM(gb, Y_ADDR_IS_IN_BATTLE);
-    if (walk_counter == 0 || in_battle != 0) {
+
+    if (!yellow_scroll.initialized || in_battle != 0) {
         yellow_scroll_reseed(player_x, player_y, cur_map, tileset_id);
-        *out_sub_x = 0;
-        *out_sub_y = 0;
+        *out_camera_x = yellow_scroll.camera_x;
+        *out_camera_y = yellow_scroll.camera_y;
         return;
     }
 
-    i8 scroll_dx = (i8)(scx_reg - yellow_scroll.prev_scx);
-    i8 scroll_dy = (i8)(scy_reg - yellow_scroll.prev_scy);
-    yellow_scroll.sub_x += scroll_dx;
-    yellow_scroll.sub_y += scroll_dy;
+    if (cur_map != yellow_scroll.prev_map || tileset_id != yellow_scroll.prev_tileset_id) {
+        yellow_scroll_reseed(player_x, player_y, cur_map, tileset_id);
+        *out_camera_x = yellow_scroll.camera_x;
+        *out_camera_y = yellow_scroll.camera_y;
+        return;
+    }
 
+    // Teleport or large warp: coordinate jumped more than 1 tile in a single frame
     int coord_dx = (int)player_x - (int)yellow_scroll.prev_player_x;
     int coord_dy = (int)player_y - (int)yellow_scroll.prev_player_y;
-
-    if (player_x != yellow_scroll.prev_player_x)
-        yellow_scroll.sub_x -= coord_dx * 16;
-    if (player_y != yellow_scroll.prev_player_y)
-        yellow_scroll.sub_y -= coord_dy * 16;
-
-    if (yellow_scroll.sub_x > 16 || yellow_scroll.sub_x < -16 ||
-        yellow_scroll.sub_y > 16 || yellow_scroll.sub_y < -16) {
+    if (coord_dx > 1 || coord_dx < -1 || coord_dy > 1 || coord_dy < -1) {
         yellow_scroll_reseed(player_x, player_y, cur_map, tileset_id);
-        *out_sub_x = 0;
-        *out_sub_y = 0;
+        *out_camera_x = yellow_scroll.camera_x;
+        *out_camera_y = yellow_scroll.camera_y;
         return;
+    }
+
+    i8 scroll_dx = (i8)(u8)(scx_reg - yellow_scroll.prev_scx);
+    i8 scroll_dy = (i8)(u8)(scy_reg - yellow_scroll.prev_scy);
+
+    // Sudden scroll jump larger than normal walking/biking speed (max bike speed is 4 px/frame)
+    if (scroll_dx > 8 || scroll_dx < -8 || scroll_dy > 8 || scroll_dy < -8) {
+        yellow_scroll_reseed(player_x, player_y, cur_map, tileset_id);
+        *out_camera_x = yellow_scroll.camera_x;
+        *out_camera_y = yellow_scroll.camera_y;
+        return;
+    }
+
+    yellow_scroll.camera_x += scroll_dx;
+    yellow_scroll.camera_y += scroll_dy;
+
+    u8 walk_counter = Y_WRAM(gb, Y_ADDR_WALK_COUNTER);
+    // When completely stopped at rest and PPU has reached a tile boundary, ensure camera is cleanly snapped to the tile grid
+    if (walk_counter == 0 && scroll_dx == 0 && scroll_dy == 0 &&
+        ((scx_reg & 0xF) == 0) && ((scy_reg & 0xF) == 0)) {
+        yellow_scroll.camera_x = (int)player_x * 16 - 64;
+        yellow_scroll.camera_y = (int)player_y * 16 - 64;
     }
 
     yellow_scroll.prev_scx = scx_reg;
@@ -549,8 +544,8 @@ static void update_scroll_tracking(gb_t* gb, u8 player_x, u8 player_y, u8 tilese
     yellow_scroll.prev_map = cur_map;
     yellow_scroll.prev_tileset_id = tileset_id;
 
-    *out_sub_x = yellow_scroll.sub_x;
-    *out_sub_y = yellow_scroll.sub_y;
+    *out_camera_x = yellow_scroll.camera_x;
+    *out_camera_y = yellow_scroll.camera_y;
 }
 
 typedef struct {
@@ -1303,15 +1298,9 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     int gb_screen_canvas_x = (width - LCD_WIDTH) / 2;
     int gb_screen_canvas_y = (height - LCD_HEIGHT) / 2;
 
-    int player_px = player_x * 16;
-    int player_py = player_y * 16;
-
-    int sub_x;
-    int sub_y;
-    update_scroll_tracking(gb, player_x, player_y, tileset_id, &sub_x, &sub_y);
-
-    int camera_x = player_px - 64 + sub_x;
-    int camera_y = player_py - 64 + sub_y;
+    int camera_x;
+    int camera_y;
+    update_scroll_tracking(gb, player_x, player_y, tileset_id, &camera_x, &camera_y);
 
     int map_offset_x = camera_x - gb_screen_canvas_x;
     int map_offset_y = camera_y - gb_screen_canvas_y;
