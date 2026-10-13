@@ -1,5 +1,6 @@
 #include "cores/gbc/gb.h"
 #include <string.h>
+#include <stdlib.h>
 #include "SDL_MAINLOOP.h"
 
 
@@ -989,6 +990,65 @@ static void yellow_draw_rom_objects(gb_t* gb, u8 map_id, const yellow_map_header
 }
 
 typedef struct {
+    int tile_base;
+    bool flip_x;
+    int rom_x;
+    int rom_y;
+    bool valid;
+} yellow_sprite_pose_t;
+
+static void yellow_get_map_rom_poses(gb_t* gb, const yellow_map_header* hdr, yellow_sprite_pose_t poses[16]) {
+    for (int i = 0; i < 16; i++) {
+        poses[i].valid = false;
+        poses[i].tile_base = 0;
+        poses[i].flip_x = false;
+        poses[i].rom_x = 0;
+        poses[i].rom_y = 0;
+    }
+    u16 ptr = hdr->objects_ptr;
+    u8 border, nwarps, nbg, nobj;
+    if (!yellow_rom_byte(gb, hdr->bank, ptr, &border))
+        return;
+    (void)border;
+    if (!yellow_rom_byte(gb, hdr->bank, (u16)(ptr + 1), &nwarps) || nwarps > 32)
+        return;
+    ptr = (u16)(ptr + 2 + (u16)nwarps * 4);
+    if (!yellow_rom_byte(gb, hdr->bank, ptr, &nbg) || nbg > 16)
+        return;
+    ptr = (u16)(ptr + 1 + (u16)nbg * 3);
+    if (!yellow_rom_byte(gb, hdr->bank, ptr, &nobj) || nobj > 16)
+        return;
+    ptr = (u16)(ptr + 1);
+
+    for (int i = 0; i < nobj; i++) {
+        u8 picture, obj_y, obj_x, movement, range, text_id;
+        if (!yellow_rom_byte(gb, hdr->bank, ptr, &picture) ||
+            !yellow_rom_byte(gb, hdr->bank, (u16)(ptr + 1), &obj_y) ||
+            !yellow_rom_byte(gb, hdr->bank, (u16)(ptr + 2), &obj_x) ||
+            !yellow_rom_byte(gb, hdr->bank, (u16)(ptr + 3), &movement) ||
+            !yellow_rom_byte(gb, hdr->bank, (u16)(ptr + 4), &range) ||
+            !yellow_rom_byte(gb, hdr->bank, (u16)(ptr + 5), &text_id))
+            return;
+
+        int slot = i + 1;
+        if (slot < 16) {
+            yellow_still_pose(movement, range, (text_id & Y_OBJ_ITEM) != 0,
+                &poses[slot].tile_base, &poses[slot].flip_x);
+            poses[slot].rom_x = (int)obj_x - 4;
+            poses[slot].rom_y = (int)obj_y - 4;
+            poses[slot].valid = true;
+        }
+
+        int size = 6;
+        if (text_id & Y_OBJ_TRAINER)
+            size = 8;
+        else if (text_id & Y_OBJ_ITEM)
+            size = 7;
+        ptr = (u16)(ptr + size);
+    }
+}
+
+typedef struct {
     int origin_bx;
     int origin_by;
     u8 width;
@@ -1215,6 +1275,15 @@ static void yellow_draw_rom_map(gb_t* gb, u8 map_id, int origin_bx, int origin_b
 
 
 
+static struct {
+    bool initialized;
+    u8 prev_map;
+    u8 prev_tileset_id;
+    u8 prev_player_x;
+    u8 prev_player_y;
+    bool seen[16];
+} yellow_sprite_history;
+
 bool gb_draw_yellow_revamped(gb_t* gb) {
     init_game_info(gb);
     u8 map_height = Y_WRAM(gb, Y_ADDR_MAP_HEIGHT);
@@ -1235,6 +1304,24 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
     u8 tileset_id = Y_WRAM(gb, Y_ADDR_TILESET_ID);
     u8 player_x   = Y_WRAM(gb, Y_ADDR_PLAYER_X);
     u8 player_y   = Y_WRAM(gb, Y_ADDR_PLAYER_Y);
+
+    int player_step_dx = abs((int)player_x - (int)yellow_sprite_history.prev_player_x);
+    int player_step_dy = abs((int)player_y - (int)yellow_sprite_history.prev_player_y);
+
+    if (!yellow_sprite_history.initialized ||
+        cur_map != yellow_sprite_history.prev_map ||
+        tileset_id != yellow_sprite_history.prev_tileset_id ||
+        player_step_dx > 1 || player_step_dy > 1) {
+        memset(yellow_sprite_history.seen, 0, sizeof(yellow_sprite_history.seen));
+        yellow_sprite_history.initialized = true;
+    }
+    yellow_sprite_history.prev_map = cur_map;
+    yellow_sprite_history.prev_tileset_id = tileset_id;
+    yellow_sprite_history.prev_player_x = player_x;
+    yellow_sprite_history.prev_player_y = player_y;
+
+    yellow_sprite_pose_t cur_map_rom_poses[16];
+    yellow_get_map_rom_poses(gb, &cur_hdr, cur_map_rom_poses);
 
     yellow_tileset_ctx tileset;
     bool have_tileset = yellow_load_tileset(gb, tileset_id, &tileset);
@@ -1290,6 +1377,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
 
         if (is_sprite_hidden(gb, slot)) continue;
 
+        // Coordinate della griglia della mappa (sempre valide nella mappa attiva)
         int npc_y = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 4) - 4;
         int npc_x = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_2 + (slot * 16) + 5) - 4;
 
@@ -1302,7 +1390,18 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         int draw_base_x;
         int draw_base_y;
 
+        u8 facing_dir = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 9);
+
+        // Se lo sprite si trova nella viewport, o ha una direzione non nulla (girato),
+        // o ha cambiato coordinate rispetto alla ROM, consideralo gia' attivo/visto.
+        if (image_index != 0xff || facing_dir != 0 ||
+            (cur_map_rom_poses[slot].valid &&
+             (npc_x != cur_map_rom_poses[slot].rom_x || npc_y != cur_map_rom_poses[slot].rom_y))) {
+            yellow_sprite_history.seen[slot] = true;
+        }
+
         if (image_index != 0xff) {
+            // Sprite vicino al giocatore: usa i pixel offset della RAM per il movimento fluido
             u8 y_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 4);
             u8 x_pixels = Y_WRAM(gb, Y_ADDR_SPRITE_DATA_1 + (slot * 16) + 6);
             int delta_x = (i8)(u8)(x_pixels - (u8)expected_screen_x);
@@ -1310,11 +1409,37 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
             draw_base_x = gb_screen_canvas_x + expected_screen_x + delta_x;
             draw_base_y = gb_screen_canvas_y + expected_screen_y + delta_y;
         } else {
+            // Sprite lontano dal giocatore: calcola le coordinate esatte basandoti sulla griglia della RAM
+            // (Preserva qualsiasi movimento fatto finora dallo sprite!)
             draw_base_x = gb_screen_canvas_x + expected_screen_x;
             draw_base_y = gb_screen_canvas_y + expected_screen_y - 4;
         }
 
-        yellow_draw_picture(gb, picture_id, draw_base_x, draw_base_y, active_ob_pal, 0, false);
+        // ==========================================
+        // ESTRAZIONE ORIENTAMENTO
+        // ==========================================
+        int tile_base = 0;
+        bool flip_x = false;
+
+        if (image_index == 0xff && !yellow_sprite_history.seen[slot] && cur_map_rom_poses[slot].valid) {
+            // Sprite non in viewport e mai attivato in RAM: usa l'orientamento iniziale della ROM
+            tile_base = cur_map_rom_poses[slot].tile_base;
+            flip_x = cur_map_rom_poses[slot].flip_x;
+        } else {
+            // Nel motore di Pokémon Giallo/Rosso/Blu: 0x00=Giù, 0x04=Su, 0x08=Sinistra, 0x0C=Destra
+            if (facing_dir == 0x04) {
+                tile_base = 4;
+            } else if (facing_dir == 0x08) {
+                tile_base = 8;
+            } else if (facing_dir == 0x0C) {
+                tile_base = 8;
+                flip_x = true;
+            } else {
+                tile_base = 0; // Default: Giù (usato anche per gli Item, sfere poké, pietre ecc.)
+            }
+        }
+
+        yellow_draw_picture(gb, picture_id, draw_base_x, draw_base_y, active_ob_pal, tile_base, flip_x);
     }
 
     SDL_Surface* main_surf = getMainWindowSurface();
