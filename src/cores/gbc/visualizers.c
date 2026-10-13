@@ -238,6 +238,8 @@ typedef struct {
     u8 NUM_MAPS;
     u8 NUM_CITY_MAPS;
     u8 NUM_CGB_PALS;
+    u8 FIRST_STILL_SPRITE;
+    u8 NUM_SPRITES;
     
     bool is_yellow;
 } game_info_t;
@@ -288,6 +290,8 @@ static void init_game_info(gb_t* gb) {
         g_info_storage.NUM_MAPS = 249;
         g_info_storage.NUM_CITY_MAPS = 0x0B;
         g_info_storage.NUM_CGB_PALS = 0x28;
+        g_info_storage.FIRST_STILL_SPRITE = 0x47;
+        g_info_storage.NUM_SPRITES = 0x52;
         
         g_info_storage.is_yellow = true;
     } else {
@@ -325,6 +329,8 @@ static void init_game_info(gb_t* gb) {
         g_info_storage.NUM_MAPS = 248;
         g_info_storage.NUM_CITY_MAPS = 11;
         g_info_storage.NUM_CGB_PALS = 0x24; // PAL_CAVE + 1
+        g_info_storage.FIRST_STILL_SPRITE = 0x3D;
+        g_info_storage.NUM_SPRITES = 0x48;
         
         g_info_storage.is_yellow = false;
     }
@@ -370,7 +376,13 @@ static void init_game_info(gb_t* gb) {
 // WRAM Map State
 #define Y_PIKACHU_HIDE_MASK   ((1 << 5) | (1 << 7))
 #define Y_PIKACHU_SPRITE_SLOT 15
-#define Y_SPRITE_PICTURE_ID_MAX 0x52
+#define Y_FIRST_STILL_SPRITE    g_info->FIRST_STILL_SPRITE
+#define Y_SPRITE_PICTURE_ID_MAX g_info->NUM_SPRITES
+
+static inline bool is_still_sprite(u8 picture_id) {
+    if (!g_info) return false;
+    return picture_id >= g_info->FIRST_STILL_SPRITE && picture_id <= g_info->NUM_SPRITES;
+}
 
 
 
@@ -838,6 +850,11 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
         draw_base_y < -16 || draw_base_y >= height)
         return;
 
+    if (is_still_sprite(picture_id)) {
+        tile_base = 0;
+        flip_x = false;
+    }
+
     int entry = Y_ROM_SPRITE_TABLE + ((picture_id - 1) * 4);
     u8 lo, hi, sprite_bank;
     if (!yellow_rom_abs(gb, (size_t)entry + 0, &lo) ||
@@ -901,11 +918,16 @@ static void yellow_draw_picture(gb_t* gb, u8 picture_id, int draw_base_x, int dr
     }
 }
 
-static void yellow_still_pose(u8 movement, u8 range, bool is_item, int* tile_base, bool* flip_x) {
+static void yellow_still_pose(u8 picture_id, u8 movement, u8 range, bool is_item, int* tile_base, bool* flip_x) {
+    if (is_still_sprite(picture_id) || is_item) {
+        *tile_base = 0;
+        *flip_x = false;
+        return;
+    }
     u8 facing = Y_DIR_DOWN;
-    if (!is_item && movement == Y_MOVE_STAY && range >= Y_DIR_DOWN && range <= Y_DIR_RIGHT)
+    if (movement == Y_MOVE_STAY && range >= Y_DIR_DOWN && range <= Y_DIR_RIGHT)
         facing = range;
-    else if (!is_item && movement == Y_MOVE_WALK && range == Y_RANGE_LEFT_RIGHT)
+    else if (movement == Y_MOVE_WALK && range == Y_RANGE_LEFT_RIGHT)
         facing = Y_DIR_LEFT;
 
     *flip_x = facing == Y_DIR_RIGHT;
@@ -947,7 +969,7 @@ static void yellow_draw_rom_objects(gb_t* gb, u8 map_id, const yellow_map_header
         if (!yellow_rom_object_hidden(gb, map_id, i + 1)) {
             int tile_base;
             bool flip_x;
-            yellow_still_pose(movement, range, (text_id & Y_OBJ_ITEM) != 0, &tile_base, &flip_x);
+            yellow_still_pose(picture, movement, range, (text_id & Y_OBJ_ITEM) != 0, &tile_base, &flip_x);
             int grid_x = (int)obj_x - 4;
             int grid_y = (int)obj_y - 4;
             int world_px = origin_bx * YELLOW_BLOCK_PX + grid_x * 16;
@@ -1008,7 +1030,7 @@ static void yellow_get_map_rom_poses(gb_t* gb, const yellow_map_header* hdr, yel
 
         int slot = i + 1;
         if (slot < 16) {
-            yellow_still_pose(movement, range, (text_id & Y_OBJ_ITEM) != 0,
+            yellow_still_pose(picture, movement, range, (text_id & Y_OBJ_ITEM) != 0,
                 &poses[slot].tile_base, &poses[slot].flip_x);
             poses[slot].rom_x = (int)obj_x - 4;
             poses[slot].rom_y = (int)obj_y - 4;
@@ -1381,7 +1403,10 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
         int tile_base = 0;
         bool flip_x = false;
 
-        if (image_index == 0xff && !yellow_sprite_history.seen[slot] && cur_map_rom_poses[slot].valid) {
+        if (is_still_sprite(picture_id)) {
+            tile_base = 0;
+            flip_x = false;
+        } else if (image_index == 0xff && !yellow_sprite_history.seen[slot] && cur_map_rom_poses[slot].valid) {
             // Sprite non in viewport e mai attivato in RAM: usa l'orientamento iniziale della ROM
             tile_base = cur_map_rom_poses[slot].tile_base;
             flip_x = cur_map_rom_poses[slot].flip_x;
