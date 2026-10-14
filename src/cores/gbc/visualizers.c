@@ -433,6 +433,13 @@ extern int scy_reg;
 #define Y_SPRITE1_IMAGE_INDEX 2
 #define Y_SPRITE1_MOVEMENT_STATUS 1
 
+static bool yellow_rom_abs(gb_t* gb, size_t addr, u8* out) {
+    if (!gb->ROM || addr >= gb->ROM_SIZE)
+        return false;
+    *out = gb->ROM[addr];
+    return true;
+}
+
 static bool yellow_rom_byte(gb_t* gb, u8 bank, u16 ptr, u8* out) {
     size_t off = (size_t)bank * 0x4000u + (ptr & 0x3FFFu);
     return yellow_rom_abs(gb, off, out);
@@ -679,13 +686,6 @@ typedef struct {
     yellow_connection conns[4];
     int n_conns;
 } yellow_map_header;
-
-static bool yellow_rom_abs(gb_t* gb, size_t addr, u8* out) {
-    if (!gb->ROM || addr >= gb->ROM_SIZE)
-        return false;
-    *out = gb->ROM[addr];
-    return true;
-}
 
 // Sprite slot on a map that is not the one loaded in WRAM. The save bit is the
 // global index of that object's entry in ToggleableObjectStates.
