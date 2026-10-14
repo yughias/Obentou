@@ -566,7 +566,96 @@ typedef struct {
     u8 rom_bank;
     u16 block_ptr;
     u16 gfx_ptr;
+    bool vram_valid;
+    bool has_water;
 } yellow_tileset_ctx;
+
+static struct {
+    int shift;          // Rotazione attuale dell'acqua (0..4 bit)
+    int dir;            // Direzione onda (+1 = rrc, -1 = rlc)
+    int frame_timer;    // Contatore di fallback (scatta ogni 20 frame)
+    bool has_flower;
+    u8 flower_tile[16]; // Ultimo frame valido dei fiori (tile 0x03)
+} yellow_anim = { 0, 1, 0, false, {0} };
+
+static inline u8 yellow_ror8(u8 val, int s) {
+    s &= 7;
+    return s ? (u8)((val >> s) | (val << (8 - s))) : val;
+}
+
+// Tabella WaterTilesets originale di Pokémon Rosso/Blu/Giallo
+static bool yellow_tileset_has_water(u8 tileset_id) {
+    switch (tileset_id) {
+        case 0:  // OVERWORLD
+        case 3:  // FOREST
+        case 5:  // DOJO
+        case 7:  // GYM
+        case 11: // SHIP
+        case 12: // SHIP_PORT
+        case 17: // CAVERN
+        case 22: // FACILITY
+        case 23: // PLATEAU
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Controlla se gb->VRAM + 0x1000 contiene davvero il tileset (non sovrascritto da menù/battaglie)
+static bool yellow_vram_has_tileset(gb_t* gb, u8 rom_bank, u16 gfx_ptr) {
+    // Confrontiamo i tile statici 0x01 e 0x02 (32 byte ad offset 0x10..0x2F)
+    for (u16 off = 0x10; off < 0x30; off++) {
+        u8 rom_b;
+        if (!yellow_rom_byte(gb, rom_bank, (u16)(gfx_ptr + off), &rom_b))
+            return false;
+        if (gb->VRAM[0x1000 + off] != rom_b)
+            return false;
+    }
+    return true;
+}
+
+static void yellow_update_tile_anim(gb_t* gb, const yellow_tileset_ctx* cur_ts) {
+    if (cur_ts && cur_ts->vram_valid) {
+        // Salva l'ultimo stato valido dei fiori (tile 0x03 nell'Overworld)
+        if (cur_ts->tileset_id == 0) {
+            memcpy(yellow_anim.flower_tile, &gb->VRAM[0x1000 + 0x03 * 16], 16);
+            yellow_anim.has_flower = true;
+        }
+
+        // Sincronizza lo shift (0..4) dell'acqua leggendo la rotazione attuale in VRAM
+        if (cur_ts->has_water) {
+            for (int s = 0; s <= 4; s++) {
+                bool match = true;
+                for (int i = 0; i < 16; i++) {
+                    u8 rom_b;
+                    if (!yellow_rom_byte(gb, cur_ts->rom_bank, (u16)(cur_ts->gfx_ptr + 0x14 * 16 + i), &rom_b) ||
+                        yellow_ror8(rom_b, s) != gb->VRAM[0x1000 + 0x14 * 16 + i]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    if (s != yellow_anim.shift) {
+                        yellow_anim.dir = (s > yellow_anim.shift) ? 1 : -1;
+                        yellow_anim.shift = s;
+                        yellow_anim.frame_timer = 0;
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    // Fallback: se la VRAM è occupata (battaglia o menù), continua ad animare ogni 20 frame
+    if (++yellow_anim.frame_timer >= 20) {
+        yellow_anim.frame_timer = 0;
+        if (yellow_anim.shift >= 4)
+            yellow_anim.dir = -1;
+        else if (yellow_anim.shift <= 0)
+            yellow_anim.dir = 1;
+        yellow_anim.shift += yellow_anim.dir;
+    }
+}
 
 typedef struct {
     u8 map_id;
@@ -643,6 +732,8 @@ static bool yellow_load_tileset(gb_t* gb, u8 tileset_id, yellow_tileset_ctx* ctx
     ctx->rom_bank = bank;
     ctx->block_ptr = (u16)b1 | ((u16)b2 << 8);
     ctx->gfx_ptr = (u16)b3 | ((u16)b4 << 8);
+    ctx->vram_valid = yellow_vram_has_tileset(gb, ctx->rom_bank, ctx->gfx_ptr);
+    ctx->has_water = yellow_tileset_has_water(tileset_id);
     return true;
 }
 
@@ -814,10 +905,28 @@ static void yellow_draw_block(gb_t* gb, u8 block_id, const yellow_tileset_ctx* t
                 int row_offset = draw_y * stride;
                 
                 u8 row_byte1, row_byte2;
-                u16 gfx_addr = (u16)(ts->gfx_ptr + (u16)tile_id * 16 + (u16)(py * 2));
-                if (!yellow_rom_byte(gb, ts->rom_bank, gfx_addr, &row_byte1) ||
-                    !yellow_rom_byte(gb, ts->rom_bank, (u16)(gfx_addr + 1), &row_byte2))
-                    continue;
+                if (ts->vram_valid && (tile_id == 0x14 || tile_id == 0x03)) {
+                    // Tileset presente in VRAM: leggi acqua (0x14) e fiori (0x03) direttamente dalla VRAM
+                    u16 vram_off = (u16)(0x1000 + (u16)tile_id * 16 + (u16)(py * 2));
+                    row_byte1 = gb->VRAM[vram_off];
+                    row_byte2 = gb->VRAM[vram_off + 1];
+                } else if (tile_id == 0x03 && ts->tileset_id == 0 && yellow_anim.has_flower) {
+                    // Fallback per i fiori quando un menù/battaglia sovrascrive la VRAM
+                    row_byte1 = yellow_anim.flower_tile[py * 2];
+                    row_byte2 = yellow_anim.flower_tile[py * 2 + 1];
+                } else {
+                    // Lettura da ROM
+                    u16 gfx_addr = (u16)(ts->gfx_ptr + (u16)tile_id * 16 + (u16)(py * 2));
+                    if (!yellow_rom_byte(gb, ts->rom_bank, gfx_addr, &row_byte1) ||
+                        !yellow_rom_byte(gb, ts->rom_bank, (u16)(gfx_addr + 1), &row_byte2))
+                        continue;
+
+                    // Se è il tile dell'acqua (0x14), applica la rotazione rrc/rlc al volo
+                    if (tile_id == 0x14 && ts->has_water && yellow_anim.shift > 0) {
+                        row_byte1 = yellow_ror8(row_byte1, yellow_anim.shift);
+                        row_byte2 = yellow_ror8(row_byte2, yellow_anim.shift);
+                    }
+                }
 
                 if (!y_valid)
                     continue;
@@ -1345,6 +1454,7 @@ bool gb_draw_yellow_revamped(gb_t* gb) {
 
     yellow_tileset_ctx tileset;
     bool have_tileset = yellow_load_tileset(gb, tileset_id, &tileset);
+    yellow_update_tile_anim(gb, have_tileset ? &tileset : NULL);
 
     int gb_screen_canvas_x = (width - LCD_WIDTH) / 2;
     int gb_screen_canvas_y = (height - LCD_HEIGHT) / 2;
