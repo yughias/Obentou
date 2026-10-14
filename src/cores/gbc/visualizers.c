@@ -433,6 +433,11 @@ extern int scy_reg;
 #define Y_SPRITE1_IMAGE_INDEX 2
 #define Y_SPRITE1_MOVEMENT_STATUS 1
 
+static bool yellow_rom_byte(gb_t* gb, u8 bank, u16 ptr, u8* out) {
+    size_t off = (size_t)bank * 0x4000u + (ptr & 0x3FFFu);
+    return yellow_rom_abs(gb, off, out);
+}
+
 static bool yellow_event_flag_set(gb_t* gb, int flag_id) {
     if (flag_id < 0 || flag_id >= 256)
         return false;
@@ -680,11 +685,6 @@ static bool yellow_rom_abs(gb_t* gb, size_t addr, u8* out) {
         return false;
     *out = gb->ROM[addr];
     return true;
-}
-
-static bool yellow_rom_byte(gb_t* gb, u8 bank, u16 ptr, u8* out) {
-    size_t off = (size_t)bank * 0x4000u + (ptr & 0x3FFFu);
-    return yellow_rom_abs(gb, off, out);
 }
 
 // Sprite slot on a map that is not the one loaded in WRAM. The save bit is the
